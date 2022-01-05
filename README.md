@@ -13,7 +13,7 @@ The intuitive command-line interface (CLI) development tool.
 - Command support
 - Help documentation generation (customizable too!)
 
-→ Try it out online
+→ [Try it out online](https://stackblitz.com/edit/cleye-demo?devtoolsheight=50&file=examples/greet.ts&view=editor)
 
 <sub>Support this project by starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on.</sub>
 
