@@ -1,0 +1,215 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`help customization 1`] = `
+"USAGE:
+  esbuild [options...] [entry points]
+
+DOCUMENTATION:
+  [4mhttps://esbuild.github.io/[24m
+
+SIMPLE OPTIONS:
+  --bundle            Bundle all dependencies into the output files                       
+  --define=...        Substitute K with V while parsing                                   
+
+ADVANCED OPTIONS:
+  --allow-overwrite        Allow output files to overwrite input files                    
+  --asset-names            Path template to use for \\"file\\" loader files (default          
+                           \\"[name]-[hash]\\")                                               
+
+EXAMPLES:
+  # Produces dist/entry_point.js and dist/entry_point.js.map
+  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap
+
+Received value: 123"
+`;
+
+exports[`show help command help 1`] = `
+"my-cli test
+
+test command
+
+USAGE:
+  my-cli test [flags...] <arg a> <arg b>
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help commands 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...]
+  my-cli <command>
+
+COMMANDS:
+  test                                                                                    
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help commands with description 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...]
+  my-cli <command>
+
+COMMANDS:
+  test        test command                                                                
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help empty cli 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help empty commands 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help empty flags 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help empty help.examples 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help empty parameters 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help flags 1`] = `
+"FLAGS:
+      --flag                                                                              
+      --flag-a <string>                                                                   
+      --flag-b <number>                                                                   
+      --flag-c <value>          (default: {})                                             
+  -h, --help                   Show help                                                  
+"
+`;
+
+exports[`show help help disabled but shown 1`] = `
+"my-cli v1.2.3
+"
+`;
+
+exports[`show help help.description 1`] = `
+"test description
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help help.usage array 1`] = `
+"USAGE:
+  usage string a
+  usage string b
+  usage string c
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help help.usage string 1`] = `
+"USAGE:
+  usage string
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help help.version with --help 1`] = `
+"v1.0.0
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help name 1`] = `
+"npm
+
+USAGE:
+  npm [flags...]
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help parameters with name 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...] <arg-a> [arg-b]
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help parameters with no name 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help undefined flags 1`] = `
+"FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show version 1`] = `"1.0.0"`;
+
+exports[`smoke test 1`] = `
+"my-cli v1.1.1
+
+USAGE:
+  my-cli [flags...] <urls...>
+  my-cli <command>
+
+COMMANDS:
+  my-command        my command description                                                
+
+FLAGS:
+  -d, --dark-mode                Show tweet in dark mode                                  
+  -h, --help                     Show help                                                
+      --locale <locale>          Locale (default: \\"en\\")                                   
+  -o, --output-dir <path>        Tweet screenshot output directory                        
+  -t, --show-tweet               Show tweet thread                                        
+      --version                  Show version                                             
+  -w, --width <width>            Width of tweet (default: 550)                            
+
+EXAMPLES:
+  # Snapshot a tweet
+  snap-tweet https://twitter.com/jack/status/20
+  
+  # Snapshot a tweet with Japanese locale
+  snap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja
+  
+  # Snapshot a tweet with dark mode and 900px width
+  snap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode
+"
+`;

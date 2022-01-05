@@ -1,0 +1,28 @@
+name: Test
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [master, develop, next]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Install dependencies
+      run: npx ci
+    - name: Lint
+      if: ${{ matrix.node-version == '14.x' }}
+      run: npm run lint
+    - name: Test
+      run: npm run test --if-present
