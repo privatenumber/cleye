@@ -1,1 +1,1 @@
-export const isScriptNamePattern = /^[\w-]+$/;
+export const isScriptNamePattern = /^[\w.-]+$/;

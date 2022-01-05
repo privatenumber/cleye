@@ -23,4 +23,10 @@ describe('error-handling', () => {
 			});
 		}).toThrow('Invalid script name: "a b"');
 	});
+
+	test('allowed name format', () => {
+		cli({
+			name: 'a.b_',
+		});
+	});
 });
