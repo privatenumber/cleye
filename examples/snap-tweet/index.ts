@@ -1,4 +1,6 @@
 /**
+ * Reimplementation of snap-tweet CLI: https://github.com/privatenumber/snap-tweet
+ *
  * Usage:
  *  npx esno examples/snap-tweet --help
  */

@@ -1,3 +1,10 @@
+/**
+ * Reimplementation of esbuild CLI: https://github.com/evanw/esbuild
+ *
+ * Usage:
+ *  npx esno examples/esbuild --help
+ */
+
 import { underline } from 'colorette';
 import { cli } from '../../src';
 

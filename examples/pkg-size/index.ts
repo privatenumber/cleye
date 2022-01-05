@@ -1,4 +1,6 @@
 /**
+ * Reimplmentation of pkg-size CLI: https://github.com/pkg-size/pkg-size
+ *
  * Usage:
  *  npx esno examples/pkg-size --help
  */

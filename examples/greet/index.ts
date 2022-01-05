@@ -1,3 +1,10 @@
+/**
+ * Demo from README.md
+ *
+ * Usage:
+ *  npx esno examples/greet --help
+ */
+
 import { cli } from '../../src';
 
 // Parse argv
