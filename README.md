@@ -170,7 +170,7 @@ _Cleye_'s flag parsing is powered by [`type-flag`](https://github.com/privatenum
 - Array & Custom types
 - Flag delimiters: `--flag value`, `--flag=value`, `--flag:value`, and `--flag.value`
 - Combined aliases: `-abcd 2` → `-a -b -c -d 2`
-- Early termination: Pass in `--` to end flag parsing
+- [End of flags](https://unix.stackexchange.com/a/11382): Pass in `--` to end flag parsing
 - Unknown flags: Unexpected flags stored in `unknownFlags`
 
 
