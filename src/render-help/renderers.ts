@@ -8,6 +8,7 @@ import type { FlagData } from './render-flags';
 
 type TypeFunction = (value: any) => any;
 
+const { isTTY } = process.stdout;
 const stdoutHasColors = tty.WriteStream.prototype.hasColors();
 
 type HelpDocumentNodeOrString<Type extends PropertyKey> = string | HelpDocumentNode<Type>;
@@ -27,7 +28,7 @@ export class Renderers {
 	}
 
 	heading(text: string) {
-		return stdoutHasColors ? this.bold(text) : text.toLocaleUpperCase();
+		return isTTY && stdoutHasColors ? this.bold(text) : text.toLocaleUpperCase();
 	}
 
 	section({
