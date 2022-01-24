@@ -19,7 +19,9 @@ export class Renderers {
 	}
 
 	bold(text: string) {
-		return `\u001B[1m${text}\u001B[22m`;
+		return stdoutHasColors
+			? `\u001B[1m${text}\u001B[22m`
+			: text.toLocaleUpperCase();
 	}
 
 	indentText({ text, spaces }: { text: string; spaces: number }) {
@@ -27,7 +29,7 @@ export class Renderers {
 	}
 
 	heading(text: string) {
-		return stdoutHasColors ? this.bold(text) : text.toLocaleUpperCase();
+		return this.bold(text);
 	}
 
 	section({
