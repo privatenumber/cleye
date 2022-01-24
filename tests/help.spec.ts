@@ -19,6 +19,10 @@ afterEach(() => {
 	mockConsoleLog.mockRestore();
 });
 
+afterAll(() => {
+	mockProcessExit.mockRestore();
+});
+
 describe('show help', () => {
 	test('empty cli', () => {
 		cli(

@@ -47,7 +47,7 @@
 		]
 	},
 	"dependencies": {
-		"terminal-columns": "^1.4.0",
+		"terminal-columns": "^1.4.1",
 		"type-flag": "^2.0.0"
 	},
 	"devDependencies": {
