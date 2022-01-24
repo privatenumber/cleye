@@ -64,7 +64,7 @@ const parsed = cli({
 				help: boolean | undefined;
 			}>(flags);
 		}),
-	]
+	],
 }, ({ flags }) => {
 	expectType<{
 		booleanFlag: boolean | undefined;
@@ -88,7 +88,7 @@ if (parsed.command === undefined) {
 		numberFlagDefault: number;
 		extraOptions: boolean;
 		help: boolean | undefined;
-	}>(parsed.flags);	
+	}>(parsed.flags);
 }
 
 if (parsed.command === 'commandA') {
@@ -101,5 +101,5 @@ if (parsed.command === 'commandA') {
 		numberFlagDefault: number;
 		extraOptions: boolean;
 		help: boolean | undefined;
-	}>(parsed.flags);	
+	}>(parsed.flags);
 }
