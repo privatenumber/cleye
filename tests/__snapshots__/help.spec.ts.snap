@@ -1,22 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`help customization 1`] = `
-"[1mUsage:[22m
+"USAGE:
   esbuild [options...] [entry points]
 
-[1mDocumentation:[22m
+DOCUMENTATION:
   [4mhttps://esbuild.github.io/[24m
 
-[1mSimple options:[22m
+SIMPLE OPTIONS:
   --bundle            Bundle all dependencies into the output files                       
   --define=...        Substitute K with V while parsing                                   
 
-[1mAdvanced options:[22m
+ADVANCED OPTIONS:
   --allow-overwrite        Allow output files to overwrite input files                    
   --asset-names            Path template to use for \\"file\\" loader files (default          
                            \\"[name]-[hash]\\")                                               
 
-[1mExamples:[22m
+EXAMPLES:
   # Produces dist/entry_point.js and dist/entry_point.js.map
   esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap
 
@@ -28,10 +28,10 @@ exports[`show help command help 1`] = `
 
 test command
 
-[1mUsage:[22m
+USAGE:
   my-cli test [flags...] <arg a> <arg b>
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -39,14 +39,14 @@ test command
 exports[`show help commands 1`] = `
 "my-cli
 
-[1mUsage:[22m
+USAGE:
   my-cli [flags...]
   my-cli <command>
 
-[1mCommands:[22m
+COMMANDS:
   test                                                                                    
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -54,50 +54,50 @@ exports[`show help commands 1`] = `
 exports[`show help commands with description 1`] = `
 "my-cli
 
-[1mUsage:[22m
+USAGE:
   my-cli [flags...]
   my-cli <command>
 
-[1mCommands:[22m
+COMMANDS:
   test        test command                                                                
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help empty cli 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help empty commands 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help empty flags 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help empty help.examples 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help empty parameters 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help flags 1`] = `
-"[1mFlags:[22m
+"FLAGS:
       --flag                                                                              
       --flag-a <string>                                                                   
       --flag-b <number>                                                                   
@@ -114,27 +114,27 @@ exports[`show help help disabled but shown 1`] = `
 exports[`show help help.description 1`] = `
 "test description
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help help.usage array 1`] = `
-"[1mUsage:[22m
+"USAGE:
   usage string a
   usage string b
   usage string c
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help help.usage string 1`] = `
-"[1mUsage:[22m
+"USAGE:
   usage string
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -142,7 +142,7 @@ exports[`show help help.usage string 1`] = `
 exports[`show help help.version with --help 1`] = `
 "v1.0.0
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -150,10 +150,10 @@ exports[`show help help.version with --help 1`] = `
 exports[`show help name 1`] = `
 "npm
 
-[1mUsage:[22m
+USAGE:
   npm [flags...]
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -161,22 +161,22 @@ exports[`show help name 1`] = `
 exports[`show help parameters with name 1`] = `
 "my-cli
 
-[1mUsage:[22m
+USAGE:
   my-cli [flags...] <arg-a> [arg-b]
 
-[1mFlags:[22m
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help parameters with no name 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
 
 exports[`show help undefined flags 1`] = `
-"[1mFlags:[22m
+"FLAGS:
   -h, --help        Show help                                                             
 "
 `;
@@ -186,14 +186,14 @@ exports[`show version 1`] = `"1.0.0"`;
 exports[`smoke test 1`] = `
 "my-cli v1.1.1
 
-[1mUsage:[22m
+USAGE:
   my-cli [flags...] <urls...>
   my-cli <command>
 
-[1mCommands:[22m
+COMMANDS:
   my-command        my command description                                                
 
-[1mFlags:[22m
+FLAGS:
   -d, --dark-mode                Show tweet in dark mode                                  
   -h, --help                     Show help                                                
       --locale <locale>          Locale (default: \\"en\\")                                   
@@ -202,7 +202,7 @@ exports[`smoke test 1`] = `
       --version                  Show version                                             
   -w, --width <width>            Width of tweet (default: 550)                            
 
-[1mExamples:[22m
+EXAMPLES:
   # Snapshot a tweet
   snap-tweet https://twitter.com/jack/status/20
   
