@@ -210,6 +210,7 @@ describe('command', () => {
 				flagB: {
 					type: String,
 					default: 'true',
+					description: 'flagB description',
 				},
 			},
 		}, (parsed) => {
