@@ -14,12 +14,12 @@ specifiers:
   terminal-columns: ^1.4.1
   tsd: ^0.19.1
   tsup: ^5.11.10
-  type-flag: ^2.0.1
+  type-flag: github:privatenumber/type-flag#built/end-of-flags-property
   typescript: ^4.5.4
 
 dependencies:
   terminal-columns: 1.4.1
-  type-flag: 2.0.1
+  type-flag: github.com/privatenumber/type-flag/c8177511855b14ac57182b7e036b79fbf1e5cc17
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.11.0_eslint@8.6.0+typescript@4.5.4
@@ -5285,10 +5285,6 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /type-flag/2.0.1:
-    resolution: {integrity: sha512-dYdZq0d+UaeGx82jeYDHsNg6WXCohgtob9rOP+PpUpx7smqlXDdCOzo8mejmoRaJLbPuY00Dl5iDjJNr8vhN+Q==}
-    dev: false
-
   /typedarray-to-buffer/3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
     dependencies:
@@ -5528,3 +5524,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  github.com/privatenumber/type-flag/c8177511855b14ac57182b7e036b79fbf1e5cc17:
+    resolution: {tarball: https://codeload.github.com/privatenumber/type-flag/tar.gz/c8177511855b14ac57182b7e036b79fbf1e5cc17}
+    name: type-flag
+    version: 0.0.0-semantic-release
+    dev: false

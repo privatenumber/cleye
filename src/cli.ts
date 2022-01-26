@@ -166,7 +166,7 @@ function cliBase<
 
 	if (options.parameters) {
 		const parsedParameters = parseParameters(options.parameters);
-		const _ = parsed._ as (string[] & Record<string, string | string[]>);
+		const _ = parsed._ as (typeof parsed._ & Record<string, string | string[]>);
 
 		for (let i = 0; i < parsedParameters.length; i += 1) {
 			const { name, required, spread } = parsedParameters[i];
