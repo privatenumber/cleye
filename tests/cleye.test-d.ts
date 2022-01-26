@@ -1,6 +1,8 @@
 import { expectType } from 'tsd';
 import { cli, command } from '..';
 
+type Arguments = string[] & { '--': string[] };
+
 const parsed = cli({
 	parameters: ['[foo]', '<bar...>'],
 
@@ -85,11 +87,9 @@ const parsed = cli({
 
 if (parsed.command === undefined) {
 	expectType<
-		string[]
-		& { '--': string[] }
-		& {
-			foo: string | undefined,
-			bar: string[],
+		Arguments & {
+			foo: string | undefined;
+			bar: string[];
 		}
 	>(parsed._);
 
@@ -103,16 +103,13 @@ if (parsed.command === undefined) {
 		extraOptions: boolean;
 		help: boolean | undefined;
 	}>(parsed.flags);
-
 }
 
 if (parsed.command === 'commandA') {
 	expectType<
-		string[]
-		& { '--': string[] }
-		& {
-			bar: string | undefined,
-			foo: string[],
+		Arguments & {
+			bar: string | undefined;
+			foo: string[];
 		}
 	>(parsed._);
 
