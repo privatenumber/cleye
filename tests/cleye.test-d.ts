@@ -1,7 +1,11 @@
 import { expectType } from 'tsd';
 import { cli, command } from '..';
 
+type Arguments = string[] & { '--': string[] };
+
 const parsed = cli({
+	parameters: ['[foo]', '<bar...>'],
+
 	flags: {
 		booleanFlag: Boolean,
 		booleanFlagDefault: {
@@ -29,6 +33,9 @@ const parsed = cli({
 	commands: [
 		command({
 			name: 'commandA',
+
+			parameters: ['[bar]', '<foo...>'],
+
 			flags: {
 				booleanFlag: Boolean,
 				booleanFlagDefault: {
@@ -79,6 +86,13 @@ const parsed = cli({
 });
 
 if (parsed.command === undefined) {
+	expectType<
+		Arguments & {
+			foo: string | undefined;
+			bar: string[];
+		}
+	>(parsed._);
+
 	expectType<{
 		booleanFlag: boolean | undefined;
 		booleanFlagDefault: boolean;
@@ -92,6 +106,13 @@ if (parsed.command === undefined) {
 }
 
 if (parsed.command === 'commandA') {
+	expectType<
+		Arguments & {
+			bar: string | undefined;
+			foo: string[];
+		}
+	>(parsed._);
+
 	expectType<{
 		booleanFlag: boolean | undefined;
 		booleanFlagDefault: boolean;
