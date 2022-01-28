@@ -18,12 +18,14 @@ const { stringify } = JSON;
 
 const specialCharactersPattern = /[|\\{}()[\]^$+*?.]/;
 
+type ParsedParameter = {
+	name: string;
+	required: boolean;
+	spread: boolean;
+};
+
 function parseParameters(parameters: string[]) {
-	const parsedParameters: {
-		name: string;
-		required: boolean;
-		spread: boolean;
-	}[] = [];
+	const parsedParameters: ParsedParameter[] = [];
 
 	let hasOptional: string | undefined;
 	let hasSpread: string | undefined;
@@ -76,6 +78,38 @@ function parseParameters(parameters: string[]) {
 	}
 
 	return parsedParameters;
+}
+
+function mapParametersToArguments(
+	mapping: Record<string, string | string[]>,
+	parameters: ParsedParameter[],
+	cliArguments: string[],
+	showHelp: () => void,
+) {
+	for (let i = 0; i < parameters.length; i += 1) {
+		const { name, required, spread } = parameters[i];
+		const camelCaseName = camelCase(name);
+		if (camelCaseName in mapping) {
+			throw new Error(`Invalid parameter: ${stringify(name)} is used more than once.`);
+		}
+
+		const value = spread ? cliArguments.slice(i) : cliArguments[i];
+
+		if (spread) {
+			i = parameters.length;
+		}
+
+		if (
+			required
+			&& (!value || (spread && value.length === 0))
+		) {
+			console.error(`Error: Missing required parameter ${stringify(name)}\n`);
+			showHelp();
+			return process.exit(1);
+		}
+
+		mapping[camelCaseName] = value;
+	}
 }
 
 function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOptions | undefined) {
@@ -165,28 +199,43 @@ function cliBase<
 	}
 
 	if (options.parameters) {
-		const parsedParameters = parseParameters(options.parameters);
-		const _ = parsed._ as (typeof parsed._ & Record<string, string | string[]>);
+		let { parameters } = options;
+		let cliArguments = parsed._ as string[];
+		const hasEof = parameters.indexOf('--');
+		const eofParameters = parameters.slice(hasEof + 1);
+		const mapping: Record<string, string | string[]> = Object.create(null);
 
-		for (let i = 0; i < parsedParameters.length; i += 1) {
-			const { name, required, spread } = parsedParameters[i];
-			const value = spread ? parsed._.slice(i) : parsed._[i];
+		if (hasEof > -1 && eofParameters.length > 0) {
+			parameters = parameters.slice(0, hasEof);
 
-			if (spread) {
-				i = parsedParameters.length;
-			}
+			const eofArguments = parsed._['--'];
+			cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
 
-			if (
-				required
-				&& (!value || (spread && value.length === 0))
-			) {
-				console.error(`Error: Missing required parameter ${stringify(name)}\n`);
-				showHelp();
-				return process.exit(1);
-			}
-
-			_[camelCase(name)] = value;
+			mapParametersToArguments(
+				mapping,
+				parseParameters(parameters),
+				cliArguments,
+				showHelp,
+			);
+			mapParametersToArguments(
+				mapping,
+				parseParameters(eofParameters),
+				eofArguments,
+				showHelp,
+			);
+		} else {
+			mapParametersToArguments(
+				mapping,
+				parseParameters(parameters),
+				cliArguments,
+				showHelp,
+			);
 		}
+
+		Object.assign(
+			parsed._,
+			mapping,
+		);
 	}
 
 	const parsedWithApi = {

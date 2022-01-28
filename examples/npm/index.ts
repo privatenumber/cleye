@@ -7,12 +7,14 @@
 
 import { cli } from '../../src';
 import { install } from './commands/install';
+import { runScript } from './commands/run-script';
 
 const argv = cli({
 	name: 'npm',
 
 	commands: [
 		install,
+		runScript,
 	],
 });
 
