@@ -401,7 +401,7 @@ describe('show help', () => {
 });
 
 describe('invalid usage', () => {
-	test('missing required parameter', () => {	
+	test('missing required parameter', () => {
 		cli(
 			{
 				name: 'my-cli',
@@ -410,11 +410,11 @@ describe('invalid usage', () => {
 			undefined,
 			[],
 		);
-	
+
 		expect(mockProcessExit).toHaveBeenCalledWith(1);
 		const { calls } = mockConsoleError.mock;
-		expect(calls[0][0]).toMatchSnapshot();	
-	});	
+		expect(calls[0][0]).toMatchSnapshot();
+	});
 });
 
 test('show version', () => {
