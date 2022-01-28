@@ -176,7 +176,7 @@ const argv = cli({
     parameters: [
         '<script>',
         '--',
-        '[arguments...]',
+        '[arguments...]'
     ]
 })
 
