@@ -98,7 +98,19 @@ function getUsage(options: Options) {
 			options.parameters
 			&& options.parameters.length > 0
 		) {
-			usage.push(options.parameters.join(' '));
+			const { parameters } = options;
+			const hasEof = parameters.indexOf('--');
+			const hasRequiredParametersAfterEof = hasEof > -1 && parameters.slice(hasEof + 1).some(parameter => parameter.startsWith('<'));
+			usage.push(
+				parameters
+					.map((parameter) => {
+						if (parameter !== '--') {
+							return parameter;
+						}
+						return hasRequiredParametersAfterEof ? '--' : '[--]';
+					})
+					.join(' '),
+			);
 		}
 
 		if (usage.length > 1) {

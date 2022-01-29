@@ -101,6 +101,38 @@ describe('show help', () => {
 		expect(calls[0][0]).toMatchSnapshot();
 	});
 
+	test('parameters with optional --', () => {
+		cli(
+			{
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '[arg-c]'],
+			},
+			undefined,
+			['--help'],
+		);
+
+		expect(mockProcessExit).toHaveBeenCalledWith(0);
+
+		const { calls } = mockConsoleLog.mock;
+		expect(calls[0][0]).toMatchSnapshot();
+	});
+
+	test('parameters with required --', () => {
+		cli(
+			{
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '<arg-c>'],
+			},
+			undefined,
+			['--help'],
+		);
+
+		expect(mockProcessExit).toHaveBeenCalledWith(0);
+
+		const { calls } = mockConsoleLog.mock;
+		expect(calls[0][0]).toMatchSnapshot();
+	});
+
 	test('empty commands', () => {
 		cli(
 			{

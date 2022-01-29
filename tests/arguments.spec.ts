@@ -50,6 +50,18 @@ describe('error handling', () => {
 			}).toThrow('Invalid parameter: "value-a" is used more than once');
 		});
 
+		test('multiple --', () => {
+			expect(() => {
+				const parsed = cli(
+					{
+						parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
+					},
+				);
+
+				expect<string[]>(parsed._).toStrictEqual([]);
+			}).toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+		});
+
 		test('optional parameter before required parameter', () => {
 			expect(() => {
 				const parsed = cli(

@@ -180,6 +180,28 @@ exports[`show help parameters with no name 1`] = `
 "
 `;
 
+exports[`show help parameters with optional -- 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help parameters with required -- 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...] <arg-a> [arg-b] -- <arg-c>
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
 exports[`show help undefined flags 1`] = `
 "FLAGS:
   -h, --help        Show help                                                             
