@@ -3,6 +3,7 @@ import { cli, command } from '../src';
 
 let mockProcessExit: jest.SpyInstance;
 let mockConsoleLog: jest.SpyInstance;
+let mockConsoleError: jest.SpyInstance;
 
 beforeAll(() => {
 	process.stdout.columns = 90;
@@ -11,12 +12,14 @@ beforeAll(() => {
 
 beforeEach(() => {
 	mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
+	mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
 	mockProcessExit.mockClear();
 });
 
 afterEach(() => {
 	mockConsoleLog.mockRestore();
+	mockConsoleError.mockRestore();
 });
 
 afterAll(() => {
@@ -87,6 +90,38 @@ describe('show help', () => {
 			{
 				name: 'my-cli',
 				parameters: ['<arg-a>', '[arg-b]'],
+			},
+			undefined,
+			['--help'],
+		);
+
+		expect(mockProcessExit).toHaveBeenCalledWith(0);
+
+		const { calls } = mockConsoleLog.mock;
+		expect(calls[0][0]).toMatchSnapshot();
+	});
+
+	test('parameters with optional --', () => {
+		cli(
+			{
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '[arg-c]'],
+			},
+			undefined,
+			['--help'],
+		);
+
+		expect(mockProcessExit).toHaveBeenCalledWith(0);
+
+		const { calls } = mockConsoleLog.mock;
+		expect(calls[0][0]).toMatchSnapshot();
+	});
+
+	test('parameters with required --', () => {
+		cli(
+			{
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '<arg-c>'],
 			},
 			undefined,
 			['--help'],
@@ -394,6 +429,23 @@ describe('show help', () => {
 		);
 
 		expect(mockProcessExit).not.toHaveBeenCalled();
+	});
+});
+
+describe('invalid usage', () => {
+	test('missing required parameter', () => {
+		cli(
+			{
+				name: 'my-cli',
+				parameters: ['<value-a>'],
+			},
+			undefined,
+			[],
+		);
+
+		expect(mockProcessExit).toHaveBeenCalledWith(1);
+		const { calls } = mockConsoleError.mock;
+		expect(calls[0][0]).toMatchSnapshot();
 	});
 });
 

@@ -155,6 +155,38 @@ argv._.optionalParameter // => "b" (string | undefined)
 argv._.optionalSpread // => ["c", "d"] (string[])
 ```
 
+#### End-of-flags
+End-of-flags (`--`) (aka _end-of-options_) allows users to pass in a subset of arguments. This is useful for passing in arguments that should be parsed separately from the rest of the arguments or passing in arguments that look like flags.
+
+An example of this is [`npm run`](https://docs.npmjs.com/cli/v8/commands/npm-run-script):
+```sh
+$ npm run <script> -- <script arguments>
+```
+The `--` indicates that all arguments afterwards should be passed into the _script_ rather than _npm_.
+
+All end-of-flag arguments will be accessible from `argv._['--']`.
+
+Additionally, you can specify `--` in the `parameters` array to parse end-of-flags arguments.
+
+Example:
+
+```ts
+const argv = cli({
+    name: 'npm-run',
+    parameters: [
+        '<script>',
+        '--',
+        '[arguments...]'
+    ]
+})
+
+// $ npm-run echo -- hello world
+
+argv._.script // => "echo" (string)
+argv._.arguments // => ["hello", "world] (string[])
+```
+
+
 ### Flags
 Flags (aka Options) are key-value pairs passed into the script in the format `--flag-name <value>`.
 

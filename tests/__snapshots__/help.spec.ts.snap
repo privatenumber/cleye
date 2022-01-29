@@ -23,6 +23,11 @@ EXAMPLES:
 Received value: 123"
 `;
 
+exports[`invalid usage missing required parameter 1`] = `
+"Error: Missing required parameter \\"value-a\\"
+"
+`;
+
 exports[`show help command help 1`] = `
 "my-cli test
 
@@ -171,6 +176,28 @@ FLAGS:
 
 exports[`show help parameters with no name 1`] = `
 "FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help parameters with optional -- 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]
+
+FLAGS:
+  -h, --help        Show help                                                             
+"
+`;
+
+exports[`show help parameters with required -- 1`] = `
+"my-cli
+
+USAGE:
+  my-cli [flags...] <arg-a> [arg-b] -- <arg-c>
+
+FLAGS:
   -h, --help        Show help                                                             
 "
 `;
