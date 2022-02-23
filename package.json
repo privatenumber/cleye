@@ -32,7 +32,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup src/index.ts --dts --format esm,cjs --minify",
+		"build": "pkgroll --minify",
 		"lint": "eslint .",
 		"test": "CI=true jest",
 		"test:dts": "tsd"
@@ -49,7 +49,7 @@
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
-		"type-flag": "^2.1.0"
+		"type-flag": "github:privatenumber/type-flag#built/pkgroll"
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.14.1",
@@ -62,8 +62,8 @@
 		"husky": "^4.3.8",
 		"jest": "^27.4.7",
 		"lint-staged": "^12.1.2",
+		"pkgroll": "github:privatenumber/pkgroll#built/develop",
 		"tsd": "^0.19.1",
-		"tsup": "^5.11.10",
 		"typescript": "^4.5.4"
 	},
 	"eslintConfig": {
