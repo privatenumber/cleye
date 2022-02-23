@@ -1,0 +1,78 @@
+{
+	"name": "cleye",
+	"version": "0.0.0-semantic-release",
+	"description": "The intuitive CLI development tool",
+	"keywords": [
+		"cli",
+		"command line",
+		"argv",
+		"parameters",
+		"flags",
+		"node",
+		"typescript"
+	],
+	"license": "MIT",
+	"repository": "privatenumber/cleye",
+	"funding": "https://github.com/privatenumber/cleye?sponsor=1",
+	"author": {
+		"name": "Hiroki Osame",
+		"email": "hiroki.osame@gmail.com"
+	},
+	"files": [
+		"dist"
+	],
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "pkgroll --minify",
+		"lint": "eslint .",
+		"test": "CI=true jest",
+		"test:dts": "tsd"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged && npm test"
+		}
+	},
+	"lint-staged": {
+		"*.ts": [
+			"eslint"
+		]
+	},
+	"dependencies": {
+		"terminal-columns": "^1.4.1",
+		"type-flag": "github:privatenumber/type-flag#built/pkgroll"
+	},
+	"devDependencies": {
+		"@pvtnbr/eslint-config": "^0.14.1",
+		"@types/jest": "^27.4.0",
+		"@types/node": "^17.0.8",
+		"colorette": "^2.0.16",
+		"es-jest": "^1.5.0",
+		"eslint": "^8.9.0",
+		"esno": "^0.13.0",
+		"husky": "^4.3.8",
+		"jest": "^27.4.7",
+		"lint-staged": "^12.1.2",
+		"pkgroll": "github:privatenumber/pkgroll#built/develop",
+		"tsd": "^0.19.1",
+		"typescript": "^4.5.4"
+	},
+	"eslintConfig": {
+		"extends": "@pvtnbr",
+		"rules": {
+			"unicorn/no-process-exit": "off"
+		}
+	},
+	"tsd": {
+		"directory": "tests"
+	}
+}
