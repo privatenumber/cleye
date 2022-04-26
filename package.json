@@ -47,7 +47,7 @@
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
-		"type-flag": "github:privatenumber/type-flag#built/pkgroll"
+		"type-flag": "^2.1.0"
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.14.1",

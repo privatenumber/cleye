@@ -14,12 +14,12 @@ specifiers:
   pkgroll: ^1.0.4
   terminal-columns: ^1.4.1
   tsd: ^0.19.1
-  type-flag: github:privatenumber/type-flag#built/pkgroll
+  type-flag: ^2.1.0
   typescript: ^4.5.4
 
 dependencies:
   terminal-columns: 1.4.1
-  type-flag: github.com/privatenumber/type-flag/e86fae12651bc386e10118d687101b63693966b6
+  type-flag: 2.1.0
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.14.1_eslint@8.9.0+typescript@4.5.4
@@ -5514,6 +5514,10 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
+  /type-flag/2.1.0:
+    resolution: {integrity: sha512-ln8u/BdNzppXeFP8JsmsofElwVC2/FYoQAIipzhx45jjFwSApFqIieBEY93TKoLpphQBAbazX8LCoIY59Vwxlg==}
+    dev: false
+
   /typedarray-to-buffer/3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
     dependencies:
@@ -5753,9 +5757,3 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
-
-  github.com/privatenumber/type-flag/e86fae12651bc386e10118d687101b63693966b6:
-    resolution: {tarball: https://codeload.github.com/privatenumber/type-flag/tar.gz/e86fae12651bc386e10118d687101b63693966b6}
-    name: type-flag
-    version: 0.0.0-semantic-release
-    dev: false
