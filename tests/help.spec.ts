@@ -1,5 +1,5 @@
 import { underline } from 'colorette';
-import { cli, command } from '../dist';
+import { cli, command } from '../dist/index.js';
 
 let mockProcessExit: jest.SpyInstance;
 let mockConsoleLog: jest.SpyInstance;
