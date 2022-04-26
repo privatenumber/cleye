@@ -32,6 +32,7 @@
 	"scripts": {
 		"build": "pkgroll --minify",
 		"lint": "eslint .",
+		"pretest": "npm run build",
 		"test": "CI=true jest",
 		"test:dts": "tsd"
 	},
