@@ -1,4 +1,4 @@
-import { cli } from '../src';
+import { cli } from '../dist/index.js';
 
 describe('flags', () => {
 	test('has return type & callback', () => {

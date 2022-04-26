@@ -1,4 +1,4 @@
-import { cli, command } from '../src';
+import { cli, command } from '../dist/index.js';
 
 describe('error handling', () => {
 	test('missing options', () => {

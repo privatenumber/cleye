@@ -1,4 +1,4 @@
-import { cli } from '../src';
+import { cli } from '../dist/index.js';
 
 describe('error-handling', () => {
 	test('must pass in options', () => {
