@@ -1,4 +1,4 @@
-import { cli, command } from '../src';
+import { cli, command } from '../dist';
 
 describe('error handling', () => {
 	describe('parameters', () => {
