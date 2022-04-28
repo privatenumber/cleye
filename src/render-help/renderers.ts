@@ -97,16 +97,17 @@ export class Renderers {
 		return '<value>';
 	}
 
-	flagOperator() {
+	flagOperator(_: FlagData) {
 		return ' ';
 	}
 
-	flagName({
-		flag,
-		flagFormatted,
-		aliasesEnabled,
-		aliasFormatted,
-	}: FlagData) {
+	flagName(flagData: FlagData) {
+		const {
+			flag,
+			flagFormatted,
+			aliasesEnabled,
+			aliasFormatted,
+		} = flagData;
 		let flagText = '';
 
 		if (aliasFormatted) {
@@ -118,12 +119,12 @@ export class Renderers {
 		flagText += flagFormatted;
 
 		if ('placeholder' in flag && typeof flag.placeholder === 'string') {
-			flagText += `${this.flagOperator()}${flag.placeholder}`;
+			flagText += `${this.flagOperator(flagData)}${flag.placeholder}`;
 		} else {
 			// Test: default flag for String type short-hand
 			const flagPlaceholder = this.flagParameter('type' in flag ? flag.type : flag);
 			if (flagPlaceholder) {
-				flagText += `${this.flagOperator()}${flagPlaceholder}`;
+				flagText += `${this.flagOperator(flagData)}${flagPlaceholder}`;
 			}
 		}
 
