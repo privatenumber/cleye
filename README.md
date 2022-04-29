@@ -64,12 +64,14 @@ if (argv.flags.time === 'morning') {
 ```
 
 🛠 In development, type hints are provided on parsed flags and parameters:
-<figure align="center">
+<p align="center">
+    <br>
     <img src=".github/typed-flags.png" width="600">
-    <figcaption>
-        Type hints for Cleye's output are very verbose and readable
-    </figcaption>
-</figure>
+    <br>
+    <i>Type hints for Cleye's output are very verbose and readable</i>
+    <br>
+    <br>
+</p>
 
 📖 Generated help documentation can be viewed with the `--help` flag:
 
