@@ -53,6 +53,10 @@ export type HelpDocumentNode<Types extends PropertyKey = keyof Renderers> = {
 };
 
 export type HelpOptions = {
+	/**
+	Adds the `--help` flag but disable automatically showing the help message
+	*/
+	disableAutoHelp?: boolean;
 
 	/**
 	Version of the script displayed in `--help` output. Use to avoid enabling `--version` flag.

@@ -191,6 +191,8 @@ function cliBase<
 	if (
 		isHelpEnabled
 
+		&& !help?.disableAutoHelp
+
 		// Can be overridden to different type
 		&& parsed.flags.help === true
 	) {
