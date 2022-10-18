@@ -1,16 +1,12 @@
 {
 	"compilerOptions": {
-		"moduleResolution": "node",
-		"isolatedModules": true,
-		"esModuleInterop": true,
 		"strict": true,
-		"declaration": true,
-		"outDir": "dist",
+		"isolatedModules": true,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
 
-		// Node 12
-		"lib": ["ES2019"],
-		"module": "commonjs",
-		"target": "ES2019",
+		"module": "esnext",
+		"target": "esnext"
 	},
 	"include": [
 		"src",

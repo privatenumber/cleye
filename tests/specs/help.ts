@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
-import { underline } from 'colorette';
+import { underline } from 'kolorist';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
-import { cli, command } from '../../dist/index.js';
+import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
 	describe('help', ({ describe, test }) => {

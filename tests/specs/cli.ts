@@ -1,5 +1,5 @@
 import { testSuite, expect } from 'manten';
-import { cli } from '../../dist/index.js';
+import { cli } from '#cleye';
 
 export default testSuite(({ describe }) => {
 	describe('cli', ({ describe }) => {

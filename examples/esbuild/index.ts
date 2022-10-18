@@ -5,7 +5,7 @@
  *  npx esno examples/esbuild --help
  */
 
-import { underline } from 'colorette';
+import { underline } from 'kolorist';
 import { cli } from '../../src';
 
 const simpleFlags = {

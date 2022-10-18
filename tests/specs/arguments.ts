@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { spy } from 'nanospy';
-import { cli, command } from '../../dist/index.js';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
+import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
 	describe('arguments', ({ describe }) => {

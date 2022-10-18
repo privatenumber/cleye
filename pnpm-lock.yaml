@@ -3,8 +3,8 @@ lockfileVersion: 5.4
 specifiers:
   '@pvtnbr/eslint-config': ^0.30.2
   '@types/node': ^18.11.0
-  colorette: ^2.0.16
   eslint: ^8.25.0
+  kolorist: ^1.6.0
   lint-staged: ^13.0.3
   manten: ^0.3.0
   nanospy: ^0.5.0
@@ -23,8 +23,8 @@ dependencies:
 devDependencies:
   '@pvtnbr/eslint-config': 0.30.2_z4bbprzjrhnsfa24uvmcbu7f5q
   '@types/node': 18.11.0
-  colorette: 2.0.16
   eslint: 8.25.0
+  kolorist: 1.6.0
   lint-staged: 13.0.3
   manten: 0.3.0
   nanospy: 0.5.0
@@ -828,10 +828,6 @@ packages:
 
   /color-name/1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
-    dev: true
-
-  /colorette/2.0.16:
-    resolution: {integrity: sha512-hUewv7oMjCp+wkBv5Rm0v87eJhq4woh5rSR+42YSQJKecCqgIqNkZ6lAlQms/BwHPJA5NKMRlpxPRv0n8HQW6g==}
     dev: true
 
   /colorette/2.0.19:
@@ -2563,6 +2559,10 @@ packages:
   /kind-of/6.0.3:
     resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
     engines: {node: '>=0.10.0'}
+    dev: true
+
+  /kolorist/1.6.0:
+    resolution: {integrity: sha512-dLkz37Ab97HWMx9KTes3Tbi3D1ln9fCAy2zr2YVExJasDRPGRaKcoE4fycWNtnCAJfjFqe0cnY+f8KT2JePEXQ==}
     dev: true
 
   /levn/0.4.1:
