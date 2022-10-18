@@ -30,22 +30,18 @@
 		"types": "./dist/index.d.ts"
 	},
 	"scripts": {
+		"prepare": "pnpm simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc --noEmit",
-		"pretest": "npm run build",
-		"test": "CI=true jest",
+		"test": "pnpm build && CI=true jest",
 		"test:dts": "tsd"
 	},
-	"husky": {
-		"hooks": {
-			"pre-commit": "lint-staged && npm test"
-		}
+	"simple-git-hooks": {
+		"pre-commit": "pnpm lint-staged && pnpm test"
 	},
 	"lint-staged": {
-		"*.ts": [
-			"eslint"
-		]
+		"*.ts": "pnpm lint"
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
@@ -59,10 +55,10 @@
 		"es-jest": "^1.5.0",
 		"eslint": "^8.25.0",
 		"esno": "^0.13.0",
-		"husky": "^4.3.8",
 		"jest": "^27.4.7",
 		"lint-staged": "^12.1.2",
 		"pkgroll": "^1.3.1",
+		"simple-git-hooks": "^2.8.1",
 		"tsd": "^0.24.1",
 		"typescript": "^4.8.4"
 	},
