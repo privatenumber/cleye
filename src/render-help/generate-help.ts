@@ -3,7 +3,6 @@ import type {
 	HelpDocumentNode,
 } from '../types';
 import type { CommandOptions } from '../command';
-import type { Renderers } from './renderers';
 import { renderFlags } from './render-flags';
 
 type Options = CliOptionsInternal | CommandOptions;
@@ -242,16 +241,20 @@ function getAliases(options: Options) {
 	} as const;
 }
 
-export const generateHelp = (options: Options): HelpDocumentNode<keyof Renderers>[] => [
-	getNameAndVersion,
-	getDescription,
-	getUsage,
-	getCommands,
-	getFlags,
-	getExamples,
-	getAliases,
-].map(
-	helpSectionGenerator => helpSectionGenerator(options),
-).filter(
-	<T>(value: T): value is NonNullable<T> => Boolean(value),
+type Truthy = <T>(value?: T) => value is T;
+
+export const generateHelp = (options: Options): HelpDocumentNode[] => (
+	[
+		getNameAndVersion,
+		getDescription,
+		getUsage,
+		getCommands,
+		getFlags,
+		getExamples,
+		getAliases,
+	].map(
+		helpSectionGenerator => helpSectionGenerator(options),
+	).filter(
+		Boolean as any as Truthy,
+	)
 );

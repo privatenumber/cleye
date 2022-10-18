@@ -44,7 +44,9 @@ type HasHelp<Options extends { flags?: Flags }> = (
 		: Options['flags'] & { help: BooleanConstructor }
 );
 
-export type HasHelpOrVersion<Options extends { flags?: Flags }> = HasVersion<Options> & HasHelp<Options>;
+export type HasHelpOrVersion<Options extends { flags?: Flags }> = (
+	HasVersion<Options> & HasHelp<Options>
+);
 
 export type HelpDocumentNode<Types extends PropertyKey = keyof Renderers> = {
 	id?: string;
