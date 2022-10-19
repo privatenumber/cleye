@@ -29,8 +29,13 @@ jobs:
 
     - name: Test
       run: |
+        # Node.js v16 detects GITHUB_ACTIONS as a color supported environment
+        # https://github.com/nodejs/node/blob/v16.18.0/lib/internal/tty.js#L167
         pnpm test
-        pnpm --use-node-version=12.22.12 test
+
+        # Node.js 12 doesn't handle GITHUB_ACTIONS
+        # https://github.com/nodejs/node/blob/v15.14.0/lib/internal/tty.js#L164
+        FORCE_COLOR=2 pnpm --use-node-version=12.22.12 test
 
     - name: Lint
       run: pnpm lint
