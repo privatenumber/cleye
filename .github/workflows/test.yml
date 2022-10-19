@@ -29,9 +29,7 @@ jobs:
 
     - name: Test
       run: |
-        pnpm --use-node-version=16.18.0 test
-        pnpm --use-node-version=15.14.0 test
-        pnpm --use-node-version=14.20.1 test
+        pnpm test
         pnpm --use-node-version=12.22.12 test
 
     - name: Lint
