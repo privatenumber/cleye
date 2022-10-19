@@ -1,4 +1,8 @@
+import tty from 'tty';
 import { describe } from 'manten';
+
+const stdoutHasColors = tty.WriteStream.prototype.hasColors();
+console.log({ stdoutHasColors });
 
 process.stdout.columns = Number.POSITIVE_INFINITY;
 
