@@ -3,7 +3,7 @@ import { describe } from 'manten';
 // For CLI tools to render without ascii codes
 process.env.CI = '1';
 
-describe('get-tsconfig', ({ runTestSuite }) => {
+describe('cleye', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/cli.js'));
 	runTestSuite(import('./specs/flags.js'));
 	runTestSuite(import('./specs/arguments.js'));
