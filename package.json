@@ -42,7 +42,7 @@
 		"lint": "eslint --cache .",
 		"type-check": "tsc --noEmit",
 		"test": "tsx tests",
-		"test:dts": "tsd",
+		"test:dts": "tsd -f tests/cleye.test-d.ts",
 		"dev": "tsx watch --conditions=development tests"
 	},
 	"simple-git-hooks": {
@@ -74,8 +74,5 @@
 		"rules": {
 			"unicorn/no-process-exit": "off"
 		}
-	},
-	"tsd": {
-		"directory": "tests"
 	}
 }
