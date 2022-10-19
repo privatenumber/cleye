@@ -2,6 +2,7 @@ import { describe } from 'manten';
 
 // For CLI tools to render without ascii codes
 process.env.CI = '1';
+console.log(process.env);
 
 describe('cleye', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/cli.js'));
