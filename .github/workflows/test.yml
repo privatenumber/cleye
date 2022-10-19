@@ -9,9 +9,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      matrix:
-        node-version: [12.x, 14.x]
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -19,7 +16,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version-file: '.nvmrc'
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v2.2.2
@@ -27,11 +24,15 @@ jobs:
         version: 7
         run_install: true
 
+    - name: Build
+      run: pnpm build
+
     - name: Test
-      run: pnpm test
+      run: |
+        pnpm test
+        pnpm --use-node-version=12.22.12 test
 
     - name: Lint
-      if: ${{ matrix.node-version == '14.x' }}
       run: pnpm lint
 
     - name: Test DTS

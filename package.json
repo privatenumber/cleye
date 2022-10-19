@@ -41,7 +41,7 @@
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc --noEmit",
-		"test": "pnpm build && tsx tests",
+		"test": "tsx tests",
 		"test:dts": "tsd",
 		"dev": "tsx watch --conditions=development tests"
 	},
