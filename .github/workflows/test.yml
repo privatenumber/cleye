@@ -33,7 +33,7 @@ jobs:
         # https://github.com/nodejs/node/blob/v16.18.0/lib/internal/tty.js#L167
         pnpm test
 
-        # Node.js 12 doesn't handle GITHUB_ACTIONS
+        # Node.js 12 doesn't handle GITHUB_ACTIONS so colors must be forced
         # https://github.com/nodejs/node/blob/v15.14.0/lib/internal/tty.js#L164
         FORCE_COLOR=2 pnpm --use-node-version=12.22.12 test
 
