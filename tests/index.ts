@@ -1,7 +1,6 @@
 import { describe } from 'manten';
 
-// For CLI tools to render without ascii codes
-process.env.CI = '1';
+process.stdout.columns = Number.POSITIVE_INFINITY;
 
 describe('cleye', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/cli.js'));

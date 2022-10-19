@@ -16,7 +16,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('name', () => {
@@ -31,7 +31,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['npm\n\nUSAGE:\n  npm [flags...]\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['npm\n\n\u001B[1mUsage:\u001B[22m\n  npm [flags...]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('empty parameters', () => {
@@ -46,7 +46,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('parameters with no name', () => {
@@ -61,7 +61,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('parameters with name', () => {
@@ -77,7 +77,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\nUSAGE:\n  my-cli [flags...] <arg-a> [arg-b]\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('parameters with optional --', () => {
@@ -93,7 +93,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\nUSAGE:\n  my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('parameters with required --', () => {
@@ -109,7 +109,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\nUSAGE:\n  my-cli [flags...] <arg-a> [arg-b] -- <arg-c>\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b] -- <arg-c>\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('empty commands', () => {
@@ -124,7 +124,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('commands', () => {
@@ -146,7 +146,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\nUSAGE:\n  my-cli [flags...]\n  my-cli <command>\n\nCOMMANDS:\n  test                                                                                                                                                                                                                                                                       \n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        \n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('commands with description', () => {
@@ -169,7 +169,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\nUSAGE:\n  my-cli [flags...]\n  my-cli <command>\n\nCOMMANDS:\n  test        test command                                                                                                                                                                                                                                                   \n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        test command\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('undefined flags', () => {
@@ -184,7 +184,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('empty flags', () => {
@@ -199,7 +199,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('flags', () => {
@@ -224,7 +224,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n      --flag                                                                                                                                                                                                                                                                 \n      --flag-a <string>                                                                                                                                                                                                                                                      \n      --flag-b <number>                                                                                                                                                                                                                                                      \n      --flag-c <value>          (default: {})                                                                                                                                                                                                                                \n  -h, --help                   Show help                                                                                                                                                                                                                                     \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n      --flag                   \n      --flag-a <string>        \n      --flag-b <number>        \n      --flag-c <value>          (default: {})\n  -h, --help                   Show help\n']]);
 			});
 
 			test('help disabled', () => {
@@ -274,7 +274,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['FLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('help.version with --help', () => {
@@ -290,7 +290,7 @@ export default testSuite(({ describe }) => {
 				);
 				mocked.restore();
 
-				expect(mocked.consoleLog.calls).toStrictEqual([['v1.0.0\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['v1.0.0\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('help.version with --version', () => {
@@ -326,7 +326,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['USAGE:\n  usage string\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  usage string\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('help.usage array', () => {
@@ -347,7 +347,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['USAGE:\n  usage string a\n  usage string b\n  usage string c\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  usage string a\n  usage string b\n  usage string c\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('help.description', () => {
@@ -364,7 +364,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('command help', () => {
@@ -388,7 +388,7 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli test\n\ntest command\n\nUSAGE:\n  my-cli test [flags...] <arg a> <arg b>\n\nFLAGS:\n  -h, --help        Show help                                                                                                                                                                                                                                                \n']]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli test\n\ntest command\n\n\u001B[1mUsage:\u001B[22m\n  my-cli test [flags...] <arg a> <arg b>\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
 			test('command help disabled', () => {
@@ -511,7 +511,7 @@ export default testSuite(({ describe }) => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\nUSAGE:\n  my-cli [flags...] <urls...>\n  my-cli <command>\n\nCOMMANDS:\n  my-command        my command description                                                                                                                                                                                                                                   \n\nFLAGS:\n  -d, --dark-mode                Show tweet in dark mode                                                                                                                                                                                                                     \n  -h, --help                     Show help                                                                                                                                                                                                                                   \n      --locale <locale>          Locale (default: "en")                                                                                                                                                                                                                      \n  -o, --output-dir <path>        Tweet screenshot output directory                                                                                                                                                                                                           \n  -t, --show-tweet               Show tweet thread                                                                                                                                                                                                                           \n      --version                  Show version                                                                                                                                                                                                                                \n  -w, --width <width>            Width of tweet (default: 550)                                                                                                                                                                                                               \n\nEXAMPLES:\n  # Snapshot a tweet\n  snap-tweet https://twitter.com/jack/status/20\n  \n  # Snapshot a tweet with Japanese locale\n  snap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n  \n  # Snapshot a tweet with dark mode and 900px width\n  snap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode\n']]);
+			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <urls...>\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  my-command        my command description\n\n\u001B[1mFlags:\u001B[22m\n  -d, --dark-mode                Show tweet in dark mode\n  -h, --help                     Show help\n      --locale <locale>          Locale (default: "en")\n  -o, --output-dir <path>        Tweet screenshot output directory\n  -t, --show-tweet               Show tweet thread\n      --version                  Show version\n  -w, --width <width>            Width of tweet (default: 550)\n\n\u001B[1mExamples:\u001B[22m\n  # Snapshot a tweet\n  snap-tweet https://twitter.com/jack/status/20\n  \n  # Snapshot a tweet with Japanese locale\n  snap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n  \n  # Snapshot a tweet with dark mode and 900px width\n  snap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode\n']]);
 		});
 
 		test('help customization', () => {
@@ -636,7 +636,7 @@ export default testSuite(({ describe }) => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['USAGE:\n  esbuild [options...] [entry points]\n\nDOCUMENTATION:\n  \u001B[4mhttps://esbuild.github.io/\u001B[24m\n\nSIMPLE OPTIONS:\n  --bundle            Bundle all dependencies into the output files                                                                                                                                                                                                          \n  --define=...        Substitute K with V while parsing                                                                                                                                                                                                                      \n\nADVANCED OPTIONS:\n  --allow-overwrite        Allow output files to overwrite input files                                                                                                                                                                                                       \n  --asset-names            Path template to use for "file" loader files (default "[name]-[hash]")                                                                                                                                                                            \n\nEXAMPLES:\n  # Produces dist/entry_point.js and dist/entry_point.js.map\n  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap\n\nReceived value: 123']]);
+			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  esbuild [options...] [entry points]\n\n\u001B[1mDocumentation:\u001B[22m\n  \u001B[4mhttps://esbuild.github.io/\u001B[24m\n\n\u001B[1mSimple options:\u001B[22m\n  --bundle            Bundle all dependencies into the output files\n  --define=...        Substitute K with V while parsing\n\n\u001B[1mAdvanced options:\u001B[22m\n  --allow-overwrite        Allow output files to overwrite input files\n  --asset-names            Path template to use for "file" loader files (default "[name]-[hash]")\n\n\u001B[1mExamples:\u001B[22m\n  # Produces dist/entry_point.js and dist/entry_point.js.map\n  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap\n\nReceived value: 123']]);
 		});
 	});
 });
