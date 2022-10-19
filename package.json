@@ -53,7 +53,7 @@
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
-		"type-flag": "^2.1.0"
+		"type-flag": "^2.2.0"
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.30.2",

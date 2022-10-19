@@ -29,9 +29,14 @@ export type CommandOptions<Parameters = string[]> = {
 	parameters?: Parameters;
 
 	/**
-	Flags accepted by the command
+	Flags accepted by the command.
 	*/
 	flags?: Flags;
+
+	/**
+	 * Whether to treat unknown flags as arguments.
+	 */
+	ignoreUnknownFlags?: boolean;
 
 	/**
 	Options to configure the help documentation. Pass in `false` to disable handling `--help, -h`.

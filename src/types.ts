@@ -115,9 +115,14 @@ export type CliOptions<
 	commands?: Commands;
 
 	/**
-	Flags accepted by the script
+	Flags accepted by the script.
 	*/
 	flags?: Flags;
+
+	/**
+	 * Whether to treat unknown flags as arguments.
+	 */
+	ignoreUnknownFlags?: boolean;
 
 	/**
 	Options to configure the help documentation. Pass in `false` to disable handling `--help, -h`.

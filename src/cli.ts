@@ -155,7 +155,9 @@ function cliBase<
 		};
 	}
 
-	const parsed = typeFlag(flags as HasHelpOrVersion<Options>, argv);
+	const parsed = typeFlag(flags as HasHelpOrVersion<Options>, argv, {
+		ignoreUnknown: options.ignoreUnknownFlags,
+	});
 
 	const showVersion = () => {
 		console.log(options.version);
