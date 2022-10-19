@@ -2,7 +2,11 @@ import tty from 'tty';
 import { describe } from 'manten';
 
 const stdoutHasColors = tty.WriteStream.prototype.hasColors();
-console.log({ CI: process.env.CI, stdoutHasColors });
+console.log({
+	nodeVersion: process.version,
+	CI: process.env.CI,
+	stdoutHasColors,
+});
 
 process.stdout.columns = Number.POSITIVE_INFINITY;
 
