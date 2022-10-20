@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@pvtnbr/eslint-config': ^0.30.2
   '@types/node': ^18.11.0
+  clean-pkg-json: ^1.2.0
   eslint: ^8.25.0
   kolorist: ^1.6.0
   lint-staged: ^13.0.3
@@ -23,6 +24,7 @@ dependencies:
 devDependencies:
   '@pvtnbr/eslint-config': 0.30.2_z4bbprzjrhnsfa24uvmcbu7f5q
   '@types/node': 18.11.0
+  clean-pkg-json: 1.2.0
   eslint: 8.25.0
   kolorist: 1.6.0
   lint-staged: 13.0.3
@@ -776,6 +778,11 @@ packages:
 
   /ci-info/3.5.0:
     resolution: {integrity: sha512-yH4RezKOGlOhxkmhbeNuC4eYZKAUsEaGtBuBzDDP1eFUKiccDWzBABxBfOx31IDwDIXMTxWuwAxUGModvkbuVw==}
+    dev: true
+
+  /clean-pkg-json/1.2.0:
+    resolution: {integrity: sha512-QHBWWOtpSCv5nfMFKwyxn4WMvkYE0msxj5xiqejYGqYepWVrK7O/om1Vn6nSl/WPtYn8ge9YmSCbTi1Hp8k+Hg==}
+    hasBin: true
     dev: true
 
   /clean-regexp/1.0.0:

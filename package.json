@@ -43,7 +43,8 @@
 		"type-check": "tsc --noEmit",
 		"test": "tsx tests",
 		"test:dts": "tsd -f tests/cleye.test-d.ts",
-		"dev": "tsx watch --conditions=development tests"
+		"dev": "tsx watch --conditions=development tests",
+		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "pnpm lint-staged && pnpm test"
@@ -58,6 +59,7 @@
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.30.2",
 		"@types/node": "^18.11.0",
+		"clean-pkg-json": "^1.2.0",
 		"eslint": "^8.25.0",
 		"kolorist": "^1.6.0",
 		"lint-staged": "^13.0.3",
