@@ -47,7 +47,7 @@
 		"prepack": "pnpm build && clean-pkg-json"
 	},
 	"simple-git-hooks": {
-		"pre-commit": "pnpm lint-staged && pnpm test --conditions=development"
+		"pre-commit": "pnpm lint-staged"
 	},
 	"lint-staged": {
 		"*.ts": "pnpm lint"
