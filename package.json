@@ -1,0 +1,43 @@
+{
+  "name": "cleye",
+  "version": "0.0.0-semantic-release",
+  "description": "The intuitive CLI development tool",
+  "keywords": [
+    "cli",
+    "command line",
+    "argv",
+    "parameters",
+    "flags",
+    "node",
+    "typescript"
+  ],
+  "license": "MIT",
+  "repository": "privatenumber/cleye",
+  "funding": "https://github.com/privatenumber/cleye?sponsor=1",
+  "author": {
+    "name": "Hiroki Osame",
+    "email": "hiroki.osame@gmail.com"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "require": "./dist/index.js",
+    "import": "./dist/index.mjs",
+    "types": "./dist/index.d.ts"
+  },
+  "imports": {
+    "#cleye": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "terminal-columns": "^1.4.1",
+    "type-flag": "^2.2.0"
+  }
+}
