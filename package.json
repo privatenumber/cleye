@@ -54,7 +54,7 @@
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
-		"type-flag": "github:privatenumber/type-flag#npm/explicit-unknown"
+		"type-flag": "github:privatenumber/type-flag#npm/mutate-argv"
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.30.2",
