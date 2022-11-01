@@ -1,5 +1,5 @@
 import { expectType } from 'tsd';
-import { cli, command } from '..';
+import { cli, command } from '#cleye';
 
 type Arguments = string[] & { '--': string[] };
 
