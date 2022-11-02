@@ -14,12 +14,12 @@ specifiers:
   terminal-columns: ^1.4.1
   tsd: ^0.24.1
   tsx: ^3.10.3
-  type-flag: github:privatenumber/type-flag#npm/mutate-argv
+  type-flag: github:privatenumber/type-flag#npm/develop
   typescript: ^4.8.4
 
 dependencies:
   terminal-columns: 1.4.1
-  type-flag: github.com/privatenumber/type-flag/dd4d24c4b384f6bdfa7d4548899b9f3a3dc71d53
+  type-flag: github.com/privatenumber/type-flag/45a6dc40cacb659e21f7c3b9036d01781cb0b36e
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.30.2_z4bbprzjrhnsfa24uvmcbu7f5q
@@ -3837,8 +3837,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  github.com/privatenumber/type-flag/dd4d24c4b384f6bdfa7d4548899b9f3a3dc71d53:
-    resolution: {tarball: https://codeload.github.com/privatenumber/type-flag/tar.gz/dd4d24c4b384f6bdfa7d4548899b9f3a3dc71d53}
+  github.com/privatenumber/type-flag/45a6dc40cacb659e21f7c3b9036d01781cb0b36e:
+    resolution: {tarball: https://codeload.github.com/privatenumber/type-flag/tar.gz/45a6dc40cacb659e21f7c3b9036d01781cb0b36e}
     name: type-flag
     version: 0.0.0-semantic-release
     dev: false
