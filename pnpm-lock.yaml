@@ -14,12 +14,12 @@ specifiers:
   terminal-columns: ^1.4.1
   tsd: ^0.24.1
   tsx: ^3.10.3
-  type-flag: github:privatenumber/type-flag#npm/develop
+  type-flag: ^3.0.0
   typescript: ^4.8.4
 
 dependencies:
   terminal-columns: 1.4.1
-  type-flag: github.com/privatenumber/type-flag/9aecbdc1c797b474c64fd6c1efe5e6732e6cecb2
+  type-flag: 3.0.0
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.30.2_z4bbprzjrhnsfa24uvmcbu7f5q
@@ -3712,6 +3712,10 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
+  /type-flag/3.0.0:
+    resolution: {integrity: sha512-3YaYwMseXCAhBB14RXW5cRQfJQlEknS6i4C8fCfeUdS3ihG9EdccdR9kt3vP73ZdeTGmPb4bZtkDn5XMIn1DLA==}
+    dev: false
+
   /typescript/4.8.4:
     resolution: {integrity: sha512-QCh+85mCy+h0IGff8r5XWzOVSbBO+KfeYrMQh7NJ58QujwcE22u+NUSmUxqF+un70P9GXKxa2HCNiTTMJknyjQ==}
     engines: {node: '>=4.2.0'}
@@ -3836,9 +3840,3 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
-
-  github.com/privatenumber/type-flag/9aecbdc1c797b474c64fd6c1efe5e6732e6cecb2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/type-flag/tar.gz/9aecbdc1c797b474c64fd6c1efe5e6732e6cecb2}
-    name: type-flag
-    version: 0.0.0-semantic-release
-    dev: false
