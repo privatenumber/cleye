@@ -1,5 +1,6 @@
 import type {
 	TypeFlag,
+	TypeFlagOptions,
 	Flags as BaseFlags,
 } from 'type-flag';
 import { Command } from './command';
@@ -126,6 +127,11 @@ export type CliOptions<
 	Options to configure the help documentation. Pass in `false` to disable handling `--help, -h`.
 	*/
 	help?: false | HelpOptions;
+
+	/**
+	 * Which argv elements to ignore from parsing
+	 */
+	ignoreArgv?: TypeFlagOptions['ignore'];
 };
 
 export type CliOptionsInternal<
