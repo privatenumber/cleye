@@ -14,12 +14,12 @@ specifiers:
   terminal-columns: ^1.4.1
   tsd: ^0.24.1
   tsx: ^3.11.0
-  type-flag: ^2.1.0
+  type-flag: ^3.0.0
   typescript: ^4.8.4
 
 dependencies:
   terminal-columns: 1.4.1
-  type-flag: 2.1.0
+  type-flag: 3.0.0
 
 devDependencies:
   '@pvtnbr/eslint-config': 0.33.0_rmayb2veg2btbq6mbmnyivgasy
@@ -3718,8 +3718,8 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /type-flag/2.1.0:
-    resolution: {integrity: sha512-ln8u/BdNzppXeFP8JsmsofElwVC2/FYoQAIipzhx45jjFwSApFqIieBEY93TKoLpphQBAbazX8LCoIY59Vwxlg==}
+  /type-flag/3.0.0:
+    resolution: {integrity: sha512-3YaYwMseXCAhBB14RXW5cRQfJQlEknS6i4C8fCfeUdS3ihG9EdccdR9kt3vP73ZdeTGmPb4bZtkDn5XMIn1DLA==}
     dev: false
 
   /typescript/4.8.4:

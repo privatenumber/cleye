@@ -1,4 +1,4 @@
-import typeFlag from 'type-flag';
+import { typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
 	HasHelpOrVersion,
@@ -155,7 +155,13 @@ function cliBase<
 		};
 	}
 
-	const parsed = typeFlag(flags as HasHelpOrVersion<Options>, argv);
+	const parsed = typeFlag(
+		flags as HasHelpOrVersion<Options>,
+		argv,
+		{
+			ignore: options.ignoreArgv,
+		},
+	);
 
 	const showVersion = () => {
 		console.log(options.version);

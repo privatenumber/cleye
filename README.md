@@ -539,6 +539,18 @@ Type: `Command[]`
 
 Array of [commands](#commandoptions-callback) to register.
 
+##### ignoreArgv
+
+Type:
+```ts
+type IgnoreArgvCallback = (
+    type: 'known-flag' | 'unknown-flag' | 'argument',
+    flagOrArgv: string,
+    value: string | undefined,
+) => boolean | void
+```
+
+A callback to ignore argv tokens from being parsed.
 
 #### callback(parsed)
 
