@@ -1,3 +1,4 @@
+import type { TypeFlagOptions } from 'type-flag';
 import type {
 	CallbackFunction,
 	Flags,
@@ -37,6 +38,11 @@ export type CommandOptions<Parameters = string[]> = {
 	Options to configure the help documentation. Pass in `false` to disable handling `--help, -h`.
 	*/
 	help?: false | HelpOptions;
+
+	/**
+	 * Which argv elements to ignore from parsing
+	 */
+	ignoreArgv?: TypeFlagOptions['ignore'];
 };
 
 export function command<
