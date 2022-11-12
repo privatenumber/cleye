@@ -269,5 +269,51 @@ export default testSuite(({ describe }) => {
 				expect(callback.called).toBe(true);
 			});
 		});
+
+		describe('ignoreArgv', ({ test }) => {
+			test('ignore after arguments', () => {
+				const callback = spy();
+				const argv = ['commandA', '--unknown', 'arg', '--help'];
+
+				let receivedArgument = false;
+				const commandA = command({
+					name: 'commandA',
+					flags: {
+						flagA: String,
+					},
+					ignoreArgv(type) {
+						if (receivedArgument) {
+							return true;
+						}
+						if (type === 'argument') {
+							receivedArgument = true;
+							return true;
+						}
+					},
+				}, (parsed) => {
+					expect<(string | boolean)[]>(parsed.unknownFlags.unknown).toStrictEqual([true]);
+					callback();
+				});
+
+				const parsed = cli(
+					{
+						commands: [
+							commandA,
+						],
+					},
+					undefined,
+					argv,
+				);
+
+				expect(parsed.command).toBe('commandA');
+
+				// Narrow type
+				if (parsed.command === 'commandA') {
+					expect<(string | boolean)[]>(parsed.unknownFlags.unknown).toStrictEqual([true]);
+				}
+
+				expect(callback.called).toBe(true);
+			});
+		});
 	});
 });

@@ -5,7 +5,4 @@
 		"esModuleInterop": true,
 		"module": "Node16"
 	},
-	"include": [
-		"src",
-	],
 }

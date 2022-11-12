@@ -120,5 +120,38 @@ export default testSuite(({ describe }) => {
 				expect(mocked.processExit.calls).toStrictEqual([[0]]);
 			});
 		});
+
+		describe('ignoreArgv', ({ test }) => {
+			test('ignore after arguments', () => {
+				const argv = ['--unknown', 'arg', '--help'];
+
+				let receivedArgument = false;
+				const parsed = cli(
+					{
+						ignoreArgv(type) {
+							if (receivedArgument) {
+								return true;
+							}
+							if (type === 'argument') {
+								receivedArgument = true;
+								return true;
+							}
+						},
+					},
+					(p) => {
+						expect(argv).toStrictEqual(['arg', '--help']);
+						expect(p.unknownFlags).toStrictEqual({
+							unknown: [true],
+						});
+					},
+					argv,
+				);
+
+				expect(argv).toStrictEqual(['arg', '--help']);
+				expect(parsed.unknownFlags).toStrictEqual({
+					unknown: [true],
+				});
+			});
+		});
 	});
 });
