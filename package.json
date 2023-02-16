@@ -69,7 +69,7 @@
 		"simple-git-hooks": "^2.8.1",
 		"tsd": "^0.25.0",
 		"tsx": "^3.12.3",
-		"typescript": "^4.9.5"
+		"typescript": "5.0.0-dev.20230215"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",
