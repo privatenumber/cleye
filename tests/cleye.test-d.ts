@@ -34,7 +34,7 @@ const parsed = cli({
 		command({
 			name: 'commandA',
 
-			parameters: ['[bar]', '<foo...>'],
+			parameters: ['[bar]', '<foo...>', '<hello world>', '<hello-world>', '<hello_world>', '<hello.world>', '<hello =world>', '<hello / world>'],
 
 			flags: {
 				booleanFlag: Boolean,
@@ -110,6 +110,7 @@ if (parsed.command === 'commandA') {
 		Arguments & {
 			bar: string | undefined;
 			foo: string[];
+			helloWorld: string;
 		}
 	>(parsed._);
 
