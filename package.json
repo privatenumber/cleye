@@ -58,18 +58,18 @@
 	},
 	"devDependencies": {
 		"@pvtnbr/eslint-config": "^0.33.0",
-		"@types/node": "^18.11.0",
+		"@types/node": "^18.13.0",
 		"clean-pkg-json": "^1.2.0",
 		"eslint": "^8.27.0",
-		"kolorist": "^1.6.0",
-		"lint-staged": "^13.0.3",
-		"manten": "^0.5.0",
+		"kolorist": "^1.7.0",
+		"lint-staged": "^13.1.2",
+		"manten": "^0.6.1",
 		"nanospy": "^0.5.0",
-		"pkgroll": "^1.4.0",
+		"pkgroll": "^1.9.0",
 		"simple-git-hooks": "^2.8.1",
-		"tsd": "^0.24.1",
-		"tsx": "^3.11.0",
-		"typescript": "^4.8.4"
+		"tsd": "^0.25.0",
+		"tsx": "^3.12.3",
+		"typescript": "^4.9.5"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",
