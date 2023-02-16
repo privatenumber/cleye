@@ -140,10 +140,18 @@ export type CliOptionsInternal<
 	parent?: CliOptions;
 };
 
-type kebabToCamel<Word extends string> = (
-	Word extends `${infer Prefix}-${infer Suffix}` | `${infer Prefix} ${infer Suffix}`
-		? `${Prefix}${Capitalize<kebabToCamel<Suffix>>}`
-		: Word
+type AlphabetLowercase = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z';
+type Numeric = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+type AlphaNumeric = AlphabetLowercase | Uppercase<AlphabetLowercase> | Numeric;
+
+type CamelCase<Word extends string> = (
+  Word extends `${infer FirstCharacter}${infer Rest}`
+    ? (
+      FirstCharacter extends AlphaNumeric
+        ? `${FirstCharacter}${CamelCase<Rest>}`
+        : Capitalize<CamelCase<Rest>>
+    )
+    : Word
 );
 
 type StripBrackets<Parameter extends string> = (
@@ -180,7 +188,7 @@ type TypeFlagWrapper<
 	_: {
 		[
 			Parameter in Parameters[number]
-				as kebabToCamel<StripBrackets<Parameter>>
+				as CamelCase<StripBrackets<Parameter>>
 		]: ParameterType<Parameter>;
 	};
 	showHelp: (options?: HelpOptions) => void;

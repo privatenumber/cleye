@@ -128,15 +128,18 @@ export default testSuite(({ describe }) => {
 				const callback = spy();
 				const parsed = cli(
 					{
-						parameters: ['<value-a>', '[value-B]', '[value c]'],
+						parameters: ['<value-a>', '[value-B]', '[value c]', '[value_d]', '[value=e]', '[value/f]'],
 					},
 					(callbackParsed) => {
 						expect<string>(callbackParsed._.valueA).toBe('valueA');
 						expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
 						expect<string | undefined>(callbackParsed._.valueC).toBe('valueC');
+						expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
+						expect<string | undefined>(callbackParsed._.valueE).toBe('valueE');
+						expect<string | undefined>(callbackParsed._.valueF).toBe('valueF');
 						callback();
 					},
-					['valueA', 'valueB', 'valueC'],
+					['valueA', 'valueB', 'valueC', 'valueD', 'valueE', 'valueF'],
 				);
 
 				expect<string>(parsed._.valueA).toBe('valueA');
