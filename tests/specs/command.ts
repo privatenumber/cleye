@@ -243,7 +243,7 @@ export default testSuite(({ describe }) => {
 						expect<number | undefined>(parsed.flags.flagC);
 						callback();
 					},
-					['--flagA', 'valueA', '--flagB', '123'],
+					['--flagC', '456', '--flagA', 'valueA', '--flagB', '123'],
 				);
 
 				if (argv.command === undefined) {
@@ -254,9 +254,7 @@ export default testSuite(({ describe }) => {
 
 				if (argv.command === 'commandA') {
 					expect<string | undefined>(argv.flags.flagA);
-
-					// @ts-expect-error non exixtent property
-					expect(argv.flags.flagC);
+					expect<number | undefined>(argv.flags.flagC);
 				}
 
 				if (argv.command === 'commandB') {

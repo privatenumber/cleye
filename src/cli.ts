@@ -132,7 +132,7 @@ function cliBase<
 	callback: CallbackFunction<ParseArgv<Options, Parameters>> | undefined,
 	argv: string[],
 ) {
-	const flags = { ...options.flags };
+	const flags = { ...options.flags, ...options.parent?.flags };
 	const isVersionEnabled = options.version;
 
 	// Expected to work even if flag is overwritten; add tests
@@ -337,11 +337,8 @@ function cli<
 		[KeyA in keyof Commands]: (
 			Commands[KeyA] extends Command
 				? (
-					{
-						[
-							KeyB in keyof Commands[KeyA][typeof parsedType]
-						]: Commands[KeyA][typeof parsedType][KeyB];
-					}
+                                        Commands[KeyA][typeof parsedType] &
+                                        { flags: ParseArgv<Options, Parameters, undefined>['flags'] }
 				) : never
 		);
 	}[number]
