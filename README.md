@@ -15,7 +15,7 @@ The intuitive command-line interface (CLI) development tool.
 
 → [Try it out online](https://stackblitz.com/edit/cleye-demo?devtoolsheight=50&file=examples/greet.ts&view=editor)
 
-<sub>Support this project by starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on.</sub>
+<sub>Found this package useful? Show your support & appreciation by [sponsoring](https://github.com/sponsors/privatenumber)! ❤️</sub>
 
 ## Install
 
@@ -583,3 +583,10 @@ The raw parameters array to parse.
 Type: 
 
 Optional callback function that is called when the command is invoked.
+
+## Sponsors
+<p align="center">
+	<a href="https://github.com/sponsors/privatenumber">
+		<img src="https://cdn.jsdelivr.net/gh/privatenumber/sponsors/sponsorkit/sponsors.svg">
+	</a>
+</p>
