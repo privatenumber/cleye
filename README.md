@@ -2,7 +2,11 @@
 <p align="center">
 	<img width="110" src=".github/logo.png">
 </p>
-<h1 align="center">cleye</h1>
+<h1 align="center">
+	cleye
+	<br>
+	<a href="https://npm.im/cleye"><img src="https://badgen.net/npm/v/cleye"></a> <a href="https://npm.im/cleye"><img src="https://badgen.net/npm/dm/cleye"></a>
+</h1>
 
 The intuitive command-line interface (CLI) development tool.
 
@@ -15,7 +19,17 @@ The intuitive command-line interface (CLI) development tool.
 
 → [Try it out online](https://stackblitz.com/edit/cleye-demo?devtoolsheight=50&file=examples/greet.ts&view=editor)
 
-<sub>Found this package useful? Show your support & appreciation by [sponsoring](https://github.com/sponsors/privatenumber)! ❤️</sub>
+<br>
+
+<p align="center">
+	<a href="https://privatenumber-sponsors.vercel.app/api/sponsor?tier=platinum">
+		<picture>
+			<source width="830" media="(prefers-color-scheme: dark)" srcset="https://privatenumber-sponsors.vercel.app/api/sponsor?tier=platinum&image=dark">
+			<source width="830" media="(prefers-color-scheme: light)" srcset="https://privatenumber-sponsors.vercel.app/api/sponsor?tier=platinum&image">
+			<img width="830" src="https://privatenumber-sponsors.vercel.app/api/sponsor?tier=platinum&image" alt="Premium sponsor banner">
+		</picture>
+	</a>
+</p>
 
 ## Install
 
