@@ -76,5 +76,6 @@
 		"rules": {
 			"unicorn/no-process-exit": "off"
 		}
-	}
+	},
+	"packageManager": "pnpm@9.2.0"
 }
