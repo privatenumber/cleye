@@ -6,7 +6,7 @@ import type {
 	ParseArgv,
 	parsedType,
 } from './types';
-import { isScriptNamePattern } from './utils/is-script-name';
+import { isValidScriptName } from './utils/script-name';
 
 export type CommandOptions<Parameters = string[]> = {
 	/**
@@ -61,7 +61,7 @@ export function command<
 		throw new Error('Command name is required');
 	}
 
-	if (!isScriptNamePattern.test(name)) {
+	if (!isValidScriptName(name)) {
 		throw new Error(`Invalid command name ${JSON.stringify(name)}. Command names must be one word.`);
 	}
 

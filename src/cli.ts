@@ -12,7 +12,7 @@ import type {
 import { Command } from './command';
 import { generateHelp, Renderers } from './render-help';
 import { camelCase } from './utils/convert-case';
-import { isScriptNamePattern } from './utils/is-script-name';
+import { isValidScriptName } from './utils/script-name';
 
 const { stringify } = JSON;
 
@@ -361,7 +361,7 @@ function cli<
 		throw new Error('Options is required');
 	}
 
-	if ('name' in options && (!options.name || !isScriptNamePattern.test(options.name))) {
+	if ('name' in options && (!options.name || !isValidScriptName(options.name))) {
 		throw new Error(`Invalid script name: ${stringify(options.name)}`);
 	}
 
@@ -369,7 +369,7 @@ function cli<
 
 	if (
 		options.commands
-		&& isScriptNamePattern.test(potentialCommand)
+		&& isValidScriptName(potentialCommand)
 	) {
 		const command = getCommand(potentialCommand, options.commands);
 
