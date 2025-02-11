@@ -369,6 +369,7 @@ function cli<
 
 	if (
 		options.commands
+		&& potentialCommand
 		&& isValidScriptName(potentialCommand)
 	) {
 		const command = getCommand(potentialCommand, options.commands);

@@ -57,7 +57,7 @@ export function command<
 	}
 
 	const { name } = options;
-	if (options.name === undefined) {
+	if (name === undefined) {
 		throw new Error('Command name is required');
 	}
 
