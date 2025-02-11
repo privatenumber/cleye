@@ -54,7 +54,7 @@
 		"@types/node": "^18.13.0",
 		"clean-pkg-json": "^1.2.0",
 		"eslint": "^8.27.0",
-		"kolorist": "^1.7.0",
+		"kolorist": "^1.8.0",
 		"manten": "^0.6.1",
 		"nanospy": "^0.5.0",
 		"pkgroll": "^1.9.0",
