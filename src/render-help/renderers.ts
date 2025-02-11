@@ -1,5 +1,6 @@
 import tty from 'tty';
-import terminalColumns, {
+import {
+	terminalColumns,
 	breakpoints,
 	Options as TerminalColumnsOptions,
 } from 'terminal-columns';
