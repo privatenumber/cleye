@@ -59,7 +59,7 @@
 		"nanospy": "^0.5.0",
 		"pkgroll": "^1.9.0",
 		"tsd": "^0.31.2",
-		"tsx": "^3.12.3",
+		"tsx": "^4.19.2",
 		"typescript": "^5.7.3"
 	},
 	"eslintConfig": {
