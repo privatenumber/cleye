@@ -3,6 +3,8 @@
 		"strict": true,
 		"isolatedModules": true,
 		"esModuleInterop": true,
-		"module": "Node16"
+		"skipLibCheck": true,
+		"noEmit": true,
+		"module": "Preserve"
 	},
 }

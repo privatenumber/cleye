@@ -1,7 +1,6 @@
 import { typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
-	HasHelpOrVersion,
 	CliOptions,
 	CliOptionsInternal,
 	ParseArgv,
@@ -132,7 +131,7 @@ function cliBase<
 	callback: CallbackFunction<ParseArgv<Options, Parameters>> | undefined,
 	argv: string[],
 ) {
-	const flags = { ...options.flags };
+	const flags = { ...options.flags };//  as HasHelpOrVersion<Options>;
 	const isVersionEnabled = options.version;
 
 	// Expected to work even if flag is overwritten; add tests
@@ -156,7 +155,7 @@ function cliBase<
 	}
 
 	const parsed = typeFlag(
-		flags as HasHelpOrVersion<Options>,
+		flags,
 		argv,
 		{
 			ignore: options.ignoreArgv,

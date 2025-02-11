@@ -40,7 +40,7 @@
 		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
-		"type-check": "tsc --noEmit",
+		"type-check": "tsc",
 		"test": "tsx tests",
 		"test:dts": "tsd -f tests/cleye.test-d.ts",
 		"dev": "tsx watch --conditions=development tests",
@@ -67,9 +67,9 @@
 		"nanospy": "^0.5.0",
 		"pkgroll": "^1.9.0",
 		"simple-git-hooks": "^2.8.1",
-		"tsd": "^0.25.0",
+		"tsd": "^0.31.2",
 		"tsx": "^3.12.3",
-		"typescript": "^4.9.5"
+		"typescript": "^5.7.3"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",

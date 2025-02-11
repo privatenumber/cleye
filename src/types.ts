@@ -48,7 +48,7 @@ type HasHelp<Options extends { flags?: Flags }> = (
 		: Options['flags'] & { help: BooleanConstructor }
 );
 
-export type HasHelpOrVersion<Options extends { flags?: Flags }> = (
+type HasHelpOrVersion<Options extends { flags?: Flags }> = (
 	HasVersion<Options> & HasHelp<Options>
 );
 
