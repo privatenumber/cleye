@@ -37,7 +37,6 @@
 		}
 	},
 	"scripts": {
-		"prepare": "simple-git-hooks",
 		"build": "pkgroll --minify",
 		"lint": "eslint --cache .",
 		"type-check": "tsc",
@@ -45,12 +44,6 @@
 		"test:dts": "tsd -f tests/cleye.test-d.ts",
 		"dev": "tsx watch --conditions=development tests",
 		"prepack": "pnpm build && clean-pkg-json"
-	},
-	"simple-git-hooks": {
-		"pre-commit": "pnpm lint-staged"
-	},
-	"lint-staged": {
-		"*.ts": "pnpm lint"
 	},
 	"dependencies": {
 		"terminal-columns": "^1.4.1",
@@ -62,11 +55,9 @@
 		"clean-pkg-json": "^1.2.0",
 		"eslint": "^8.27.0",
 		"kolorist": "^1.7.0",
-		"lint-staged": "^13.1.2",
 		"manten": "^0.6.1",
 		"nanospy": "^0.5.0",
 		"pkgroll": "^1.9.0",
-		"simple-git-hooks": "^2.8.1",
 		"tsd": "^0.31.2",
 		"tsx": "^3.12.3",
 		"typescript": "^5.7.3"
