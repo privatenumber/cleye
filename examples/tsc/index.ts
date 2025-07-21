@@ -9,9 +9,7 @@ import assert from 'assert';
 import { cli } from '../../src';
 
 // https://github.com/microsoft/TypeScript/blob/7a12909ae3f03b1feed19df2082aa84e5c7a5081/src/executeCommandLine/executeCommandLine.ts#L111
-function blue(string_: string) {
-	return `\u001B[94m${string_}\u001B[39m`;
-}
+const blue = (string_: string) => `\u001B[94m${string_}\u001B[39m`;
 
 const targetType = ['es3', 'es5', 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'esnext'];
 
@@ -69,8 +67,8 @@ const commonCompilerOptions = {
 	},
 
 	target: {
-		type: function TargetType(value: typeof targetType[number]) {
-			assert(targetType.includes(value), 'Invalid target type');
+		type: (value: typeof targetType[number]) => {
+			assert.ok(targetType.includes(value), 'Invalid target type');
 			return value;
 		},
 		alias: 't',
@@ -79,8 +77,8 @@ const commonCompilerOptions = {
 	},
 
 	module: {
-		type: function ModuleType(value: typeof moduleTypes[number]) {
-			assert(moduleTypes.includes(value), 'Invalid module type');
+		type: (value: typeof moduleTypes[number]) => {
+			assert.ok(moduleTypes.includes(value), 'Invalid module type');
 			return value;
 		},
 		alias: 'm',
@@ -89,8 +87,8 @@ const commonCompilerOptions = {
 
 	lib: {
 		type: [
-			function LibraryType(value: typeof libraryTypes[number]) {
-				assert(libraryTypes.includes(value), 'Invalid library type');
+			(value: typeof libraryTypes[number]) => {
+				assert.ok(libraryTypes.includes(value), 'Invalid library type');
 				return value;
 			},
 		] as const,
@@ -109,8 +107,8 @@ const commonCompilerOptions = {
 	},
 
 	jsx: {
-		type: function JsxType(value: typeof jsxTypes[number]) {
-			assert(jsxTypes.includes(value), 'Invalid jsx type');
+		type: (value: typeof jsxTypes[number]) => {
+			assert.ok(jsxTypes.includes(value), 'Invalid jsx type');
 			return value;
 		},
 		description: `Specify what JSX code is generated.\none of: ${jsxTypes.join(', ')}`,
@@ -272,7 +270,7 @@ const argv = cli({
 								tableBreakpoints,
 								tableData: flagsTableData.filter(
 									(
-										[flagName]: [{ data: { name: string }}],
+										[flagName]: [{ data: { name: string } }],
 									) => flagName.data.name in commandLineFlags,
 								),
 							},
@@ -290,7 +288,7 @@ const argv = cli({
 								tableBreakpoints,
 								tableData: flagsTableData.filter(
 									(
-										[flagName]: [{ data: { name: string }}],
+										[flagName]: [{ data: { name: string } }],
 									) => flagName.data.name in commonCompilerOptions,
 								),
 							},
