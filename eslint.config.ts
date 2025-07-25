@@ -5,6 +5,7 @@ export default defineConfig([
 	{
 		rules: {
 			'pvtnbr/prefer-arrow-functions': 'off',
+			'@typescript-eslint/no-explicit-any': 'off',
 		},
 	},
 ]);

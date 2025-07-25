@@ -177,9 +177,9 @@ type ParameterType<Parameter extends string> = (
 
 type WithCommand<
 	Options extends { flags?: Flags },
-	Command extends string | undefined = undefined,
+	CommandName extends string | undefined = undefined,
 > = {
-	command: Command;
+	command: CommandName;
 } & Options;
 
 type TypeFlagWrapper<
@@ -199,9 +199,9 @@ type TypeFlagWrapper<
 export type ParseArgv<
 	Options extends { flags?: Flags },
 	Parameters extends string[],
-	Command extends string | undefined = '',
+	CommandName extends string | undefined = '',
 > = (
-	Command extends ''
+	CommandName extends ''
 		? TypeFlagWrapper<Options, Parameters>
-		: WithCommand<TypeFlagWrapper<Options, Parameters>, Command>
+		: WithCommand<TypeFlagWrapper<Options, Parameters>, CommandName>
 );
