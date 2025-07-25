@@ -99,7 +99,7 @@ function getUsage(options: Options) {
 		) {
 			const { parameters } = options;
 			const hasEof = parameters.indexOf('--');
-			const hasRequiredParametersAfterEof = hasEof > -1 && parameters.slice(hasEof + 1).some(parameter => parameter.startsWith('<'));
+			const hasRequiredParametersAfterEof = hasEof !== -1 && parameters.slice(hasEof + 1).some(parameter => parameter.startsWith('<'));
 			usage.push(
 				parameters
 					.map((parameter) => {

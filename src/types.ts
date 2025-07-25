@@ -3,7 +3,7 @@ import type {
 	TypeFlagOptions,
 	Flags as BaseFlags,
 } from 'type-flag';
-import { Command } from './command';
+import type { Command } from './command';
 import type { Renderers } from './render-help/renderers';
 
 export declare const parsedType: unique symbol;
@@ -93,6 +93,7 @@ export type CliOptions<
 	Commands = Command[],
 	Parameters extends string[] = string[],
 > = {
+
 	/**
 	Name of the script displayed in `--help` output.
 	*/
@@ -145,13 +146,13 @@ type Numeric = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
 type AlphaNumeric = AlphabetLowercase | Uppercase<AlphabetLowercase> | Numeric;
 
 type CamelCase<Word extends string> = (
-  Word extends `${infer FirstCharacter}${infer Rest}`
-    ? (
-      FirstCharacter extends AlphaNumeric
-        ? `${FirstCharacter}${CamelCase<Rest>}`
-        : Capitalize<CamelCase<Rest>>
-    )
-    : Word
+	Word extends `${infer FirstCharacter}${infer Rest}`
+		? (
+			FirstCharacter extends AlphaNumeric
+				? `${FirstCharacter}${CamelCase<Rest>}`
+				: Capitalize<CamelCase<Rest>>
+		)
+		: Word
 );
 
 type StripBrackets<Parameter extends string> = (
@@ -187,13 +188,13 @@ type TypeFlagWrapper<
 > = TypeFlag<HasHelpOrVersion<Options>> & {
 	_: {
 		[
-			Parameter in Parameters[number]
-				as CamelCase<StripBrackets<Parameter>>
+		Parameter in Parameters[number]
+		as CamelCase<StripBrackets<Parameter>>
 		]: ParameterType<Parameter>;
 	};
 	showHelp: (options?: HelpOptions) => void;
 	showVersion: () => void;
-}
+};
 
 export type ParseArgv<
 	Options extends { flags?: Flags },

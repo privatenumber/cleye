@@ -9,6 +9,7 @@ import type {
 import { isValidScriptName } from './utils/script-name';
 
 export type CommandOptions<Parameters = string[]> = {
+
 	/**
 	Name of the command used to invoke it. Also displayed in `--help` output.
 	*/
