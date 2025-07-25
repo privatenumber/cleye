@@ -274,7 +274,7 @@ const possibleSizes = ['small', 'medium', 'large'] as const
 type Sizes = typeof possibleSizes[number] // => "small" | "medium" | "large"
 
 // Custom type function
-function Size(size: Sizes) {
+const Size = (size: Sizes) => {
     if (!possibleSizes.includes(size)) {
         throw new Error(`Invalid size: "${size}"`)
     }

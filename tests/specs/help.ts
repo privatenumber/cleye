@@ -586,7 +586,7 @@ export default testSuite(({ describe }) => {
 									data: {
 										...flags,
 										tableData: flags.tableData.filter(
-											([flagName]: [{ data: { name: string }}]) => (
+											([flagName]: [{ data: { name: string } }]) => (
 												flagName.data.name in simpleFlags
 											),
 										),
@@ -603,7 +603,7 @@ export default testSuite(({ describe }) => {
 									data: {
 										...flags,
 										tableData: flags.tableData.filter(
-											([flagName]: [{ data: { name: string }}]) => (
+											([flagName]: [{ data: { name: string } }]) => (
 												flagName.data.name in advancedFlags
 											),
 										),

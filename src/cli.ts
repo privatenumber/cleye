@@ -8,7 +8,7 @@ import type {
 	HelpOptions,
 	HelpDocumentNode,
 } from './types';
-import { Command } from './command';
+import type { Command } from './command';
 import { generateHelp, Renderers } from './render-help';
 import { camelCase } from './utils/convert-case';
 import { isValidScriptName } from './utils/script-name';
@@ -35,7 +35,7 @@ function parseParameters(parameters: string[]) {
 		}
 
 		const firstCharacter = parameter[0];
-		const lastCharacter = parameter[parameter.length - 1];
+		const lastCharacter = parameter.at(-1);
 
 		let required: boolean | undefined;
 		if (firstCharacter === '<' && lastCharacter === '>') {
@@ -298,11 +298,11 @@ function cli<
 	argv?: string[],
 ): {
 	[
-		Key in keyof ParseArgv<
-			Options,
-			Parameters,
-			undefined
-		>
+	Key in keyof ParseArgv<
+		Options,
+		Parameters,
+		undefined
+	>
 	]: ParseArgv<
 		Options,
 		Parameters,
@@ -321,11 +321,11 @@ function cli<
 ):(
 	{
 		[
-			Key in keyof ParseArgv<
-				Options,
-				Parameters,
-				undefined
-			>
+		Key in keyof ParseArgv<
+			Options,
+			Parameters,
+			undefined
+		>
 		]: ParseArgv<
 			Options,
 			Parameters,
@@ -338,7 +338,7 @@ function cli<
 				? (
 					{
 						[
-							KeyB in keyof Commands[KeyA][typeof parsedType]
+						KeyB in keyof Commands[KeyA][typeof parsedType]
 						]: Commands[KeyA][typeof parsedType][KeyB];
 					}
 				) : never

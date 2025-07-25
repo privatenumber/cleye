@@ -1,6 +1,5 @@
 import { spyOn } from 'nanospy';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {};
 
 export const mockEnvFunctions = () => {
@@ -13,7 +12,7 @@ export const mockEnvFunctions = () => {
 		consoleLog,
 		consoleError,
 		processExit,
-		restore() {
+		restore: () => {
 			consoleLog.restore();
 			consoleError.restore();
 			processExit.restore();

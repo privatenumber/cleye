@@ -266,7 +266,7 @@ const app = cli({
 							data: {
 								...flags,
 								tableData: flagsTableData.filter(
-									([flagName]: [{ data: { name: string }}]) => flagName.data.name in simpleFlags,
+									([flagName]: [{ data: { name: string } }]) => flagName.data.name in simpleFlags,
 								),
 							},
 						},
@@ -282,7 +282,7 @@ const app = cli({
 							data: {
 								...flags,
 								tableData: flagsTableData.filter(
-									([flagName]: [{ data: { name: string }}]) => flagName.data.name in advancedFlags,
+									([flagName]: [{ data: { name: string } }]) => flagName.data.name in advancedFlags,
 								),
 							},
 						},

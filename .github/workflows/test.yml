@@ -9,34 +9,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: '.nvmrc'
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        run_install: true
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: true
 
-    - name: Build
-      run: pnpm build
+      - name: Build
+        run: pnpm build
 
-    - name: Test
-      run: |
-        # Node.js v16 detects GITHUB_ACTIONS as a color supported environment
-        # https://github.com/nodejs/node/blob/v16.18.0/lib/internal/tty.js#L167
-        pnpm test
+      - name: Test
+        run: |
+          # Node.js v16 detects GITHUB_ACTIONS as a color supported environment
+          # https://github.com/nodejs/node/blob/v16.18.0/lib/internal/tty.js#L167
+          pnpm test
 
-        # Node.js 12 doesn't handle GITHUB_ACTIONS so colors must be forced
-        # https://github.com/nodejs/node/blob/v15.14.0/lib/internal/tty.js#L164
-        FORCE_COLOR=2 pnpm --use-node-version=12.22.12 test
+          # Node.js 12 doesn't handle GITHUB_ACTIONS so colors must be forced
+          # https://github.com/nodejs/node/blob/v15.14.0/lib/internal/tty.js#L164
+          FORCE_COLOR=2 pnpm --use-node-version=12.22.12 test
 
-    - name: Lint
-      run: pnpm lint
+      - name: Lint
+        run: pnpm lint
 
-    - name: Test DTS
-      run: pnpm test:dts
+      - name: Test DTS
+        run: pnpm test:dts

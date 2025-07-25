@@ -2,7 +2,7 @@ import tty from 'tty';
 import {
 	terminalColumns,
 	breakpoints,
-	Options as TerminalColumnsOptions,
+	type Options as TerminalColumnsOptions,
 } from 'terminal-columns';
 import type { HelpDocumentNode } from '../types';
 import type { FlagData } from './render-flags';
@@ -34,8 +34,9 @@ export class Renderers {
 			: text.toLocaleUpperCase();
 	}
 
-	indentText({ text, spaces }: { text: string; spaces: number }) {
-		return text.replace(/^/gm, ' '.repeat(spaces));
+	indentText({ text, spaces }: { text: string;
+		spaces: number; }) {
+		return text.replaceAll(/^/gm, ' '.repeat(spaces));
 	}
 
 	heading(text: string) {
