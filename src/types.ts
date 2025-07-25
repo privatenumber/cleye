@@ -34,7 +34,7 @@ export type Flags = BaseFlags<{
 export type CallbackFunction<Parsed> = (parsed: {
 	// This exposes the content of "TypeFlag<T>" in type hints
 	[Key in keyof Parsed]: Parsed[Key];
-}) => void;
+}) => void | Promise<void>;
 
 type HasVersion<Options extends { flags?: Flags }> = (
 	Options extends { version: string }

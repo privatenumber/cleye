@@ -1,8 +1,9 @@
+import { setImmediate } from 'node:timers/promises';
 import { testSuite, expect } from 'manten';
 import { cli } from '#cleye';
 
 export default testSuite(({ describe }) => {
-	describe('cli', ({ describe }) => {
+	describe('cli', ({ describe, test }) => {
 		describe('error-handling', ({ test }) => {
 			test('must pass in options', () => {
 				expect(() => {
@@ -32,6 +33,15 @@ export default testSuite(({ describe }) => {
 					name: 'a.b_',
 				});
 			});
+		});
+
+		test('async callbacks', async () => {
+			let asyncCompleted = false;
+			await cli({}, async () => {
+				await setImmediate();
+				asyncCompleted = true;
+			});
+			expect(asyncCompleted).toBe(true);
 		});
 	});
 });

@@ -249,15 +249,26 @@ function cliBase<
 		showHelp,
 	};
 
-	if (typeof callback === 'function') {
-		callback(parsedWithApi as any);
-	}
-
 	// Already flattened
-	return {
+	const result = {
 		command,
 		...parsedWithApi,
 	};
+
+	if (typeof callback === 'function') {
+		const callbackResult = callback(parsedWithApi as any);
+
+		// Make it awaitable in case the callback returns a promise
+		if (callbackResult && 'then' in callbackResult) {
+			return Object.assign(
+				// We wrap the promise again incase a fake promise was returned
+				Promise.resolve(callbackResult),
+				result,
+			);
+		}
+	}
+
+	return result;
 }
 
 function getCommand<Commands extends Command[]>(
