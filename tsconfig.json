@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "Preserve",
+		"module": "NodeNext",
 		"strict": true,
 		"noEmit": true,
 		"esModuleInterop": true,
