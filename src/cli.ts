@@ -132,9 +132,9 @@ function cliBase<
 	argv: string[],
 ) {
 	const flags = { ...options.flags };//  as HasHelpOrVersion<Options>;
-	const isVersionEnabled = options.version;
-
 	// Expected to work even if flag is overwritten; add tests
+	const isVersionEnabled = options.version && !('version' in flags);
+
 	if (isVersionEnabled) {
 		flags.version = {
 			type: Boolean,
