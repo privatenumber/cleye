@@ -253,5 +253,32 @@ export default testSuite(({ describe }) => {
 				expect(callback.called).toBe(true);
 			});
 		});
+
+		describe('EOF edge cases', ({ test }) => {
+			test('EOF at beginning of parameters', () => {
+				const parsed = cli(
+					{
+						parameters: ['--', '<value>'],
+					},
+					undefined,
+					['--', 'test'],
+				);
+
+				expect<string>(parsed._.value).toBe('test');
+			});
+
+			test('empty EOF section', () => {
+				const parsed = cli(
+					{
+						parameters: ['<arg>', '--', '[optional]'],
+					},
+					undefined,
+					['value', '--'],
+				);
+
+				expect<string>(parsed._.arg).toBe('value');
+				expect<string | undefined>(parsed._.optional).toBeUndefined();
+			});
+		});
 	});
 });

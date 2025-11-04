@@ -315,5 +315,34 @@ export default testSuite(({ describe }) => {
 				expect(callback.called).toBe(true);
 			});
 		});
+
+		describe('command vs flag ambiguity', ({ test }) => {
+			test('command name conflicts with flag name', () => {
+				const commandCallback = spy();
+				const cliCallback = spy();
+
+				const testCommand = command({
+					name: 'test',
+				}, commandCallback);
+
+				const parsed = cli(
+					{
+						flags: {
+							test: Boolean, // Flag with the same name as the command
+						},
+						commands: [
+							testCommand,
+						],
+					},
+					cliCallback,
+					['test'], // Ambiguous: command 'test' or flag '--test'?
+				);
+
+				// It should be parsed as the command
+				expect(parsed.command).toBe('test');
+				expect(commandCallback.called).toBe(true);
+				expect(cliCallback.called).toBe(false);
+			});
+		});
 	});
 });

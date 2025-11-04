@@ -256,5 +256,25 @@ export default testSuite(({ describe }) => {
 				expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 			}
 		});
+
+		test('command callback flag types', () => {
+			command({
+				name: 'commandA',
+
+				flags: {
+					booleanFlag: Boolean,
+					booleanFlagDefault: {
+						type: Boolean,
+						default: false,
+					},
+				},
+			}, (argv) => {
+				expectTypeOf(argv.flags).toEqualTypeOf<{
+					help: boolean | undefined;
+					booleanFlag: boolean | undefined;
+					booleanFlagDefault: boolean;
+				}>();
+			});
+		});
 	});
 });

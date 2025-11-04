@@ -43,5 +43,46 @@ export default testSuite(({ describe }) => {
 			});
 			expect(asyncCompleted).toBe(true);
 		});
+
+		describe('callback error handling', ({ test }) => {
+			test('callback throws synchronous error', () => {
+				expect(() => {
+					cli({}, () => {
+						throw new Error('Callback error');
+					});
+				}).toThrow('Callback error');
+			});
+
+			test('callback returns rejected Promise', async () => {
+				const result = cli({}, async () => {
+					throw new Error('Async error');
+				});
+				await expect(result).rejects.toThrow('Async error');
+			});
+
+			test('callback with fake promise thenable', () => {
+				const fakePromise = {
+					then: (resolve: any) => resolve('fake'), // eslint-disable-line unicorn/no-thenable
+				};
+				const result = cli({}, () => fakePromise as any);
+				expect(result).toHaveProperty('then');
+			});
+		});
+
+		describe('Promise edge cases', ({ test }) => {
+			test('result properties accessible on Promise return', async () => {
+				const result = cli({
+					parameters: ['<value>'],
+				}, async () => {
+					await setImmediate();
+				}, ['test']);
+
+				// Properties should be accessible even though callback returns Promise
+				expect<string>(result._.value).toBe('test');
+
+				// And it's awaitable
+				await result;
+			});
+		});
 	});
 });

@@ -9,4 +9,6 @@ describe('cleye', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/command.js'));
 	runTestSuite(import('./specs/help.js'));
 	runTestSuite(import('./specs/types.js'));
+	runTestSuite(import('./specs/integration.js'));
+	runTestSuite(import('./specs/edge-cases.js'));
 });

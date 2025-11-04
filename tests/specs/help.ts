@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { underline } from 'kolorist';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
@@ -409,6 +410,73 @@ export default testSuite(({ describe }) => {
 				mocked.restore();
 
 				expect(mocked.processExit.called).toBe(false);
+			});
+		});
+
+		describe('responsive help', ({ test }) => {
+			const testFlags = {
+				flagA: {
+					type: String,
+					description: 'A long description for flag-a to test wrapping behavior and responsive rendering logic.',
+					alias: 'a',
+				},
+				flagB: {
+					type: Number,
+					description: 'A long description for flag-b to test wrapping behavior and responsive rendering logic.',
+					alias: 'b',
+				},
+			};
+
+			test('normal width (default)', () => {
+				const mocked = mockEnvFunctions();
+				const originalColumns = process.stdout.columns;
+				process.stdout.columns = Number.POSITIVE_INFINITY;
+
+				cli({ flags: testFlags }, undefined, ['--help']);
+
+				process.stdout.columns = originalColumns;
+				mocked.restore();
+
+				const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+				// At infinite width, flags and descriptions should be on same line
+				expect(output).toContain('-a, --flag-a <string>');
+				expect(output).toContain('-b, --flag-b <number>');
+			});
+
+			test('narrow width (breakpoint > 40)', () => {
+				const mocked = mockEnvFunctions();
+				const originalColumns = process.stdout.columns;
+				process.stdout.columns = 60;
+
+				cli({ flags: testFlags }, undefined, ['--help']);
+
+				process.stdout.columns = originalColumns;
+				mocked.restore();
+
+				const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+				// At medium width, descriptions should be on separate line (word-wrapped)
+				// Remove padding dots for easier assertion
+				const cleanOutput = output.replaceAll('·', '');
+				expect(cleanOutput).toContain('-a, --flag-a <string>');
+				expect(cleanOutput).toContain('A long description for flag-a');
+				expect(cleanOutput).toContain('-b, --flag-b <number>');
+				expect(cleanOutput).toContain('A long description for flag-b');
+			});
+
+			test('very narrow width (breakpoint > 0)', () => {
+				const mocked = mockEnvFunctions();
+				const originalColumns = process.stdout.columns;
+				process.stdout.columns = 30;
+
+				cli({ flags: testFlags }, undefined, ['--help']);
+
+				process.stdout.columns = originalColumns;
+				mocked.restore();
+
+				const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+				// The '> 0' breakpoint sets columns to 1000, effectively disabling wrapping
+				expect(output).toContain('-a, --flag-a <string>');
+				expect(output).toContain('-b, --flag-b <number>');
 			});
 		});
 
