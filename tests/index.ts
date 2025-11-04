@@ -8,4 +8,5 @@ describe('cleye', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/arguments.js'));
 	runTestSuite(import('./specs/command.js'));
 	runTestSuite(import('./specs/help.js'));
+	runTestSuite(import('./specs/types.js'));
 });

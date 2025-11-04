@@ -36,5 +36,5 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test DTS
-        run: pnpm test:dts
+      - name: Type check
+        run: pnpm type-check

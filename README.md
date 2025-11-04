@@ -556,7 +556,7 @@ Type:
 type IgnoreArgvCallback = (
     type: 'known-flag' | 'unknown-flag' | 'argument',
     flagOrArgv: string,
-    value: string | undefined,
+    value: string | undefined
 ) => boolean | void
 ```
 
