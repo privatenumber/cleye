@@ -176,7 +176,7 @@ type ParameterType<Parameter extends string> = (
 );
 
 type WithCommand<
-	Options extends { flags?: Flags },
+	Options extends TypeFlag,
 	CommandName extends string | undefined = undefined,
 > = {
 	command: CommandName;
