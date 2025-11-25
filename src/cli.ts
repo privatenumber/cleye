@@ -307,29 +307,7 @@ function cli<
 	options: Options & CliOptions<undefined, [...Parameters]>,
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv?: string[],
-): {
-	[
-	Key in keyof ParseArgv<
-		Options,
-		Parameters,
-		undefined
-	>
-	]: ParseArgv<
-		Options,
-		Parameters,
-		undefined
-	>[Key];
-};
-
-function cli<
-	Options extends CliOptions<[...Commands], [...Parameters]>,
-	Commands extends Command[],
-	Parameters extends string[],
->(
-	options: Options & CliOptions<[...Commands], [...Parameters]>,
-	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
-	argv?: string[],
-):(
+): (
 	{
 		[
 		Key in keyof ParseArgv<
@@ -342,19 +320,45 @@ function cli<
 			Parameters,
 			undefined
 		>[Key];
-	}
-	| {
-		[KeyA in keyof Commands]: (
-			Commands[KeyA] extends Command
-				? (
-					{
-						[
-						KeyB in keyof Commands[KeyA][typeof parsedType]
-						]: Commands[KeyA][typeof parsedType][KeyB];
-					}
-				) : never
-		);
-	}[number]
+	} & Promise<void>
+);
+
+function cli<
+	Options extends CliOptions<[...Commands], [...Parameters]>,
+	Commands extends Command[],
+	Parameters extends string[],
+>(
+	options: Options & CliOptions<[...Commands], [...Parameters]>,
+	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
+	argv?: string[],
+): (
+	(
+		{
+			[
+			Key in keyof ParseArgv<
+				Options,
+				Parameters,
+				undefined
+			>
+			]: ParseArgv<
+				Options,
+				Parameters,
+				undefined
+			>[Key];
+		}
+		| {
+			[KeyA in keyof Commands]: (
+				Commands[KeyA] extends Command
+					? (
+						{
+							[
+							KeyB in keyof Commands[KeyA][typeof parsedType]
+							]: Commands[KeyA][typeof parsedType][KeyB];
+						}
+					) : never
+			);
+		}[number]
+	) & Promise<void>
 );
 
 function cli<
@@ -365,7 +369,7 @@ function cli<
 	options: Options | (Options & CliOptions<[...Commands], [...Parameters]>),
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv = process.argv.slice(2),
-) {
+): any {
 	// Because if not configured, it's probably being misused or overlooked
 	if (!options) {
 		throw new Error('Options is required');

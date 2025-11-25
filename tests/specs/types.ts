@@ -276,5 +276,62 @@ export default testSuite(({ describe }) => {
 				}>();
 			});
 		});
+
+		test('async cli() returns promise', () => {
+			const result = cli({
+				flags: {
+					foo: String,
+				},
+			}, async (argv) => {
+				console.log(argv.flags.foo);
+			}, []);
+
+			// Should have Promise methods
+			expectTypeOf(result.then).toBeFunction();
+			expectTypeOf(result.catch).toBeFunction();
+			expectTypeOf(result.finally).toBeFunction();
+
+			// Should also have parsed properties
+			expectTypeOf(result.flags).toEqualTypeOf<{
+				foo: string | undefined;
+				help: boolean | undefined;
+			}>();
+		});
+
+		test('sync cli() has parsed properties', () => {
+			const result = cli({
+				flags: {
+					bar: Number,
+				},
+			}, (argv) => {
+				console.log(argv.flags.bar);
+			}, []);
+
+			// Should have parsed properties
+			expectTypeOf(result.flags).toEqualTypeOf<{
+				bar: number | undefined;
+				help: boolean | undefined;
+			}>();
+		});
+
+		test('async cli() with commands returns promise', () => {
+			const result = cli({
+				commands: [
+					command({
+						name: 'test',
+						flags: {
+							flag: Boolean,
+						},
+					}, async (argv) => {
+						console.log(argv.flags.flag);
+					}),
+				],
+			}, undefined, ['test']);
+
+			// Should have Promise methods
+			expectTypeOf(result.then).toBeFunction();
+			expectTypeOf(result.catch).toBeFunction();
+			expectTypeOf(result.finally).toBeFunction();
+		});
 	});
 });
