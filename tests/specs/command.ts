@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises';
 import { testSuite, expect } from 'manten';
 import { spy } from 'nanospy';
 import { cli, command } from '#cleye';
@@ -342,6 +343,64 @@ export default testSuite(({ describe }) => {
 				expect(parsed.command).toBe('test');
 				expect(commandCallback.called).toBe(true);
 				expect(cliCallback.called).toBe(false);
+			});
+		});
+
+		describe('async command callbacks', ({ test }) => {
+			test('cli Promise waits for command callback to complete', async () => {
+				let commandCompleted = false;
+
+				const testCommand = command({
+					name: 'test',
+				}, async () => {
+					await setImmediate();
+					commandCompleted = true;
+				});
+
+				const result = cli(
+					{
+						commands: [testCommand],
+					},
+					undefined,
+					['test'],
+				);
+
+				// Command callback shouldn't have completed yet
+				expect(commandCompleted).toBe(false);
+
+				// After awaiting cli, command callback should be complete
+				await result;
+				expect(commandCompleted).toBe(true);
+			});
+
+			test('cli Promise never resolves if command callback never resolves', async () => {
+				let cliResolved = false;
+
+				const testCommand = command({
+					name: 'test',
+				}, async () => {
+					// Never resolve - hang forever
+					await new Promise(() => {});
+				});
+
+				const result = cli(
+					{
+						commands: [testCommand],
+					},
+					undefined,
+					['test'],
+				);
+
+				// Race the cli promise against a timeout
+				await Promise.race([
+					result.then(() => {
+						cliResolved = true;
+					}),
+					setImmediate(50),
+				]);
+
+				// cli should not have resolved
+				expect(cliResolved).toBe(false);
 			});
 		});
 	});

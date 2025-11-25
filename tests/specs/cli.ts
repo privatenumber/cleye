@@ -83,6 +83,42 @@ export default testSuite(({ describe }) => {
 				// And it's awaitable
 				await result;
 			});
+
+			test('cli Promise waits for callback to complete', async () => {
+				let callbackCompleted = false;
+
+				const result = cli({}, async () => {
+					await setImmediate();
+					callbackCompleted = true;
+				});
+
+				// Callback shouldn't have completed yet
+				expect(callbackCompleted).toBe(false);
+
+				// After awaiting cli, callback should be complete
+				await result;
+				expect(callbackCompleted).toBe(true);
+			});
+
+			test('cli Promise never resolves if callback never resolves', async () => {
+				let cliResolved = false;
+
+				const result = cli({}, async () => {
+					// Never resolve - hang forever
+					await new Promise(() => {});
+				});
+
+				// Race the cli promise against a timeout
+				await Promise.race([
+					result.then(() => {
+						cliResolved = true;
+					}),
+					setImmediate(50),
+				]);
+
+				// cli should not have resolved
+				expect(cliResolved).toBe(false);
+			});
 		});
 	});
 });
