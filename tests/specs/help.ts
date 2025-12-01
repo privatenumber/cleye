@@ -173,6 +173,29 @@ export default testSuite(({ describe }) => {
 				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        test command\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
+			test('commands with help but no description', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						name: 'my-cli',
+						commands: [
+							command({
+								name: 'test',
+								help: {
+									usage: 'custom usage',
+								},
+							}),
+						],
+					},
+					undefined,
+					['--help'],
+				);
+				mocked.restore();
+
+				expect(mocked.processExit.calls).toStrictEqual([[0]]);
+				expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        \n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
+			});
+
 			test('undefined flags', () => {
 				const mocked = mockEnvFunctions();
 				cli(

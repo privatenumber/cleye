@@ -145,7 +145,7 @@ function getCommands(options: Options) {
 	}
 
 	const commands = options.commands.map(
-		command => [command.options.name, command.options.help ? command.options.help.description : ''],
+		command => [command.options.name, command.options.help?.description ?? ''],
 	);
 
 	const commandsTable = {
