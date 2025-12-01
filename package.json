@@ -44,7 +44,7 @@
 	"packageManager": "pnpm@10.13.1",
 	"scripts": {
 		"build": "pkgroll --minify",
-		"lint": "lintroll --cache",
+		"lint": "lintroll --cache --git",
 		"type-check": "tsc",
 		"test": "tsx tests",
 		"dev": "tsx watch --conditions=development tests",
