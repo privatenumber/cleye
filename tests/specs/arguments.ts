@@ -279,6 +279,21 @@ export default testSuite(({ describe }) => {
 				expect<string>(parsed._.arg).toBe('value');
 				expect<string | undefined>(parsed._.optional).toBeUndefined();
 			});
+
+			test('EOF parameters are always set as properties', () => {
+				const parsed = cli(
+					{
+						parameters: ['<arg>', '--', '[optional]'],
+					},
+					undefined,
+					['value', '--'],
+				);
+
+				// EOF parameters should always be set on the object,
+				// even when no EOF arguments are provided
+				expect('optional' in parsed._).toBe(true);
+				expect(Object.keys(parsed._)).toContain('optional');
+			});
 		});
 	});
 });

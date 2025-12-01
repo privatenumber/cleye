@@ -112,13 +112,7 @@ function mapParametersToArguments(
 }
 
 function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOptions | undefined) {
-	return (
-		// Default
-		help === undefined
-
-		// Configured
-		|| help !== false
-	);
+	return help !== false;
 }
 
 function cliBase<
@@ -131,7 +125,7 @@ function cliBase<
 	callback: CallbackFunction<ParseArgv<Options, Parameters>> | undefined,
 	argv: string[],
 ) {
-	const flags = { ...options.flags };//  as HasHelpOrVersion<Options>;
+	const flags = { ...options.flags };
 	// Expected to work even if flag is overwritten; add tests
 	const isVersionEnabled = options.version && !('version' in flags);
 
@@ -210,29 +204,25 @@ function cliBase<
 		const eofParameters = parameters.slice(hasEof + 1);
 		const mapping: Record<string, string | string[]> = Object.create(null);
 
+		let eofArguments: string[] = [];
 		if (hasEof > -1 && eofParameters.length > 0) {
 			parameters = parameters.slice(0, hasEof);
-
-			const eofArguments = parsed._['--'];
+			eofArguments = parsed._['--'];
 			cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
+		}
 
-			mapParametersToArguments(
-				mapping,
-				parseParameters(parameters),
-				cliArguments,
-				showHelp,
-			);
+		mapParametersToArguments(
+			mapping,
+			parseParameters(parameters),
+			cliArguments,
+			showHelp,
+		);
+
+		if (hasEof > -1 && eofParameters.length > 0) {
 			mapParametersToArguments(
 				mapping,
 				parseParameters(eofParameters),
 				eofArguments,
-				showHelp,
-			);
-		} else {
-			mapParametersToArguments(
-				mapping,
-				parseParameters(parameters),
-				cliArguments,
 				showHelp,
 			);
 		}
