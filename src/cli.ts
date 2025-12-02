@@ -7,6 +7,7 @@ import type {
 	parsedType,
 	HelpOptions,
 	HelpDocumentNode,
+	StrictOptions,
 } from './types';
 import type { Command } from './command';
 import { generateHelp, Renderers } from './render-help';
@@ -294,7 +295,7 @@ function cli<
 	Options extends CliOptions<undefined, [...Parameters]>,
 	Parameters extends string[],
 >(
-	options: Options & CliOptions<undefined, [...Parameters]>,
+	options: StrictOptions<Options> & CliOptions<undefined, [...Parameters]>,
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv?: string[],
 ): (
@@ -318,7 +319,7 @@ function cli<
 	Commands extends Command[],
 	Parameters extends string[],
 >(
-	options: Options & CliOptions<[...Commands], [...Parameters]>,
+	options: StrictOptions<Options> & CliOptions<[...Commands], [...Parameters]>,
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv?: string[],
 ): (

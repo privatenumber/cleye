@@ -361,5 +361,23 @@ export default testSuite(({ describe }) => {
 			expectTypeOf(result.flags.verbose).toEqualTypeOf<boolean | undefined>();
 			expectTypeOf(result.flags.config).toEqualTypeOf<string | undefined>();
 		});
+
+		test('unknown cli options cause type errors', () => {
+			// This test verifies that TypeScript catches typos in cli options
+			// at compile time via @ts-expect-error directives.
+			// The StrictOptions type maps unknown keys to `never`.
+
+			cli({
+				name: 'test',
+				// @ts-expect-error - 'params' is not a valid option (typo for 'parameters')
+				params: ['<foo>'],
+			});
+
+			cli({
+				name: 'test',
+				// @ts-expect-error - 'unknownOption' is not a valid option
+				unknownOption: true,
+			});
+		});
 	});
 });

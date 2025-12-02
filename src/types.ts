@@ -205,3 +205,10 @@ export type ParseArgv<
 		? TypeFlagWrapper<Options, Parameters>
 		: WithCommand<TypeFlagWrapper<Options, Parameters>, CommandName>
 );
+
+/**
+ * Helper type to reject unknown properties in cli() options.
+ * Maps any key not in CliOptions to `never`, causing a type error
+ * when excess properties are passed.
+ */
+export type StrictOptions<T> = T & Record<Exclude<keyof T, keyof CliOptions>, never>;
