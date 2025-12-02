@@ -263,6 +263,21 @@ argv.flags.someString // => "hello" (string)
 argv.flags.someNumber // => [1, 2] (number[])
 ```
 
+#### Inverting boolean flags
+To explicitly set a boolean flag to `false`, pass in the value using the `=` operator:
+
+```sh
+$ my-script --some-boolean=false
+```
+
+Without `=`, the `false` will be parsed as a separate argument:
+
+```sh
+$ my-script --some-boolean false
+# argv.flags.someBoolean => true
+# argv._ => ['false']
+```
+
 #### Custom flag types & validation
 Custom flag types can be created to validate flags and narrow types. Simply create a new function that accepts a string and returns the parsed value.
 
