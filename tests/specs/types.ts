@@ -1,6 +1,6 @@
 import { testSuite } from 'manten';
 import { expectTypeOf } from 'expect-type';
-import { cli, command } from '#cleye';
+import { cli, command, type Flags } from '#cleye';
 
 export default testSuite(({ describe }) => {
 	describe('types', ({ test }) => {
@@ -332,6 +332,34 @@ export default testSuite(({ describe }) => {
 			expectTypeOf(result.then).toBeFunction();
 			expectTypeOf(result.catch).toBeFunction();
 			expectTypeOf(result.finally).toBeFunction();
+		});
+
+		test('Flags type is exported and usable', () => {
+			// Flags type should be importable and usable for defining shared flags
+			const sharedFlags = {
+				verbose: {
+					type: Boolean,
+					alias: 'v',
+					description: 'Enable verbose output',
+				},
+				config: {
+					type: String,
+					description: 'Config file path',
+					placeholder: '<path>',
+				},
+			} satisfies Flags;
+
+			// Flags type should be assignable
+			const flags: Flags = sharedFlags;
+			expectTypeOf(flags).toMatchTypeOf<Flags>();
+
+			// Should work with cli()
+			const result = cli({
+				flags: sharedFlags,
+			}, undefined, []);
+
+			expectTypeOf(result.flags.verbose).toEqualTypeOf<boolean | undefined>();
+			expectTypeOf(result.flags.config).toEqualTypeOf<string | undefined>();
 		});
 	});
 });
