@@ -12,8 +12,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       type-flag:
-        specifier: ^4.0.1
-        version: 4.0.1
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
       '@types/node':
         specifier: ^24.9.2
@@ -2345,8 +2345,8 @@ packages:
   type-flag@3.0.0:
     resolution: {integrity: sha512-3YaYwMseXCAhBB14RXW5cRQfJQlEknS6i4C8fCfeUdS3ihG9EdccdR9kt3vP73ZdeTGmPb4bZtkDn5XMIn1DLA==}
 
-  type-flag@4.0.1:
-    resolution: {integrity: sha512-cYW6vgqTw1yHAuMZaKj108tdrt60uFOkd6Bz/IB6Hk2iNmmIjSYcdSom0Nz59xwuQzASDU2CKuiTh15f6RY2Vw==}
+  type-flag@4.0.3:
+    resolution: {integrity: sha512-YA09cL07U7hSV+/doSfKl+RkIZ2olCnevZsVgAuyBUG3h2ROf9Oh2vmbq5Rf26aA9/qu9RtStuc7ap5PC6k/vw==}
 
   typed-array-buffer@1.0.3:
     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
@@ -5196,7 +5196,7 @@ snapshots:
 
   type-flag@3.0.0: {}
 
-  type-flag@4.0.1: {}
+  type-flag@4.0.3: {}
 
   typed-array-buffer@1.0.3:
     dependencies:

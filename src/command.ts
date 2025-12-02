@@ -1,4 +1,4 @@
-import type { TypeFlagOptions } from 'type-flag';
+import type { IgnoreFunction } from 'type-flag';
 import type {
 	CallbackFunction,
 	Flags,
@@ -43,7 +43,7 @@ export type CommandOptions<Parameters = string[]> = {
 	/**
 	 * Which argv elements to ignore from parsing
 	 */
-	ignoreArgv?: TypeFlagOptions['ignore'];
+	ignoreArgv?: IgnoreFunction;
 };
 
 export function command<

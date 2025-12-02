@@ -379,5 +379,28 @@ export default testSuite(({ describe }) => {
 				unknownOption: true,
 			});
 		});
+
+		test('ignoreArgv callback with 3 parameters', () => {
+			// Issue #26: ignoreArgv should accept callbacks with all 3 parameters
+			// The third parameter (value) is optional but users should be able to declare it
+			cli({
+				name: 'test',
+				ignoreArgv(type, flagOrArgv, value) {
+					// All parameters should be properly typed
+					expectTypeOf(type).toEqualTypeOf<'argument' | 'known-flag' | 'unknown-flag'>();
+					expectTypeOf(flagOrArgv).toBeString();
+					expectTypeOf(value).toEqualTypeOf<string | undefined>();
+					return false;
+				},
+			});
+
+			// Should also work with required third parameter
+			cli({
+				name: 'test',
+				ignoreArgv(_type, _flagOrArgv, _value) {
+					return false;
+				},
+			});
+		});
 	});
 });

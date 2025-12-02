@@ -1,7 +1,7 @@
 import type {
 	TypeFlag,
-	TypeFlagOptions,
 	Flags as BaseFlags,
+	IgnoreFunction,
 } from 'type-flag';
 import type { Command } from './command';
 import type { Renderers } from './render-help/renderers';
@@ -132,7 +132,7 @@ export type CliOptions<
 	/**
 	 * Which argv elements to ignore from parsing
 	 */
-	ignoreArgv?: TypeFlagOptions['ignore'];
+	ignoreArgv?: IgnoreFunction;
 };
 
 export type CliOptionsInternal<
