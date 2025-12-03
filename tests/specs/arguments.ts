@@ -23,6 +23,34 @@ export default testSuite(({ describe }) => {
 					}).toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
 				});
 
+				test('invalid parameter - all special characters', () => {
+					// Pattern from cli.ts: /[|\\{}()[\]^$+*?.]/
+					const specialChars = [
+						'|',
+						'\\',
+						'{',
+						'}',
+						'(',
+						')',
+						// '[' and ']' are bracket chars used for optional params
+						// so we test them inside the name portion
+						'^',
+						'$',
+						'+',
+						'*',
+						'?',
+						'.',
+					];
+
+					for (const char of specialChars) {
+						expect(() => {
+							cli({
+								parameters: [`<value${char}a>`],
+							});
+						}).toThrow('Invalid character found');
+					}
+				});
+
 				test('duplicate parameters', () => {
 					expect(() => {
 						cli({

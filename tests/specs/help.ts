@@ -375,6 +375,28 @@ export default testSuite(({ describe }) => {
 				expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  usage string a\n  usage string b\n  usage string c\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 			});
 
+			test('help.usage false disables usage section', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						name: 'my-cli',
+						help: {
+							usage: false,
+						},
+					},
+					undefined,
+					['--help'],
+				);
+				mocked.restore();
+
+				expect(mocked.processExit.calls).toStrictEqual([[0]]);
+				// Should only have name and flags, no Usage section
+				const output = mocked.consoleLog.calls[0][0];
+				expect(output).toContain('my-cli');
+				expect(output).not.toContain('Usage:');
+				expect(output).toContain('Flags:');
+			});
+
 			test('help.description', () => {
 				const mocked = mockEnvFunctions();
 				cli(

@@ -74,6 +74,44 @@ export default testSuite(({ describe }) => {
 					);
 				}).toThrow('Duplicate command name found: "duplicate"');
 			});
+
+			test('empty alias string is ignored', () => {
+				const callback = spy();
+				const commandA = command({
+					name: 'commandA',
+					alias: '',
+				}, callback);
+
+				const parsed = cli(
+					{
+						commands: [commandA],
+					},
+					undefined,
+					['commandA'],
+				);
+
+				expect(parsed.command).toBe('commandA');
+				expect(callback.called).toBe(true);
+			});
+
+			test('empty alias array is ignored', () => {
+				const callback = spy();
+				const commandA = command({
+					name: 'commandA',
+					alias: [],
+				}, callback);
+
+				const parsed = cli(
+					{
+						commands: [commandA],
+					},
+					undefined,
+					['commandA'],
+				);
+
+				expect(parsed.command).toBe('commandA');
+				expect(callback.called).toBe(true);
+			});
 		});
 
 		describe('command', ({ test }) => {
