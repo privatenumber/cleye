@@ -3,6 +3,7 @@ import { testSuite, expect } from 'manten';
 import { underline } from 'kolorist';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
 import { Renderers } from '../../src/render-help/renderers.js';
+import { renderFlags } from '../../src/render-help/render-flags.js';
 import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
@@ -809,6 +810,16 @@ export default testSuite(({ describe }) => {
 				expect(result).toBe('  body content\n');
 			});
 
+			test('section with indentBody: 0', () => {
+				const renderers = new Renderers();
+				const result = renderers.section({
+					title: 'Title:',
+					body: 'no indent',
+					indentBody: 0,
+				});
+				expect(stripVTControlCharacters(result)).toBe('Title:\nno indent\n');
+			});
+
 			test('flagParameter with Boolean type', () => {
 				const renderers = new Renderers();
 				expect(renderers.flagParameter(Boolean)).toBe('');
@@ -842,6 +853,63 @@ export default testSuite(({ describe }) => {
 				expect(renderers.flagDefault(42)).toBe('42');
 				expect(renderers.flagDefault(true)).toBe('true');
 				expect(renderers.flagDefault({ key: 'value' })).toBe('{"key":"value"}');
+			});
+		});
+
+		describe('renderFlags', ({ test }) => {
+			test('sorts flags alphabetically', () => {
+				const result = renderFlags({
+					zebra: Boolean,
+					apple: Boolean,
+					mango: Boolean,
+				});
+
+				expect(result.type).toBe('table');
+				const { tableData } = result.data;
+				expect(tableData[0][0].data.name).toBe('apple');
+				expect(tableData[1][0].data.name).toBe('mango');
+				expect(tableData[2][0].data.name).toBe('zebra');
+			});
+
+			test('formats flag names to kebab-case', () => {
+				const result = renderFlags({
+					myFlag: Boolean,
+					anotherOne: String,
+				});
+
+				const { tableData } = result.data;
+				expect(tableData[0][0].data.flagFormatted).toBe('--another-one');
+				expect(tableData[1][0].data.flagFormatted).toBe('--my-flag');
+			});
+
+			test('detects aliases and enables aliasesEnabled', () => {
+				const result = renderFlags({
+					noAlias: Boolean,
+					hasAlias: {
+						type: Boolean,
+						alias: 'h',
+					},
+				});
+
+				const { tableData } = result.data;
+				// Both flags should have aliasesEnabled = true when any flag has alias
+				expect(tableData[0][0].data.aliasesEnabled).toBe(true);
+				expect(tableData[1][0].data.aliasesEnabled).toBe(true);
+				// Only hasAlias should have aliasFormatted
+				expect(tableData[0][0].data.aliasFormatted).toBe('-h');
+				expect(tableData[1][0].data.aliasFormatted).toBeUndefined();
+			});
+
+			test('returns table with breakpoints', () => {
+				const result = renderFlags({
+					flag: Boolean,
+				});
+
+				expect(result.type).toBe('table');
+				expect(result.data.tableBreakpoints).toBeDefined();
+				expect(result.data.tableBreakpoints['> 80']).toBeDefined();
+				expect(result.data.tableBreakpoints['> 40']).toBeDefined();
+				expect(result.data.tableBreakpoints['> 0']).toBeDefined();
 			});
 		});
 	});
