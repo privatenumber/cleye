@@ -1,5 +1,6 @@
 import { testSuite, expect } from 'manten';
-import { camelCase } from '../../src/utils/convert-case.js';
+import { camelCase, kebabCase } from '../../src/utils/convert-case.js';
+import { isValidScriptName } from '../../src/utils/script-name.js';
 import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
@@ -102,6 +103,50 @@ export default testSuite(({ describe }) => {
 				expect(camelCase('myValue')).toBe('myValue');
 				expect(camelCase('value1')).toBe('value1');
 				expect(camelCase('1value')).toBe('1value');
+			});
+		});
+
+		describe('kebabCase conversion', ({ test }) => {
+			test('basic camelCase to kebab-case', () => {
+				expect(kebabCase('helloWorld')).toBe('hello-world');
+				expect(kebabCase('myValue')).toBe('my-value');
+				expect(kebabCase('getValue')).toBe('get-value');
+			});
+
+			test('multiple uppercase letters', () => {
+				expect(kebabCase('getHTTPResponse')).toBe('get-h-t-t-p-response');
+				expect(kebabCase('XMLParser')).toBe('x-m-l-parser');
+			});
+
+			test('already kebab-case input', () => {
+				expect(kebabCase('hello-world')).toBe('hello-world');
+				expect(kebabCase('my-value')).toBe('my-value');
+			});
+
+			test('single character', () => {
+				expect(kebabCase('a')).toBe('a');
+				expect(kebabCase('A')).toBe('a');
+			});
+
+			test('all lowercase', () => {
+				expect(kebabCase('helloworld')).toBe('helloworld');
+			});
+
+			test('all uppercase', () => {
+				expect(kebabCase('ABC')).toBe('a-b-c');
+			});
+
+			test('empty string', () => {
+				expect(kebabCase('')).toBe('');
+			});
+
+			test('leading uppercase', () => {
+				expect(kebabCase('HelloWorld')).toBe('hello-world');
+			});
+
+			test('numbers in name', () => {
+				expect(kebabCase('value1Name')).toBe('value1-name');
+				expect(kebabCase('get2ndValue')).toBe('get2nd-value');
 			});
 		});
 
@@ -282,6 +327,60 @@ export default testSuite(({ describe }) => {
 						['my_command'],
 					);
 				}).not.toThrow();
+			});
+		});
+
+		describe('isValidScriptName edge cases', ({ test }) => {
+			test('empty string is invalid', () => {
+				expect(isValidScriptName('')).toBe(false);
+			});
+
+			test('single space is invalid', () => {
+				expect(isValidScriptName(' ')).toBe(false);
+			});
+
+			test('multiple spaces is invalid', () => {
+				expect(isValidScriptName('   ')).toBe(false);
+			});
+
+			test('name with space is invalid', () => {
+				expect(isValidScriptName('my command')).toBe(false);
+			});
+
+			test('tab character is valid (not a space)', () => {
+				// The current implementation only checks for space character
+				expect(isValidScriptName('my\tcommand')).toBe(true);
+			});
+
+			test('newline character is valid (not a space)', () => {
+				// The current implementation only checks for space character
+				expect(isValidScriptName('my\ncommand')).toBe(true);
+			});
+
+			test('leading space is invalid', () => {
+				expect(isValidScriptName(' command')).toBe(false);
+			});
+
+			test('trailing space is invalid', () => {
+				expect(isValidScriptName('command ')).toBe(false);
+			});
+
+			test('valid names', () => {
+				expect(isValidScriptName('command')).toBe(true);
+				expect(isValidScriptName('my-command')).toBe(true);
+				expect(isValidScriptName('my_command')).toBe(true);
+				expect(isValidScriptName('cmd123')).toBe(true);
+				expect(isValidScriptName('a')).toBe(true);
+			});
+
+			test('unicode characters are valid', () => {
+				expect(isValidScriptName('命令')).toBe(true);
+				expect(isValidScriptName('café')).toBe(true);
+			});
+
+			test('special characters are valid', () => {
+				expect(isValidScriptName('@scope/package')).toBe(true);
+				expect(isValidScriptName('name.ext')).toBe(true);
 			});
 		});
 	});

@@ -2,6 +2,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { underline } from 'kolorist';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
+import { Renderers } from '../../src/render-help/renderers.js';
 import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
@@ -728,6 +729,98 @@ export default testSuite(({ describe }) => {
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  esbuild [options...] [entry points]\n\n\u001B[1mDocumentation:\u001B[22m\n  \u001B[4mhttps://esbuild.github.io/\u001B[24m\n\n\u001B[1mSimple options:\u001B[22m\n  --bundle            Bundle all dependencies into the output files\n  --define=...        Substitute K with V while parsing\n\n\u001B[1mAdvanced options:\u001B[22m\n  --allow-overwrite        Allow output files to overwrite input files\n  --asset-names            Path template to use for "file" loader files (default "[name]-[hash]")\n\n\u001B[1mExamples:\u001B[22m\n  # Produces dist/entry_point.js and dist/entry_point.js.map\n  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap\n\nReceived value: 123']]);
+		});
+
+		describe('Renderers', ({ test }) => {
+			test('render throws on invalid node type', () => {
+				const renderers = new Renderers();
+				expect(() => {
+					renderers.render({
+						type: 'nonExistentRenderer',
+						data: 'test',
+					} as any);
+				}).toThrow('Invalid node type');
+			});
+
+			test('render with string returns string', () => {
+				const renderers = new Renderers();
+				expect(renderers.render('hello')).toBe('hello');
+			});
+
+			test('render with array joins with newlines', () => {
+				const renderers = new Renderers();
+				expect(renderers.render(['a', 'b', 'c'])).toBe('a\nb\nc');
+			});
+
+			test('text renderer returns string as-is', () => {
+				const renderers = new Renderers();
+				expect(renderers.render({
+					type: 'text',
+					data: 'hello world',
+				})).toBe('hello world');
+			});
+
+			test('indentText with multi-line text', () => {
+				const renderers = new Renderers();
+				const result = renderers.indentText({
+					text: 'line1\nline2\nline3',
+					spaces: 2,
+				});
+				expect(result).toBe('  line1\n  line2\n  line3');
+			});
+
+			test('section with only title', () => {
+				const renderers = new Renderers();
+				const result = renderers.section({
+					title: 'Title:',
+				});
+				// When colors are enabled, title is bolded with ANSI codes
+				// When colors are disabled, title is uppercased
+				expect(stripVTControlCharacters(result)).toBe('Title:\n\n');
+			});
+
+			test('section with only body', () => {
+				const renderers = new Renderers();
+				const result = renderers.section({
+					body: 'body content',
+				});
+				expect(result).toBe('  body content\n');
+			});
+
+			test('flagParameter with Boolean type', () => {
+				const renderers = new Renderers();
+				expect(renderers.flagParameter(Boolean)).toBe('');
+			});
+
+			test('flagParameter with String type', () => {
+				const renderers = new Renderers();
+				expect(renderers.flagParameter(String)).toBe('<string>');
+			});
+
+			test('flagParameter with Number type', () => {
+				const renderers = new Renderers();
+				expect(renderers.flagParameter(Number)).toBe('<number>');
+			});
+
+			test('flagParameter with custom type', () => {
+				const CustomType = (value: string) => value.toUpperCase();
+				const renderers = new Renderers();
+				expect(renderers.flagParameter(CustomType)).toBe('<value>');
+			});
+
+			test('flagParameter with array type', () => {
+				const renderers = new Renderers();
+				expect(renderers.flagParameter([String])).toBe('<string>');
+				expect(renderers.flagParameter([Number])).toBe('<number>');
+			});
+
+			test('flagDefault with various types', () => {
+				const renderers = new Renderers();
+				expect(renderers.flagDefault('hello')).toBe('"hello"');
+				expect(renderers.flagDefault(42)).toBe('42');
+				expect(renderers.flagDefault(true)).toBe('true');
+				expect(renderers.flagDefault({ key: 'value' })).toBe('{"key":"value"}');
+			});
 		});
 	});
 });
