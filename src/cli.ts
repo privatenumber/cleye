@@ -8,6 +8,7 @@ import type {
 	HelpOptions,
 	HelpDocumentNode,
 	StrictOptions,
+	MaybePromise,
 } from './types';
 import type { Command } from './command';
 import { generateHelp, Renderers } from './render-help';
@@ -291,6 +292,7 @@ function getCommand<Commands extends Command[]>(
 	return commandMap.get(potentialCommand);
 }
 
+// Overload 1: No commands, no callback - returns without Promise
 function cli<
 	Options extends CliOptions<undefined, [...Parameters]>,
 	Parameters extends string[],
@@ -298,7 +300,61 @@ function cli<
 	options: StrictOptions<Options>
 		& CliOptions<undefined, [...Parameters]>
 		& { commands?: undefined },
-	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
+	callback?: undefined,
+	argv?: string[],
+): {
+	[
+	Key in keyof ParseArgv<
+		Options,
+		Parameters,
+		undefined
+	>
+	]: ParseArgv<
+		Options,
+		Parameters,
+		undefined
+	>[Key];
+};
+
+// Overload 2: No commands, with callback - returns MaybePromise based on callback return
+function cli<
+	Options extends CliOptions<undefined, [...Parameters]>,
+	Parameters extends string[],
+	CallbackReturn extends void | Promise<void>,
+>(
+	options: StrictOptions<Options>
+		& CliOptions<undefined, [...Parameters]>
+		& { commands?: undefined },
+	callback: (parsed: ParseArgv<Options, Parameters>) => CallbackReturn,
+	argv?: string[],
+): MaybePromise<
+	{
+		[
+		Key in keyof ParseArgv<
+			Options,
+			Parameters,
+			undefined
+		>
+		]: ParseArgv<
+			Options,
+			Parameters,
+			undefined
+		>[Key];
+	},
+	CallbackReturn
+>;
+
+// Overload 3: With commands, no callback
+// Always returns Promise since commands may have async callbacks
+function cli<
+	Options extends CliOptions<[...Commands], [...Parameters]>,
+	Commands extends Command[],
+	Parameters extends string[],
+>(
+	options: StrictOptions<Options>
+		& CliOptions<[...Commands], [...Parameters]>
+		& { commands: [...Commands] },
+	callback?: undefined,
 	argv?: string[],
 ): (
 	{
@@ -313,9 +369,23 @@ function cli<
 			Parameters,
 			undefined
 		>[Key];
-	} & Promise<void>
-);
+	}
+	| {
+		[KeyA in keyof Commands]: (
+			Commands[KeyA] extends Command
+				? (
+					{
+						[
+						KeyB in keyof Commands[KeyA][typeof parsedType]
+						]: Commands[KeyA][typeof parsedType][KeyB];
+					}
+				) : never
+		);
+	}[number]
+) & Promise<void>;
 
+// Overload 4: With commands, with callback
+// Always returns Promise since commands may have async callbacks
 function cli<
 	Options extends CliOptions<[...Commands], [...Parameters]>,
 	Commands extends Command[],
@@ -324,7 +394,7 @@ function cli<
 	options: StrictOptions<Options>
 		& CliOptions<[...Commands], [...Parameters]>
 		& { commands: [...Commands] },
-	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
+	callback: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
 	argv?: string[],
 ): (
 	(
@@ -361,7 +431,7 @@ function cli(
 	options: CliOptions,
 	callback?: CallbackFunction<any>,
 	argv?: string[],
-): ParseArgv<CliOptions, string[], undefined> & Promise<void>;
+): ParseArgv<CliOptions, string[], undefined>;
 
 function cli<
 	Options extends CliOptions<[...Commands], [...Parameters]>,

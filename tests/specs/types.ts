@@ -298,7 +298,7 @@ export default testSuite(({ describe }) => {
 			}>();
 		});
 
-		test('sync cli() has parsed properties', () => {
+		test('sync cli() has parsed properties without Promise', () => {
 			const result = cli({
 				flags: {
 					bar: Number,
@@ -312,6 +312,41 @@ export default testSuite(({ describe }) => {
 				bar: number | undefined;
 				help: boolean | undefined;
 			}>();
+
+			// Should NOT have Promise methods (sync callback)
+			expectTypeOf(result).not.toMatchTypeOf<Promise<void>>();
+		});
+
+		test('async cli() without commands returns Promise', () => {
+			const result = cli({
+				flags: {
+					foo: String,
+				},
+			}, async (argv) => {
+				console.log(argv.flags.foo);
+			}, []);
+
+			// Should have Promise methods
+			expectTypeOf(result.then).toBeFunction();
+			expectTypeOf(result.catch).toBeFunction();
+			expectTypeOf(result.finally).toBeFunction();
+		});
+
+		test('cli() without callback has no Promise', () => {
+			const result = cli({
+				flags: {
+					baz: String,
+				},
+			});
+
+			// Should have parsed properties
+			expectTypeOf(result.flags).toEqualTypeOf<{
+				baz: string | undefined;
+				help: boolean | undefined;
+			}>();
+
+			// Should NOT have Promise methods (no callback)
+			expectTypeOf(result).not.toMatchTypeOf<Promise<void>>();
 		});
 
 		test('async cli() with commands returns promise', () => {
@@ -322,11 +357,11 @@ export default testSuite(({ describe }) => {
 						flags: {
 							flag: Boolean,
 						},
-					}, async (argv) => {
-						console.log(argv.flags.flag);
 					}),
 				],
-			}, undefined, ['test']);
+			}, async () => {
+				// async main callback
+			}, ['test']);
 
 			// Should have Promise methods
 			expectTypeOf(result.then).toBeFunction();
