@@ -402,5 +402,32 @@ export default testSuite(({ describe }) => {
 				},
 			});
 		});
+
+		test('Parameters<typeof cli> is not never', () => {
+			// Issue #36: Parameters<typeof cli> should not resolve to never
+			// This ensures cli function signature is properly typed for wrapper functions
+			type CliParameters = Parameters<typeof cli>;
+
+			// Should not be never - if it is, this test will fail at compile time
+			expectTypeOf<CliParameters>().not.toBeNever();
+
+			// Should be a tuple with at least one element (the options parameter)
+			expectTypeOf<CliParameters[0]>().not.toBeNever();
+		});
+
+		test('cli() return type is not void', () => {
+			// Issue #36: cli({}) return type should not be void
+			const result = cli({});
+
+			// Return type should have flags property
+			expectTypeOf(result).toHaveProperty('flags');
+
+			// Return type should have showHelp and showVersion
+			expectTypeOf(result).toHaveProperty('showHelp');
+			expectTypeOf(result).toHaveProperty('showVersion');
+
+			// Return type should not be void
+			expectTypeOf(result).not.toBeVoid();
+		});
 	});
 });

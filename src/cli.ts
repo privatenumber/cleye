@@ -295,7 +295,9 @@ function cli<
 	Options extends CliOptions<undefined, [...Parameters]>,
 	Parameters extends string[],
 >(
-	options: StrictOptions<Options> & CliOptions<undefined, [...Parameters]>,
+	options: StrictOptions<Options>
+		& CliOptions<undefined, [...Parameters]>
+		& { commands?: undefined },
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv?: string[],
 ): (
@@ -319,7 +321,9 @@ function cli<
 	Commands extends Command[],
 	Parameters extends string[],
 >(
-	options: StrictOptions<Options> & CliOptions<[...Commands], [...Parameters]>,
+	options: StrictOptions<Options>
+		& CliOptions<[...Commands], [...Parameters]>
+		& { commands: [...Commands] },
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv?: string[],
 ): (
@@ -351,6 +355,13 @@ function cli<
 		}[number]
 	) & Promise<void>
 );
+
+// General overload for Parameters<typeof cli> to extract from
+function cli(
+	options: CliOptions,
+	callback?: CallbackFunction<any>,
+	argv?: string[],
+): ParseArgv<CliOptions, string[], undefined> & Promise<void>;
 
 function cli<
 	Options extends CliOptions<[...Commands], [...Parameters]>,
