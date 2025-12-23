@@ -335,6 +335,35 @@ $ my-script --version
 
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
 
+#### Strict flags
+To reject unknown flags with an error, enable `strictFlags`:
+
+```ts
+cli({
+    flags: {
+        foo: Boolean,
+        bar: String
+    },
+    strictFlags: true
+})
+```
+
+```sh
+$ my-script --baz
+Error: Unknown flag: --baz. (Did you mean --bar?)
+```
+
+When enabled, the CLI will exit with an error if any unknown flags are passed. If a similar flag name exists (within 2 edits), it will suggest the closest match.
+
+Commands inherit `strictFlags` from the parent CLI, but can override it:
+
+```ts
+command({
+    name: 'build',
+    strictFlags: false // Disable for this command
+})
+```
+
 ### Commands
 Commands allow organizing multiple "scripts" into a single script. An example of this is the [`npm install`](https://docs.npmjs.com/cli/install/) command, which is essentially an "install" script inside the "npm" script, adjacent to other commands like [`npm run`](https://docs.npmjs.com/cli/run-script/).
 
