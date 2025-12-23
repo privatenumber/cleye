@@ -1,4 +1,5 @@
 import { typeFlag } from 'type-flag';
+import { closest, distance } from 'fastest-levenshtein';
 import type {
 	CallbackFunction,
 	CliOptions,
@@ -117,6 +118,52 @@ function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOption
 	return help !== false;
 }
 
+const getKnownFlagNames = (flags: Record<string, unknown>): string[] => {
+	const names: string[] = [];
+	for (const [name, config] of Object.entries(flags)) {
+		names.push(name);
+		if (config && typeof config === 'object' && 'alias' in config) {
+			const { alias } = config as { alias?: string | string[] };
+			if (typeof alias === 'string' && alias) {
+				names.push(alias);
+			} else if (Array.isArray(alias)) {
+				names.push(...alias.filter(Boolean));
+			}
+		}
+	}
+	return names;
+};
+
+const findClosestFlag = (
+	unknown: string,
+	knownFlags: string[],
+): string | undefined => {
+	// Don't suggest for very short flags (e.g. -a vs -b)
+	if (unknown.length < 3 || knownFlags.length === 0) {
+		return undefined;
+	}
+	const match = closest(unknown, knownFlags);
+	return distance(unknown, match) <= 2 ? match : undefined;
+};
+
+const handleUnknownFlags = (
+	unknownFlags: Record<string, unknown>,
+	knownFlagNames: string[],
+): void => {
+	const unknownFlagNames = Object.keys(unknownFlags);
+	if (unknownFlagNames.length === 0) {
+		return;
+	}
+
+	for (const flag of unknownFlagNames) {
+		const closestMatch = findClosestFlag(flag, knownFlagNames);
+		const suggestion = closestMatch ? ` (did you mean --${closestMatch}?)` : '';
+		console.error(`Error: Unknown flag --${flag}${suggestion}`);
+	}
+
+	process.exit(1);
+};
+
 function cliBase<
 	CommandName extends string | undefined,
 	Options extends CliOptionsInternal,
@@ -197,6 +244,13 @@ function cliBase<
 	) {
 		showHelp();
 		return process.exit(0);
+	}
+
+	// Check for unknown flags if strictFlags is enabled
+	// Inherit from parent if not explicitly set
+	const strictFlags = options.strictFlags ?? options.parent?.strictFlags;
+	if (strictFlags) {
+		handleUnknownFlags(parsed.unknownFlags, getKnownFlagNames(flags));
 	}
 
 	if (options.parameters) {

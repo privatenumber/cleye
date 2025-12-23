@@ -133,6 +133,12 @@ export type CliOptions<
 	 * Which argv elements to ignore from parsing
 	 */
 	ignoreArgv?: IgnoreFunction;
+
+	/**
+	 * When enabled, prints an error and exits if unknown flags are passed.
+	 * Suggests the closest matching flag name when possible.
+	 */
+	strictFlags?: boolean;
 };
 
 export type CliOptionsInternal<

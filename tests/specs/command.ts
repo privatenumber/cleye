@@ -1,6 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 import { testSuite, expect } from 'manten';
 import { spy } from 'nanospy';
+import { mockEnvFunctions } from '../utils/mock-env-functions';
 import { cli, command } from '#cleye';
 
 export default testSuite(({ describe }) => {
@@ -439,6 +440,84 @@ export default testSuite(({ describe }) => {
 
 				// cli should not have resolved
 				expect(cliResolved).toBe(false);
+			});
+		});
+
+		describe('strictFlags inheritance', ({ test }) => {
+			test('command inherits strictFlags from parent', () => {
+				const mocked = mockEnvFunctions();
+
+				const buildCommand = command({
+					name: 'build',
+					flags: {
+						watch: Boolean,
+					},
+				});
+
+				cli(
+					{
+						strictFlags: true,
+						commands: [buildCommand],
+					},
+					undefined,
+					['build', '--wathc'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(true);
+				expect(mocked.consoleError.calls[0][0]).toContain('--wathc');
+				expect(mocked.consoleError.calls[0][0]).toContain('--watch');
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
+			});
+
+			test('command can override strictFlags to false', () => {
+				const mocked = mockEnvFunctions();
+
+				const buildCommand = command({
+					name: 'build',
+					flags: {
+						watch: Boolean,
+					},
+					strictFlags: false,
+				});
+
+				const parsed = cli(
+					{
+						strictFlags: true,
+						commands: [buildCommand],
+					},
+					undefined,
+					['build', '--unknown'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(false);
+				expect(mocked.processExit.called).toBe(false);
+				expect(parsed.unknownFlags.unknown).toEqual([true]);
+			});
+
+			test('command can enable strictFlags independently', () => {
+				const mocked = mockEnvFunctions();
+
+				const buildCommand = command({
+					name: 'build',
+					flags: {
+						watch: Boolean,
+					},
+					strictFlags: true,
+				});
+
+				cli(
+					{
+						commands: [buildCommand],
+					},
+					undefined,
+					['build', '--wathc'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(true);
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
 		});
 	});

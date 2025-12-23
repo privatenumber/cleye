@@ -376,5 +376,161 @@ export default testSuite(({ describe }) => {
 				expect(parsed.unknownFlags.unknown2).toEqual([true]);
 			});
 		});
+
+		describe('strictFlags', ({ test }) => {
+			test('errors on unknown flag', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							verbose: Boolean,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--unknown'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(true);
+				expect(mocked.consoleError.calls[0][0]).toContain('Unknown flag');
+				expect(mocked.consoleError.calls[0][0]).toContain('--unknown');
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
+			});
+
+			test('suggests closest match when within distance 2', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							verbose: Boolean,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--verbos'], // Missing 'e'
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
+				expect(mocked.consoleError.calls[0][0]).toMatch(/did you mean/i);
+			});
+
+			test('no suggestion when flag is too different', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							verbose: Boolean,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--xyz'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
+			});
+
+			test('no suggestion for very short unknown flags', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							ab: Boolean,
+							ac: Boolean,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--ad'], // Short unknown flag (2 chars) shouldn't get suggestions
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(true);
+				expect(mocked.consoleError.calls[0][0]).toContain('--ad');
+				expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
+			});
+
+			test('reports multiple unknown flags', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							verbose: Boolean,
+							output: String,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--verbos', '--outpu'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.callCount).toBe(2);
+				expect(mocked.consoleError.calls[0][0]).toContain('--verbos');
+				expect(mocked.consoleError.calls[1][0]).toContain('--outpu');
+			});
+
+			test('known flags still work', () => {
+				const mocked = mockEnvFunctions();
+				const parsed = cli(
+					{
+						flags: {
+							verbose: Boolean,
+							output: String,
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--verbose', '--output', 'file.txt'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(false);
+				expect(mocked.processExit.called).toBe(false);
+				expect(parsed.flags.verbose).toBe(true);
+				expect(parsed.flags.output).toBe('file.txt');
+			});
+
+			test('strictFlags disabled by default', () => {
+				const mocked = mockEnvFunctions();
+				const parsed = cli(
+					{
+						flags: {
+							verbose: Boolean,
+						},
+					},
+					undefined,
+					['--unknown'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.called).toBe(false);
+				expect(mocked.processExit.called).toBe(false);
+				expect(parsed.unknownFlags.unknown).toEqual([true]);
+			});
+
+			test('suggests flag aliases', () => {
+				const mocked = mockEnvFunctions();
+				cli(
+					{
+						flags: {
+							verbose: {
+								type: Boolean,
+								alias: 'v',
+							},
+						},
+						strictFlags: true,
+					},
+					undefined,
+					['--verbos'],
+				);
+				mocked.restore();
+
+				expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
+			});
+		});
 	});
 });
