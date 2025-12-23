@@ -157,8 +157,8 @@ const handleUnknownFlags = (
 
 	for (const flag of unknownFlagNames) {
 		const closestMatch = findClosestFlag(flag, knownFlagNames);
-		const suggestion = closestMatch ? ` (did you mean --${closestMatch}?)` : '';
-		console.error(`Error: Unknown flag --${flag}${suggestion}`);
+		const suggestion = closestMatch ? ` (Did you mean --${closestMatch}?)` : '';
+		console.error(`Error: Unknown flag: --${flag}.${suggestion}`);
 	}
 
 	process.exit(1);
