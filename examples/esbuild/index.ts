@@ -6,7 +6,7 @@
  */
 
 import { underline } from 'kolorist';
-import { cli } from '../../src';
+import { cli } from '#cleye';
 
 const simpleFlags = {
 	bundle: {

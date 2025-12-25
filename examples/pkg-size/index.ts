@@ -5,7 +5,7 @@
  *  npx esno examples/pkg-size --help
  */
 
-import { cli } from '../../src';
+import { cli } from '#cleye';
 
 const argv = cli({
 	name: 'pkg-size',

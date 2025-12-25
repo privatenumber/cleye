@@ -5,7 +5,7 @@
  *  npx esno examples/snap-tweet --help
  */
 
-import { cli } from '../../src';
+import { cli } from '#cleye';
 
 const argv = cli({
 	name: 'snap-tweet',

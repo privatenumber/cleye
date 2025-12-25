@@ -6,7 +6,7 @@
  */
 
 import assert from 'assert';
-import { cli } from '../../src';
+import { cli } from '#cleye';
 
 // https://github.com/microsoft/TypeScript/blob/7a12909ae3f03b1feed19df2082aa84e5c7a5081/src/executeCommandLine/executeCommandLine.ts#L111
 const blue = (string_: string) => `\u001B[94m${string_}\u001B[39m`;

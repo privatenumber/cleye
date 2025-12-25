@@ -5,7 +5,7 @@
  *  npx esno examples/greet --help
  */
 
-import { cli } from '../../src';
+import { cli } from '#cleye';
 
 // Parse argv
 const argv = cli({
