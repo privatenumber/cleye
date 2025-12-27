@@ -117,6 +117,7 @@ export default testSuite(({ describe }) => {
 				expect(kebabCase('getHTTPResponse')).toBe('get-http-response');
 				expect(kebabCase('XMLParser')).toBe('xml-parser');
 				expect(kebabCase('apiURL')).toBe('api-url');
+				expect(kebabCase('xAPIKeyWithJSONResponse')).toBe("x-api-key-with-json-response");
 			});
 
 			test('already kebab-case input', () => {
