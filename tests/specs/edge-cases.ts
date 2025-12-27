@@ -114,8 +114,10 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('multiple uppercase letters', () => {
-				expect(kebabCase('getHTTPResponse')).toBe('get-h-t-t-p-response');
-				expect(kebabCase('XMLParser')).toBe('x-m-l-parser');
+				expect(kebabCase('getHTTPResponse')).toBe('get-http-response');
+				expect(kebabCase('XMLParser')).toBe('xml-parser');
+				expect(kebabCase('apiURL')).toBe('api-url');
+				expect(kebabCase('xAPIKeyWithJSONResponse')).toBe("x-api-key-with-json-response");
 			});
 
 			test('already kebab-case input', () => {
@@ -133,7 +135,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('all uppercase', () => {
-				expect(kebabCase('ABC')).toBe('a-b-c');
+				expect(kebabCase('ABC')).toBe('abc');
 			});
 
 			test('empty string', () => {
