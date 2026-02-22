@@ -453,7 +453,7 @@ _Cleye_ uses all information provided to generate rich help documentation. The m
 #### Help customization
 The help document can be customized by passing a `render(nodes, renderers) => string` function to `help.render`.
 
-The `nodes` parameter contains an array of nodes that will be used to render the document. The `renderers` parameter is an object of functions used to render the document. Each node has properties `type` and `data`, where `type` corresponds to a property in `renderers` and `data` is passed into the render function.
+The `nodes` parameter contains an array of nodes that will be used to render the document. The `renderers` parameter is an object of functions used to render the document. Each node has properties `type` and `data`, where `type` corresponds to a property in `renderers` and `data` is passed into the render function. Nodes also have an `id` property to identify sections: `name`, `description`, `usage`, `commands`, `flags`, `examples`, and `aliases`.
 
 Default renderers can be found in [`/src/render-help/renderers.ts`](/src/render-help/renderers.ts).
 
@@ -521,8 +521,8 @@ type ParsedArgv = {
     // Method to print version
     showVersion: () => void
 
-    // Method to print help
-    showHelp: (options: HelpOptions) => void
+    // Method to print help (pass HelpOptions to override content)
+    showHelp: (options?: HelpOptions) => void
 }
 ```
 
@@ -581,7 +581,7 @@ Type: `false` or an object with the following properties.
 | - | - | - |
 | `version` | `string` | Version shown in `--help`. |
 | `description` | `string` | Description shown in `--help`. |
-| `usage` | `string \| string[]` | Usage code examples shown in `--help`. |
+| `usage` | `string \| string[] \| false` | Usage code examples shown in `--help`. Pass `false` to disable auto-generated usage. |
 | `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
 | `render` | `(nodes, renderers) => string` | Function to customize the help document. |
 
@@ -606,11 +606,17 @@ type IgnoreArgvCallback = (
 
 A callback to ignore argv tokens from being parsed.
 
+##### strictFlags
+
+Type: `boolean`
+
+When enabled, prints an error and exits if unknown flags are passed. Suggests the closest matching flag name when possible. See [Strict flags](#strict-flags).
+
 #### callback(parsed)
 
-Type: 
+Type:
 
-Optional callback function that is called when the script is invoked without a command.
+Optional callback function that is called when the script is invoked without a command. If the callback returns a Promise, the `cli()` return value will also be a Promise, allowing `await cli(...)` for async workflows.
 
 #### argvs
 
@@ -627,16 +633,29 @@ The raw parameters array to parse.
 | Property | Type | Description |
 | - | - | - |
 | `name` | `string` | Required name used to invoke the command. |
-| `alias` | `string \| string[]` | Aliases used to invoke the command. |
+| `alias` | `string \| string[]` | Aliases used to invoke the command. Displayed in an "Aliases:" section in `--help`. |
 | `parameters` | `string[]` | Parameters for the command. Same as [`parameters`](#parameters-1). |
 | `flags` | `Flags` | Flags for the command. Same as [`flags`](#flags-1). |
 | `help` | `false \| HelpOptions` | Help options for the command. Same as [`help`](#help-1). |
+| `ignoreArgv` | `IgnoreArgvCallback` | Same as [`ignoreArgv`](#ignoreargv). |
+| `strictFlags` | `boolean` | Same as [`strictFlags`](#strictflags). Inherits from parent CLI if not specified. |
 
 #### callback(parsed)
 
-Type: 
+Type:
 
-Optional callback function that is called when the command is invoked.
+Optional callback function that is called when the command is invoked. If the callback returns a Promise, the `cli()` return value will also be a Promise.
+
+### Type exports
+The following types are exported for use in TypeScript:
+
+```ts
+import type { Flags, Renderers, TypeFlag } from 'cleye'
+```
+
+- `Flags` — Type for the `flags` option object.
+- `Renderers` — Class type for help document renderers, useful when customizing `help.render`.
+- `TypeFlag` — Re-exported from [`type-flag`](https://github.com/privatenumber/type-flag) for portable type declarations.
 
 ## Sponsors
 <p align="center">
