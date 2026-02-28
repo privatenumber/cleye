@@ -1,536 +1,534 @@
-import { testSuite, expect } from 'manten';
+import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
 import { cli } from '#cleye';
 
-export default testSuite(({ describe }) => {
-	describe('flags', ({ describe, test }) => {
-		test('has return type & callback', () => {
-			const callback = spy();
-			const argv = cli(
+describe('flags', () => {
+	test('has return type & callback', () => {
+		const callback = spy();
+		const argv = cli(
+			{
+				parameters: ['<value-a>', '[value-B]'],
+				flags: {
+					flagA: String,
+					flagB: {
+						type: Number,
+					},
+				},
+			},
+			(parsed) => {
+				expect<string | undefined>(parsed.flags.flagA).toBe('valueA');
+				expect<number | undefined>(parsed.flags.flagB).toBe(123);
+				callback();
+			},
+			['--flagA', 'valueA', '--flagB', '123', 'valueA', 'valueB'],
+		);
+
+		if (!argv.command) {
+			expect<string>(argv._.valueA).toBe('valueA');
+			expect<string | undefined>(argv._.valueB).toBe('valueB');
+			expect<string | undefined>(argv.flags.flagA).toBe('valueA');
+			expect<number | undefined>(argv.flags.flagB).toBe(123);
+			expect(callback.called).toBe(true);
+		}
+	});
+
+	describe('version', () => {
+		test('disabled', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{},
+				(p) => {
+					expect<{
+						version?: undefined;
+						help: boolean | undefined;
+					}>(p.flags).toEqual({});
+				},
+				['--version'],
+			);
+			mocked.restore();
+
+			expect<{
+				version?: undefined;
+				help: boolean | undefined;
+			}>(parsed.flags).toEqual({});
+			expect(mocked.consoleLog.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+		});
+
+		test('enabled', () => {
+			const mocked = mockEnvFunctions();
+			cli(
 				{
-					parameters: ['<value-a>', '[value-B]'],
+					version: '1.0.0',
 					flags: {
 						flagA: String,
-						flagB: {
-							type: Number,
+					},
+				},
+				({ flags }) => {
+					expect<boolean | undefined>(flags.version).toBe(true);
+				},
+				['--version'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleLog.called).toBe(true);
+			expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		});
+	});
+
+	describe('help', () => {
+		test('disabled', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{
+					help: false,
+				},
+				(p) => {
+					expect<{
+						help?: undefined;
+					}>(p.flags).toEqual({});
+				},
+				['--help'],
+			);
+			mocked.restore();
+
+			expect<{
+				help?: undefined;
+			}>(parsed.flags).toEqual({});
+			expect(mocked.consoleLog.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+		});
+
+		test('enabled', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						flagA: String,
+					},
+				},
+				({ flags }) => {
+					expect<boolean | undefined>(flags.help).toBe(true);
+				},
+				['--help'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleLog.called).toBe(true);
+			expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		});
+	});
+
+	describe('flag overrides', () => {
+		test('overriding --help flag', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{
+					flags: {
+						help: {
+							type: String,
+							description: 'A custom help flag that accepts a string',
 						},
 					},
 				},
-				(parsed) => {
-					expect<string | undefined>(parsed.flags.flagA).toBe('valueA');
-					expect<number | undefined>(parsed.flags.flagB).toBe(123);
-					callback();
-				},
-				['--flagA', 'valueA', '--flagB', '123', 'valueA', 'valueB'],
+				undefined,
+				['--help', 'custom-value'],
 			);
+			mocked.restore();
 
-			if (!argv.command) {
-				expect<string>(argv._.valueA).toBe('valueA');
-				expect<string | undefined>(argv._.valueB).toBe('valueB');
-				expect<string | undefined>(argv.flags.flagA).toBe('valueA');
-				expect<number | undefined>(argv.flags.flagB).toBe(123);
-				expect(callback.called).toBe(true);
+			// Should not print help and should not exit
+			expect(mocked.consoleLog.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+
+			// Should parse the flag as a string
+			if (parsed.command === undefined) {
+				// Type assertion needed because TS sees union of built-in (boolean) + override (string)
+				expect(parsed.flags.help as string | undefined).toBe('custom-value');
 			}
 		});
 
-		describe('version', ({ test }) => {
-			test('disabled', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{},
-					(p) => {
-						expect<{
-							version?: undefined;
-							help: boolean | undefined;
-						}>(p.flags).toEqual({});
+		test('overriding --version flag', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{
+					version: '1.0.0', // Enables --version behavior
+					flags: {
+						version: {
+							type: Number,
+							description: 'A custom version flag that accepts a number',
+						},
 					},
-					['--version'],
-				);
-				mocked.restore();
+				},
+				undefined,
+				['--version', '42'],
+			);
+			mocked.restore();
 
-				expect<{
-					version?: undefined;
-					help: boolean | undefined;
-				}>(parsed.flags).toEqual({});
-				expect(mocked.consoleLog.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-			});
+			// Should not print version and should not exit
+			expect(mocked.consoleLog.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
 
-			test('enabled', () => {
-				const mocked = mockEnvFunctions();
+			// Should parse the flag as a number
+			if (parsed.command === undefined) {
+				// Type assertion needed because TS sees union of built-in (boolean) + override (number)
+				expect(parsed.flags.version as number | undefined).toBe(42);
+			}
+		});
+	});
+
+	describe('custom flag type', () => {
+		const possibleSizes = ['small', 'medium', 'large'] as const;
+		type Sizes = typeof possibleSizes[number];
+		const Size = (size: Sizes) => {
+			if (!possibleSizes.includes(size)) {
+				throw new Error(`Invalid size: "${size}"`);
+			}
+			return size;
+		};
+
+		test('parses valid custom type', () => {
+			const parsed = cli(
+				{
+					flags: {
+						size: Size,
+					},
+				},
+				undefined,
+				['--size', 'medium'],
+			);
+			if (parsed.command === undefined) {
+				expect<Sizes | undefined>(parsed.flags.size).toBe('medium');
+			}
+		});
+
+		test('throws on invalid custom type', () => {
+			expect(() => {
 				cli(
-					{
-						version: '1.0.0',
-						flags: {
-							flagA: String,
-						},
-					},
-					({ flags }) => {
-						expect<boolean | undefined>(flags.version).toBe(true);
-					},
-					['--version'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleLog.called).toBe(true);
-				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			});
-		});
-
-		describe('help', ({ test }) => {
-			test('disabled', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{
-						help: false,
-					},
-					(p) => {
-						expect<{
-							help?: undefined;
-						}>(p.flags).toEqual({});
-					},
-					['--help'],
-				);
-				mocked.restore();
-
-				expect<{
-					help?: undefined;
-				}>(parsed.flags).toEqual({});
-				expect(mocked.consoleLog.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-			});
-
-			test('enabled', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							flagA: String,
-						},
-					},
-					({ flags }) => {
-						expect<boolean | undefined>(flags.help).toBe(true);
-					},
-					['--help'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleLog.called).toBe(true);
-				expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			});
-		});
-
-		describe('flag overrides', ({ test }) => {
-			test('overriding --help flag', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{
-						flags: {
-							help: {
-								type: String,
-								description: 'A custom help flag that accepts a string',
-							},
-						},
-					},
-					undefined,
-					['--help', 'custom-value'],
-				);
-				mocked.restore();
-
-				// Should not print help and should not exit
-				expect(mocked.consoleLog.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-
-				// Should parse the flag as a string
-				if (parsed.command === undefined) {
-					// Type assertion needed because TS sees union of built-in (boolean) + override (string)
-					expect(parsed.flags.help as string | undefined).toBe('custom-value');
-				}
-			});
-
-			test('overriding --version flag', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{
-						version: '1.0.0', // Enables --version behavior
-						flags: {
-							version: {
-								type: Number,
-								description: 'A custom version flag that accepts a number',
-							},
-						},
-					},
-					undefined,
-					['--version', '42'],
-				);
-				mocked.restore();
-
-				// Should not print version and should not exit
-				expect(mocked.consoleLog.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-
-				// Should parse the flag as a number
-				if (parsed.command === undefined) {
-					// Type assertion needed because TS sees union of built-in (boolean) + override (number)
-					expect(parsed.flags.version as number | undefined).toBe(42);
-				}
-			});
-		});
-
-		describe('custom flag type', ({ test }) => {
-			const possibleSizes = ['small', 'medium', 'large'] as const;
-			type Sizes = typeof possibleSizes[number];
-			const Size = (size: Sizes) => {
-				if (!possibleSizes.includes(size)) {
-					throw new Error(`Invalid size: "${size}"`);
-				}
-				return size;
-			};
-
-			test('parses valid custom type', () => {
-				const parsed = cli(
 					{
 						flags: {
 							size: Size,
 						},
 					},
 					undefined,
-					['--size', 'medium'],
+					['--size', 'xlarge'],
 				);
-				if (parsed.command === undefined) {
-					expect<Sizes | undefined>(parsed.flags.size).toBe('medium');
-				}
-			});
+			}).toThrow('Invalid size: "xlarge"');
+		});
+	});
 
-			test('throws on invalid custom type', () => {
-				expect(() => {
-					cli(
-						{
-							flags: {
-								size: Size,
-							},
-						},
-						undefined,
-						['--size', 'xlarge'],
-					);
-				}).toThrow('Invalid size: "xlarge"');
-			});
+	describe('flag parsing variants', () => {
+		test('parses array flags', () => {
+			const parsed = cli(
+				{
+					flags: {
+						item: [String],
+					},
+				},
+				undefined,
+				['--item', 'a', '--item', 'b'],
+			);
+			if (parsed.command === undefined) {
+				expect<string[] | undefined>(parsed.flags.item).toStrictEqual(['a', 'b']);
+			}
 		});
 
-		describe('flag parsing variants', ({ test }) => {
-			test('parses array flags', () => {
-				const parsed = cli(
-					{
-						flags: {
-							item: [String],
-						},
+		test('parses equals-syntax flags', () => {
+			const parsed = cli(
+				{
+					flags: {
+						name: String,
 					},
-					undefined,
-					['--item', 'a', '--item', 'b'],
-				);
-				if (parsed.command === undefined) {
-					expect<string[] | undefined>(parsed.flags.item).toStrictEqual(['a', 'b']);
-				}
-			});
-
-			test('parses equals-syntax flags', () => {
-				const parsed = cli(
-					{
-						flags: {
-							name: String,
-						},
-					},
-					undefined,
-					['--name=hiroki'],
-				);
-				if (parsed.command === undefined) {
-					expect<string | undefined>(parsed.flags.name).toBe('hiroki');
-				}
-			});
-
-			test('parses combined short aliases', () => {
-				const parsed = cli(
-					{
-						flags: {
-							read: {
-								type: Boolean,
-								alias: 'r',
-							},
-							write: {
-								type: Boolean,
-								alias: 'w',
-							},
-							execute: {
-								type: Boolean,
-								alias: 'x',
-							},
-						},
-					},
-					undefined,
-					['-rx'],
-				);
-				if (parsed.command === undefined) {
-					expect<boolean | undefined>(parsed.flags.read).toBe(true);
-					expect<boolean | undefined>(parsed.flags.write).toBe(undefined);
-					expect<boolean | undefined>(parsed.flags.execute).toBe(true);
-				}
-			});
-
-			test('parses short alias with value', () => {
-				const parsed = cli(
-					{
-						flags: {
-							number: {
-								type: Number,
-								alias: 'n',
-							},
-						},
-					},
-					undefined,
-					['-n', '42'],
-				);
-				if (parsed.command === undefined) {
-					expect<number | undefined>(parsed.flags.number).toBe(42);
-				}
-			});
-
-			test('default value function', () => {
-				const defaultFunction = spy(() => 'hello');
-				const parsed = cli(
-					{
-						flags: {
-							myFlag: {
-								type: String,
-								default: defaultFunction,
-							},
-						},
-					},
-					undefined,
-					[],
-				);
-				if (parsed.command === undefined) {
-					expect<string>(parsed.flags.myFlag).toBe('hello');
-					expect(defaultFunction.called).toBe(true);
-				}
-			});
+				},
+				undefined,
+				['--name=hiroki'],
+			);
+			if (parsed.command === undefined) {
+				expect<string | undefined>(parsed.flags.name).toBe('hiroki');
+			}
 		});
 
-		describe('ignoreArgv', ({ test }) => {
-			test('ignore after arguments', () => {
-				const argv = ['--unknown', 'arg', '--help'];
-
-				let receivedArgument = false;
-				const parsed = cli(
-					{
-						ignoreArgv(type) {
-							if (receivedArgument) {
-								return true;
-							}
-							if (type === 'argument') {
-								receivedArgument = true;
-								return true;
-							}
+		test('parses combined short aliases', () => {
+			const parsed = cli(
+				{
+					flags: {
+						read: {
+							type: Boolean,
+							alias: 'r',
+						},
+						write: {
+							type: Boolean,
+							alias: 'w',
+						},
+						execute: {
+							type: Boolean,
+							alias: 'x',
 						},
 					},
-					(p) => {
-						expect(argv).toStrictEqual(['arg', '--help']);
-						expect(p.unknownFlags).toStrictEqual({
-							unknown: [true],
-						});
-					},
-					argv,
-				);
-
-				expect(argv).toStrictEqual(['arg', '--help']);
-				expect(parsed.unknownFlags).toStrictEqual({
-					unknown: [true],
-				});
-			});
+				},
+				undefined,
+				['-rx'],
+			);
+			if (parsed.command === undefined) {
+				expect<boolean | undefined>(parsed.flags.read).toBe(true);
+				expect<boolean | undefined>(parsed.flags.write).toBe(undefined);
+				expect<boolean | undefined>(parsed.flags.execute).toBe(true);
+			}
 		});
 
-		describe('unknown flags default behavior', ({ test }) => {
-			test('unknown flag captured', () => {
-				const parsed = cli(
-					{
-						flags: {
-							known: String,
+		test('parses short alias with value', () => {
+			const parsed = cli(
+				{
+					flags: {
+						number: {
+							type: Number,
+							alias: 'n',
 						},
 					},
-					undefined,
-					['--unknown', '--known', 'value'],
-				);
-
-				expect(parsed.unknownFlags.unknown).toEqual([true]);
-				expect(parsed.flags.known).toBe('value');
-			});
-
-			test('multiple unknown flags', () => {
-				const parsed = cli(
-					{},
-					undefined,
-					['--unknown1', '--unknown2', 'value'],
-				);
-
-				expect(parsed.unknownFlags.unknown1).toEqual([true]);
-				expect(parsed.unknownFlags.unknown2).toEqual([true]);
-			});
+				},
+				undefined,
+				['-n', '42'],
+			);
+			if (parsed.command === undefined) {
+				expect<number | undefined>(parsed.flags.number).toBe(42);
+			}
 		});
 
-		describe('strictFlags', ({ test }) => {
-			test('errors on unknown flag', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							verbose: Boolean,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--unknown'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.called).toBe(true);
-				expect(mocked.consoleError.calls[0][0]).toContain('Unknown flag');
-				expect(mocked.consoleError.calls[0][0]).toContain('--unknown');
-				expect(mocked.processExit.calls).toStrictEqual([[1]]);
-			});
-
-			test('suggests closest match when within distance 2', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							verbose: Boolean,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--verbos'], // Missing 'e'
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
-				expect(mocked.consoleError.calls[0][0]).toMatch(/did you mean/i);
-			});
-
-			test('no suggestion when flag is too different', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							verbose: Boolean,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--xyz'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
-			});
-
-			test('no suggestion for very short unknown flags', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							ab: Boolean,
-							ac: Boolean,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--ad'], // Short unknown flag (2 chars) shouldn't get suggestions
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.called).toBe(true);
-				expect(mocked.consoleError.calls[0][0]).toContain('--ad');
-				expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
-			});
-
-			test('reports multiple unknown flags', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							verbose: Boolean,
-							output: String,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--verbos', '--outpu'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.callCount).toBe(2);
-				expect(mocked.consoleError.calls[0][0]).toContain('--verbos');
-				expect(mocked.consoleError.calls[1][0]).toContain('--outpu');
-			});
-
-			test('known flags still work', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{
-						flags: {
-							verbose: Boolean,
-							output: String,
-						},
-						strictFlags: true,
-					},
-					undefined,
-					['--verbose', '--output', 'file.txt'],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleError.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-				expect(parsed.flags.verbose).toBe(true);
-				expect(parsed.flags.output).toBe('file.txt');
-			});
-
-			test('strictFlags disabled by default', () => {
-				const mocked = mockEnvFunctions();
-				const parsed = cli(
-					{
-						flags: {
-							verbose: Boolean,
+		test('default value function', () => {
+			const defaultFunction = spy(() => 'hello');
+			const parsed = cli(
+				{
+					flags: {
+						myFlag: {
+							type: String,
+							default: defaultFunction,
 						},
 					},
-					undefined,
-					['--unknown'],
-				);
-				mocked.restore();
+				},
+				undefined,
+				[],
+			);
+			if (parsed.command === undefined) {
+				expect<string>(parsed.flags.myFlag).toBe('hello');
+				expect(defaultFunction.called).toBe(true);
+			}
+		});
+	});
 
-				expect(mocked.consoleError.called).toBe(false);
-				expect(mocked.processExit.called).toBe(false);
-				expect(parsed.unknownFlags.unknown).toEqual([true]);
-			});
+	describe('ignoreArgv', () => {
+		test('ignore after arguments', () => {
+			const argv = ['--unknown', 'arg', '--help'];
 
-			test('suggests flag aliases', () => {
-				const mocked = mockEnvFunctions();
-				cli(
-					{
-						flags: {
-							verbose: {
-								type: Boolean,
-								alias: 'v',
-							},
-						},
-						strictFlags: true,
+			let receivedArgument = false;
+			const parsed = cli(
+				{
+					ignoreArgv(type) {
+						if (receivedArgument) {
+							return true;
+						}
+						if (type === 'argument') {
+							receivedArgument = true;
+							return true;
+						}
 					},
-					undefined,
-					['--verbos'],
-				);
-				mocked.restore();
+				},
+				(p) => {
+					expect(argv).toStrictEqual(['arg', '--help']);
+					expect(p.unknownFlags).toStrictEqual({
+						unknown: [true],
+					});
+				},
+				argv,
+			);
 
-				expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
+			expect(argv).toStrictEqual(['arg', '--help']);
+			expect(parsed.unknownFlags).toStrictEqual({
+				unknown: [true],
 			});
+		});
+	});
+
+	describe('unknown flags default behavior', () => {
+		test('unknown flag captured', () => {
+			const parsed = cli(
+				{
+					flags: {
+						known: String,
+					},
+				},
+				undefined,
+				['--unknown', '--known', 'value'],
+			);
+
+			expect(parsed.unknownFlags.unknown).toEqual([true]);
+			expect(parsed.flags.known).toBe('value');
+		});
+
+		test('multiple unknown flags', () => {
+			const parsed = cli(
+				{},
+				undefined,
+				['--unknown1', '--unknown2', 'value'],
+			);
+
+			expect(parsed.unknownFlags.unknown1).toEqual([true]);
+			expect(parsed.unknownFlags.unknown2).toEqual([true]);
+		});
+	});
+
+	describe('strictFlags', () => {
+		test('errors on unknown flag', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						verbose: Boolean,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--unknown'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.called).toBe(true);
+			expect(mocked.consoleError.calls[0][0]).toContain('Unknown flag');
+			expect(mocked.consoleError.calls[0][0]).toContain('--unknown');
+			expect(mocked.processExit.calls).toStrictEqual([[1]]);
+		});
+
+		test('suggests closest match when within distance 2', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						verbose: Boolean,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--verbos'], // Missing 'e'
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
+			expect(mocked.consoleError.calls[0][0]).toMatch(/did you mean/i);
+		});
+
+		test('no suggestion when flag is too different', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						verbose: Boolean,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--xyz'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
+		});
+
+		test('no suggestion for very short unknown flags', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						ab: Boolean,
+						ac: Boolean,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--ad'], // Short unknown flag (2 chars) shouldn't get suggestions
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.called).toBe(true);
+			expect(mocked.consoleError.calls[0][0]).toContain('--ad');
+			expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
+		});
+
+		test('reports multiple unknown flags', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						verbose: Boolean,
+						output: String,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--verbos', '--outpu'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.callCount).toBe(2);
+			expect(mocked.consoleError.calls[0][0]).toContain('--verbos');
+			expect(mocked.consoleError.calls[1][0]).toContain('--outpu');
+		});
+
+		test('known flags still work', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{
+					flags: {
+						verbose: Boolean,
+						output: String,
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--verbose', '--output', 'file.txt'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+			expect(parsed.flags.verbose).toBe(true);
+			expect(parsed.flags.output).toBe('file.txt');
+		});
+
+		test('strictFlags disabled by default', () => {
+			const mocked = mockEnvFunctions();
+			const parsed = cli(
+				{
+					flags: {
+						verbose: Boolean,
+					},
+				},
+				undefined,
+				['--unknown'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+			expect(parsed.unknownFlags.unknown).toEqual([true]);
+		});
+
+		test('suggests flag aliases', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						verbose: {
+							type: Boolean,
+							alias: 'v',
+						},
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--verbos'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
 		});
 	});
 });

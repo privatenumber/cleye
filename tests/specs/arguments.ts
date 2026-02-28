@@ -1,327 +1,325 @@
-import { testSuite, expect } from 'manten';
+import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { mockEnvFunctions } from '../utils/mock-env-functions';
 import { cli, command } from '#cleye';
 
-export default testSuite(({ describe }) => {
-	describe('arguments', ({ describe }) => {
-		describe('error handling', ({ describe }) => {
-			describe('parameters', ({ test }) => {
-				test('invalid parameter format', () => {
-					expect(() => {
-						cli({
-							parameters: ['value-a'],
-						});
-					}).toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
-				});
-
-				test('invalid parameter character', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value.a]'],
-						});
-					}).toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
-				});
-
-				test('invalid parameter - all special characters', () => {
-					// Pattern from cli.ts: /[|\\{}()[\]^$+*?.]/
-					const specialChars = [
-						'|',
-						'\\',
-						'{',
-						'}',
-						'(',
-						')',
-						// '[' and ']' are bracket chars used for optional params
-						// so we test them inside the name portion
-						'^',
-						'$',
-						'+',
-						'*',
-						'?',
-						'.',
-					];
-
-					for (const char of specialChars) {
-						expect(() => {
-							cli({
-								parameters: [`<value${char}a>`],
-							});
-						}).toThrow('Invalid character found');
-					}
-				});
-
-				test('duplicate parameters', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a]', '[value-a]', '[value-a]'],
-						});
-					}).toThrow('Invalid parameter: "value-a" is used more than once');
-				});
-
-				test('duplicate parameters across --', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a]', '--', '[value-a]'],
-						});
-					}).toThrow('Invalid parameter: "value-a" is used more than once');
-				});
-
-				test('multiple --', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
-						});
-					}).toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
-				});
-
-				test('optional parameter before required parameter', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a]', '<value-b>'],
-						});
-					}).toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
-				});
-
-				test('multiple spread not last', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a...]', '<value-b>'],
-						});
-					}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
-				});
-
-				test('multiple spread parameters', () => {
-					expect(() => {
-						cli({
-							parameters: ['[value-a...]', '<value-b...>'],
-						});
-					}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
-				});
+describe('arguments', () => {
+	describe('error handling', () => {
+		describe('parameters', () => {
+			test('invalid parameter format', () => {
+				expect(() => {
+					cli({
+						parameters: ['value-a'],
+					});
+				}).toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
-			describe('arguments', ({ test }) => {
-				test('missing parameter', () => {
-					const mocked = mockEnvFunctions();
-					cli(
-						{
-							parameters: ['<value-a>'],
-						},
-						undefined,
-						[],
-					);
-					mocked.restore();
-
-					expect(mocked.consoleLog.called).toBe(true);
-					expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-					expect(mocked.processExit.calls).toStrictEqual([[1]]);
-				});
-
-				test('missing spread parameter', () => {
-					const mocked = mockEnvFunctions();
-					cli(
-						{
-							parameters: ['<value-a...>'],
-						},
-						undefined,
-						[],
-					);
-					mocked.restore();
-
-					expect(mocked.consoleLog.called).toBe(true);
-					expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-					expect(mocked.processExit.calls).toStrictEqual([[1]]);
-				});
-
-				test('missing -- parameter', () => {
-					const mocked = mockEnvFunctions();
-					cli(
-						{
-							parameters: ['--', '<value-a>'],
-						},
-						undefined,
-						[],
-					);
-					mocked.restore();
-
-					expect(mocked.consoleLog.called).toBe(true);
-					expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-					expect(mocked.processExit.calls).toStrictEqual([[1]]);
-				});
-			});
-		});
-
-		describe('parses arguments', ({ test }) => {
-			test('simple parsing', () => {
-				const callback = spy();
-				const parsed = cli(
-					{
-						parameters: ['<value-a>', '[value-B]', '[value c]', '[value_d]', '[value=e]', '[value/f]'],
-					},
-					(callbackParsed) => {
-						expect<string>(callbackParsed._.valueA).toBe('valueA');
-						expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
-						expect<string | undefined>(callbackParsed._.valueC).toBe('valueC');
-						expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
-						expect<string | undefined>(callbackParsed._.valueE).toBe('valueE');
-						expect<string | undefined>(callbackParsed._.valueF).toBe('valueF');
-						callback();
-					},
-					['valueA', 'valueB', 'valueC', 'valueD', 'valueE', 'valueF'],
-				);
-
-				expect<string>(parsed._.valueA).toBe('valueA');
-				expect<string | undefined>(parsed._.valueB).toBe('valueB');
-				expect<string | undefined>(parsed._.valueC).toBe('valueC');
-				expect(callback.called).toBe(true);
+			test('invalid parameter character', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value.a]'],
+					});
+				}).toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
 			});
 
-			test('simple parsing across --', () => {
-				const callback = spy();
-				const parsed = cli(
-					{
-						parameters: ['<value-a>', '[value-b]', '[value c]', '--', '<value-d>', '[value-e]', '[value f]'],
-					},
-					(callbackParsed) => {
-						expect<string>(callbackParsed._.valueA).toBe('valueA');
-						expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
-						expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
-						callback();
-					},
-					['valueA', 'valueB', '--', 'valueD'],
-				);
+			test('invalid parameter - all special characters', () => {
+				// Pattern from cli.ts: /[|\\{}()[\]^$+*?.]/
+				const specialChars = [
+					'|',
+					'\\',
+					'{',
+					'}',
+					'(',
+					')',
+					// '[' and ']' are bracket chars used for optional params
+					// so we test them inside the name portion
+					'^',
+					'$',
+					'+',
+					'*',
+					'?',
+					'.',
+				];
 
-				expect<string>(parsed._.valueA).toBe('valueA');
-				expect<string | undefined>(parsed._.valueB).toBe('valueB');
-				expect<string | undefined>(parsed._.valueD).toBe('valueD');
-				expect(callback.called).toBe(true);
-			});
-
-			test('simple parsing with empty --', () => {
-				const callback = spy();
-				const parsed = cli(
-					{
-						parameters: ['<value-a>', '[value-b]', '[value c]', '--', '[value-d]'],
-					},
-					(callbackParsed) => {
-						expect<string>(callbackParsed._.valueA).toBe('valueA');
-						expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
-						callback();
-					},
-					['valueA', 'valueB'],
-				);
-
-				expect<string>(parsed._.valueA).toBe('valueA');
-				expect<string | undefined>(parsed._.valueB).toBe('valueB');
-				expect(callback.called).toBe(true);
-			});
-
-			test('spread', () => {
-				const callback = spy();
-				const parsed = cli(
-					{
-						parameters: ['<value-a...>'],
-					},
-					(callbackParsed) => {
-						expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
-						callback();
-					},
-					['valueA', 'valueB'],
-				);
-
-				expect<string[]>(parsed._.valueA).toStrictEqual(['valueA', 'valueB']);
-				expect(callback.called).toBe(true);
-			});
-
-			test('spread with --', () => {
-				const callback = spy();
-				const parsed = cli(
-					{
-						parameters: ['<value-a...>', '--', '<value-b...>'],
-					},
-					(callbackParsed) => {
-						expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
-						expect<string[]>(callbackParsed._.valueB).toStrictEqual(['valueC', 'valueD']);
-						callback();
-					},
-					['valueA', 'valueB', '--', 'valueC', 'valueD'],
-				);
-
-				expect<string[]>(parsed._.valueA).toStrictEqual(['valueA', 'valueB']);
-				expect<string[]>(parsed._.valueB).toStrictEqual(['valueC', 'valueD']);
-				expect(callback.called).toBe(true);
-			});
-
-			test('command', () => {
-				const callback = spy();
-
-				const testCommand = command({
-					name: 'test',
-					parameters: ['<arg-a...>'],
-				}, (callbackParsed) => {
-					expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
-					callback();
-				});
-
-				const parsed = cli(
-					{
-						parameters: ['<value-a...>'],
-
-						commands: [
-							testCommand,
-						],
-					},
-					undefined,
-					['test', 'valueA', 'valueB'],
-				);
-
-				if (parsed.command === 'test') {
-					expect<string[]>(parsed._.argA).toStrictEqual(['valueA', 'valueB']);
+				for (const char of specialChars) {
+					expect(() => {
+						cli({
+							parameters: [`<value${char}a>`],
+						});
+					}).toThrow('Invalid character found');
 				}
-				expect(callback.called).toBe(true);
+			});
+
+			test('duplicate parameters', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a]', '[value-a]', '[value-a]'],
+					});
+				}).toThrow('Invalid parameter: "value-a" is used more than once');
+			});
+
+			test('duplicate parameters across --', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a]', '--', '[value-a]'],
+					});
+				}).toThrow('Invalid parameter: "value-a" is used more than once');
+			});
+
+			test('multiple --', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
+					});
+				}).toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+			});
+
+			test('optional parameter before required parameter', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a]', '<value-b>'],
+					});
+				}).toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
+			});
+
+			test('multiple spread not last', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a...]', '<value-b>'],
+					});
+				}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+			});
+
+			test('multiple spread parameters', () => {
+				expect(() => {
+					cli({
+						parameters: ['[value-a...]', '<value-b...>'],
+					});
+				}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 		});
 
-		describe('EOF edge cases', ({ test }) => {
-			test('EOF at beginning of parameters', () => {
-				const parsed = cli(
+		describe('arguments', () => {
+			test('missing parameter', () => {
+				const mocked = mockEnvFunctions();
+				cli(
 					{
-						parameters: ['--', '<value>'],
+						parameters: ['<value-a>'],
 					},
 					undefined,
-					['--', 'test'],
+					[],
 				);
+				mocked.restore();
 
-				expect<string>(parsed._.value).toBe('test');
+				expect(mocked.consoleLog.called).toBe(true);
+				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
 
-			test('empty EOF section', () => {
-				const parsed = cli(
+			test('missing spread parameter', () => {
+				const mocked = mockEnvFunctions();
+				cli(
 					{
-						parameters: ['<arg>', '--', '[optional]'],
+						parameters: ['<value-a...>'],
 					},
 					undefined,
-					['value', '--'],
+					[],
 				);
+				mocked.restore();
 
-				expect<string>(parsed._.arg).toBe('value');
-				expect<string | undefined>(parsed._.optional).toBeUndefined();
+				expect(mocked.consoleLog.called).toBe(true);
+				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
 
-			test('EOF parameters are always set as properties', () => {
-				const parsed = cli(
+			test('missing -- parameter', () => {
+				const mocked = mockEnvFunctions();
+				cli(
 					{
-						parameters: ['<arg>', '--', '[optional]'],
+						parameters: ['--', '<value-a>'],
 					},
 					undefined,
-					['value', '--'],
+					[],
 				);
+				mocked.restore();
 
-				// EOF parameters should always be set on the object,
-				// even when no EOF arguments are provided
-				expect('optional' in parsed._).toBe(true);
-				expect(Object.keys(parsed._)).toContain('optional');
+				expect(mocked.consoleLog.called).toBe(true);
+				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
+				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
+		});
+	});
+
+	describe('parses arguments', () => {
+		test('simple parsing', () => {
+			const callback = spy();
+			const parsed = cli(
+				{
+					parameters: ['<value-a>', '[value-B]', '[value c]', '[value_d]', '[value=e]', '[value/f]'],
+				},
+				(callbackParsed) => {
+					expect<string>(callbackParsed._.valueA).toBe('valueA');
+					expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
+					expect<string | undefined>(callbackParsed._.valueC).toBe('valueC');
+					expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
+					expect<string | undefined>(callbackParsed._.valueE).toBe('valueE');
+					expect<string | undefined>(callbackParsed._.valueF).toBe('valueF');
+					callback();
+				},
+				['valueA', 'valueB', 'valueC', 'valueD', 'valueE', 'valueF'],
+			);
+
+			expect<string>(parsed._.valueA).toBe('valueA');
+			expect<string | undefined>(parsed._.valueB).toBe('valueB');
+			expect<string | undefined>(parsed._.valueC).toBe('valueC');
+			expect(callback.called).toBe(true);
+		});
+
+		test('simple parsing across --', () => {
+			const callback = spy();
+			const parsed = cli(
+				{
+					parameters: ['<value-a>', '[value-b]', '[value c]', '--', '<value-d>', '[value-e]', '[value f]'],
+				},
+				(callbackParsed) => {
+					expect<string>(callbackParsed._.valueA).toBe('valueA');
+					expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
+					expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
+					callback();
+				},
+				['valueA', 'valueB', '--', 'valueD'],
+			);
+
+			expect<string>(parsed._.valueA).toBe('valueA');
+			expect<string | undefined>(parsed._.valueB).toBe('valueB');
+			expect<string | undefined>(parsed._.valueD).toBe('valueD');
+			expect(callback.called).toBe(true);
+		});
+
+		test('simple parsing with empty --', () => {
+			const callback = spy();
+			const parsed = cli(
+				{
+					parameters: ['<value-a>', '[value-b]', '[value c]', '--', '[value-d]'],
+				},
+				(callbackParsed) => {
+					expect<string>(callbackParsed._.valueA).toBe('valueA');
+					expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
+					callback();
+				},
+				['valueA', 'valueB'],
+			);
+
+			expect<string>(parsed._.valueA).toBe('valueA');
+			expect<string | undefined>(parsed._.valueB).toBe('valueB');
+			expect(callback.called).toBe(true);
+		});
+
+		test('spread', () => {
+			const callback = spy();
+			const parsed = cli(
+				{
+					parameters: ['<value-a...>'],
+				},
+				(callbackParsed) => {
+					expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
+					callback();
+				},
+				['valueA', 'valueB'],
+			);
+
+			expect<string[]>(parsed._.valueA).toStrictEqual(['valueA', 'valueB']);
+			expect(callback.called).toBe(true);
+		});
+
+		test('spread with --', () => {
+			const callback = spy();
+			const parsed = cli(
+				{
+					parameters: ['<value-a...>', '--', '<value-b...>'],
+				},
+				(callbackParsed) => {
+					expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
+					expect<string[]>(callbackParsed._.valueB).toStrictEqual(['valueC', 'valueD']);
+					callback();
+				},
+				['valueA', 'valueB', '--', 'valueC', 'valueD'],
+			);
+
+			expect<string[]>(parsed._.valueA).toStrictEqual(['valueA', 'valueB']);
+			expect<string[]>(parsed._.valueB).toStrictEqual(['valueC', 'valueD']);
+			expect(callback.called).toBe(true);
+		});
+
+		test('command', () => {
+			const callback = spy();
+
+			const testCommand = command({
+				name: 'test',
+				parameters: ['<arg-a...>'],
+			}, (callbackParsed) => {
+				expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
+				callback();
+			});
+
+			const parsed = cli(
+				{
+					parameters: ['<value-a...>'],
+
+					commands: [
+						testCommand,
+					],
+				},
+				undefined,
+				['test', 'valueA', 'valueB'],
+			);
+
+			if (parsed.command === 'test') {
+				expect<string[]>(parsed._.argA).toStrictEqual(['valueA', 'valueB']);
+			}
+			expect(callback.called).toBe(true);
+		});
+	});
+
+	describe('EOF edge cases', () => {
+		test('EOF at beginning of parameters', () => {
+			const parsed = cli(
+				{
+					parameters: ['--', '<value>'],
+				},
+				undefined,
+				['--', 'test'],
+			);
+
+			expect<string>(parsed._.value).toBe('test');
+		});
+
+		test('empty EOF section', () => {
+			const parsed = cli(
+				{
+					parameters: ['<arg>', '--', '[optional]'],
+				},
+				undefined,
+				['value', '--'],
+			);
+
+			expect<string>(parsed._.arg).toBe('value');
+			expect<string | undefined>(parsed._.optional).toBeUndefined();
+		});
+
+		test('EOF parameters are always set as properties', () => {
+			const parsed = cli(
+				{
+					parameters: ['<arg>', '--', '[optional]'],
+				},
+				undefined,
+				['value', '--'],
+			);
+
+			// EOF parameters should always be set on the object,
+			// even when no EOF arguments are provided
+			expect('optional' in parsed._).toBe(true);
+			expect(Object.keys(parsed._)).toContain('optional');
 		});
 	});
 });

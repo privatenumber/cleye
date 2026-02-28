@@ -5,9 +5,9 @@
  *  npx esno examples/npm i --help
  */
 
-import { cli } from '#cleye';
 import { install } from './commands/install';
 import { runScript } from './commands/run-script';
+import { cli } from '#cleye';
 
 const argv = cli({
 	name: 'npm',

@@ -26,3 +26,6 @@ dist
 
 # Cache
 .eslintcache
+
+# Agent skills from npm packages (managed by skills-npm)
+**/skills/npm-*

@@ -2,13 +2,13 @@ import { describe } from 'manten';
 
 process.stdout.columns = Number.POSITIVE_INFINITY;
 
-describe('cleye', ({ runTestSuite }) => {
-	runTestSuite(import('./specs/cli.js'));
-	runTestSuite(import('./specs/flags.js'));
-	runTestSuite(import('./specs/arguments.js'));
-	runTestSuite(import('./specs/command.js'));
-	runTestSuite(import('./specs/help.js'));
-	runTestSuite(import('./specs/types.js'));
-	runTestSuite(import('./specs/integration.js'));
-	runTestSuite(import('./specs/edge-cases.js'));
+describe('cleye', () => {
+	import('./specs/cli.js');
+	import('./specs/flags.js');
+	import('./specs/arguments.js');
+	import('./specs/command.js');
+	import('./specs/help.js');
+	import('./specs/types.js');
+	import('./specs/integration.js');
+	import('./specs/edge-cases.js');
 });
