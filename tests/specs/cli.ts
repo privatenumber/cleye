@@ -19,18 +19,25 @@ describe('cli', () => {
 			}).toThrow('Invalid script name: ""');
 		});
 
-		test('invalid name format', () => {
+		test('name with leading space', () => {
 			expect(() => {
 				cli({
-					name: 'a b',
+					name: ' a',
 				});
-			}).toThrow('Invalid script name: "a b"');
+			}).toThrow('Invalid script name: " a"');
 		});
 
-		test('allowed name format', () => {
-			cli({
-				name: 'a.b_',
-			});
+		test('name with trailing space', () => {
+			expect(() => {
+				cli({
+					name: 'a ',
+				});
+			}).toThrow('Invalid script name: "a "');
+		});
+
+		test('allowed name formats', () => {
+			cli({ name: 'a.b_' });
+			cli({ name: 'multiple parent commands' });
 		});
 	});
 

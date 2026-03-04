@@ -502,7 +502,7 @@ function cli<
 		throw new Error('Options is required');
 	}
 
-	if ('name' in options && (!options.name || !isValidScriptName(options.name))) {
+	if ('name' in options && (!options.name || options.name !== options.name.trim())) {
 		throw new Error(`Invalid script name: ${stringify(options.name)}`);
 	}
 
