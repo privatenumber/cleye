@@ -263,8 +263,39 @@ argv.flags.someString // => "hello" (string)
 argv.flags.someNumber // => [1, 2] (number[])
 ```
 
+#### Boolean flag negation
+To support `--no-<flag>` syntax for boolean flags, enable `booleanFlagNegation`:
+
+```ts
+cli({
+    flags: {
+        verbose: Boolean
+    },
+    booleanFlagNegation: true
+})
+```
+
+```sh
+$ my-script --no-verbose
+# argv.flags.verbose => false
+```
+
+Last-wins semantics apply between `--flag` and `--no-flag`:
+
+```sh
+$ my-script --verbose --no-verbose
+# argv.flags.verbose => false
+
+$ my-script --no-verbose --verbose
+# argv.flags.verbose => true
+```
+
+Only applies to flags defined as `Boolean`. For non-boolean flags, `--no-<flag>` is treated as an unknown flag.
+
+Commands inherit `booleanFlagNegation` from the parent CLI, but can override it.
+
 #### Inverting boolean flags
-To explicitly set a boolean flag to `false`, pass in the value using the `=` operator:
+Alternatively, a boolean flag can be set to `false` by passing the value using the `=` operator:
 
 ```sh
 $ my-script --some-boolean=false
@@ -612,6 +643,12 @@ Type: `boolean`
 
 When enabled, prints an error and exits if unknown flags are passed. Suggests the closest matching flag name when possible. See [Strict flags](#strict-flags).
 
+##### booleanFlagNegation
+
+Type: `boolean`
+
+Enable `--no-<flag>` negation for boolean flags. See [Boolean flag negation](#boolean-flag-negation).
+
 #### callback(parsed)
 
 Type:
@@ -639,6 +676,7 @@ The raw parameters array to parse.
 | `help` | `false \| HelpOptions` | Help options for the command. Same as [`help`](#help-1). |
 | `ignoreArgv` | `IgnoreArgvCallback` | Same as [`ignoreArgv`](#ignoreargv). |
 | `strictFlags` | `boolean` | Same as [`strictFlags`](#strictflags). Inherits from parent CLI if not specified. |
+| `booleanFlagNegation` | `boolean` | Same as [`booleanFlagNegation`](#booleanflagnegation). Inherits from parent CLI if not specified. |
 
 #### callback(parsed)
 

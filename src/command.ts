@@ -51,6 +51,15 @@ export type CommandOptions<Parameters = string[]> = {
 	 * Inherits from parent CLI if not specified.
 	 */
 	strictFlags?: boolean;
+
+	/**
+	 * Enable `--no-<flag>` negation for boolean flags.
+	 *
+	 * When enabled, `--no-verbose` is equivalent to `--verbose=false`.
+	 * Only applies to flags defined as `Boolean`.
+	 * Inherits from parent CLI if not specified.
+	 */
+	booleanFlagNegation?: boolean;
 };
 
 export function command<

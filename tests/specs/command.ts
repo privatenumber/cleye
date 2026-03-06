@@ -519,4 +519,77 @@ describe('command', () => {
 			expect(mocked.processExit.calls).toStrictEqual([[1]]);
 		});
 	});
+
+	describe('booleanFlagNegation inheritance', () => {
+		test('command inherits booleanFlagNegation from parent', () => {
+			const buildCommand = command({
+				name: 'build',
+				flags: {
+					watch: Boolean,
+				},
+			});
+
+			const parsed = cli(
+				{
+					booleanFlagNegation: true,
+					commands: [buildCommand],
+				},
+				undefined,
+				['build', '--no-watch'],
+			);
+
+			expect(parsed.command).toBe('build');
+			if (parsed.command === 'build') {
+				expect(parsed.flags.watch).toBe(false);
+			}
+		});
+
+		test('command can override booleanFlagNegation to false', () => {
+			const buildCommand = command({
+				name: 'build',
+				flags: {
+					watch: Boolean,
+				},
+				booleanFlagNegation: false,
+			});
+
+			const parsed = cli(
+				{
+					booleanFlagNegation: true,
+					commands: [buildCommand],
+				},
+				undefined,
+				['build', '--no-watch'],
+			);
+
+			expect(parsed.command).toBe('build');
+			if (parsed.command === 'build') {
+				expect(parsed.flags.watch).toBeUndefined();
+				expect(parsed.unknownFlags).toHaveProperty('no-watch');
+			}
+		});
+
+		test('command can enable booleanFlagNegation independently', () => {
+			const buildCommand = command({
+				name: 'build',
+				flags: {
+					watch: Boolean,
+				},
+				booleanFlagNegation: true,
+			});
+
+			const parsed = cli(
+				{
+					commands: [buildCommand],
+				},
+				undefined,
+				['build', '--no-watch'],
+			);
+
+			expect(parsed.command).toBe('build');
+			if (parsed.command === 'build') {
+				expect(parsed.flags.watch).toBe(false);
+			}
+		});
+	});
 });

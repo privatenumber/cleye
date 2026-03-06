@@ -202,6 +202,7 @@ function cliBase<
 		argv,
 		{
 			ignore: options.ignoreArgv,
+			booleanNegation: options.booleanFlagNegation ?? options.parent?.booleanFlagNegation,
 		},
 	);
 
