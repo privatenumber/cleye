@@ -45,9 +45,6 @@ importers:
       skills-npm:
         specifier: ^1.0.0
         version: 1.0.0
-      tsx:
-        specifier: ^4.20.6
-        version: 4.20.6
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

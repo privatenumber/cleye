@@ -33,6 +33,9 @@
 			"default": "./dist/index.mjs"
 		}
 	},
+	"engines": {
+		"node": ">=22.22.2"
+	},
 	"packageManager": "pnpm@10.13.1",
 	"scripts": {
 		"build": "pkgroll --minify",
@@ -58,7 +61,6 @@
 		"nanospy": "^1.0.0",
 		"pkgroll": "^2.20.1",
 		"skills-npm": "^1.0.0",
-		"tsx": "^4.20.6",
 		"typescript": "^5.9.3"
 	}
 }
