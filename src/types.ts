@@ -3,8 +3,8 @@ import type {
 	Flags as BaseFlags,
 	IgnoreFunction,
 } from 'type-flag';
-import type { Command } from './command';
-import type { Renderers } from './render-help/renderers';
+import type { Command } from './command.ts';
+import type { Renderers } from './render-help/renderers.ts';
 
 export declare const parsedType: unique symbol;
 

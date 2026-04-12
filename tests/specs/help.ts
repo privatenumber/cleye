@@ -1,9 +1,9 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { underline } from 'kolorist';
-import { mockEnvFunctions } from '../utils/mock-env-functions';
-import { Renderers } from '../../src/render-help/renderers.js';
-import { renderFlags } from '../../src/render-help/render-flags.js';
+import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
+import { Renderers } from '../../src/render-help/renderers.ts';
+import { renderFlags } from '../../src/render-help/render-flags.ts';
 import { cli, command } from '#cleye';
 
 describe('help', () => {

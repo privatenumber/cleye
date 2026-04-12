@@ -1,7 +1,7 @@
-export { cli } from './cli';
-export { command, type Command } from './command';
-export type { Renderers } from './render-help';
-export type { Flags } from './types';
+export { cli } from './cli.ts';
+export { command, type Command } from './command.ts';
+export type { Renderers } from './render-help/index.ts';
+export type { Flags } from './types.ts';
 
 /**
  * Re-export type-flag types that appear in cleye's public API.

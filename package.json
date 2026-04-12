@@ -21,6 +21,7 @@
 	"files": [
 		"dist"
 	],
+	"type": "module",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.cts",
@@ -46,8 +47,8 @@
 		"build": "pkgroll --minify",
 		"lint": "lintroll --cache --git",
 		"type-check": "tsc",
-		"test": "tsx tests",
-		"dev": "tsx watch --conditions=development tests",
+		"test": "node tests/index.ts",
+		"dev": "node --watch --conditions=development tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json",
 		"prepare": "skills-npm"
 	},

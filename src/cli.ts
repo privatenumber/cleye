@@ -10,11 +10,11 @@ import type {
 	HelpDocumentNode,
 	StrictOptions,
 	MaybePromise,
-} from './types';
-import type { Command } from './command';
-import { generateHelp, Renderers } from './render-help';
-import { camelCase } from './utils/convert-case';
-import { isValidScriptName } from './utils/script-name';
+} from './types.ts';
+import type { Command } from './command.ts';
+import { generateHelp, Renderers } from './render-help/index.ts';
+import { camelCase } from './utils/convert-case.ts';
+import { isValidScriptName } from './utils/script-name.ts';
 
 const { stringify } = JSON;
 

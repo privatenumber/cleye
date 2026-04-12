@@ -1,2 +1,2 @@
-export { generateHelp } from './generate-help';
-export { Renderers } from './renderers';
+export { generateHelp } from './generate-help.ts';
+export { Renderers } from './renderers.ts';

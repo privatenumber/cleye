@@ -5,8 +5,8 @@
  *  npx esno examples/npm i --help
  */
 
-import { install } from './commands/install';
-import { runScript } from './commands/run-script';
+import { install } from './commands/install.ts';
+import { runScript } from './commands/run-script.ts';
 import { cli } from '#cleye';
 
 const argv = cli({

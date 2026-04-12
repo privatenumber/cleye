@@ -1,5 +1,5 @@
-import type { Flags } from '../types';
-import { kebabCase } from '../utils/convert-case';
+import type { Flags } from '../types.ts';
+import { kebabCase } from '../utils/convert-case.ts';
 
 const tableBreakpoints = {
 	'> 80': [
