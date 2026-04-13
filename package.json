@@ -33,9 +33,6 @@
 			"default": "./dist/index.mjs"
 		}
 	},
-	"engines": {
-		"node": ">=22.22.2"
-	},
 	"packageManager": "pnpm@10.13.1",
 	"scripts": {
 		"build": "pkgroll --minify",
@@ -45,6 +42,9 @@
 		"dev": "node --watch --conditions=development tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json",
 		"prepare": "skills-npm"
+	},
+	"engines": {
+		"node": ">=22.22.2"
 	},
 	"dependencies": {
 		"terminal-columns": "^2.0.0",

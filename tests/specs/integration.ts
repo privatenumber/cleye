@@ -3,7 +3,7 @@ import { spy } from 'nanospy';
 import { cli, command } from '#cleye';
 
 describe('integration', () => {
-	test('full CLI with all features', () => {
+	test('full CLI with all features', async () => {
 		const buildCallback = spy();
 		const buildCommand = command(
 			{
@@ -24,7 +24,7 @@ describe('integration', () => {
 			},
 		);
 
-		const parsed = cli(
+		const parsed = await cli(
 			{
 				name: 'my-cli',
 				version: '1.0.0',

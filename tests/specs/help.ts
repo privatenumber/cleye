@@ -8,9 +8,9 @@ import { cli, command } from '#cleye';
 
 describe('help', () => {
 	describe('show help', () => {
-		test('empty cli', () => {
+		test('empty cli', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{},
 				undefined,
 				['--help'],
@@ -21,9 +21,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('name', () => {
+		test('name', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'npm',
 				},
@@ -36,9 +36,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['npm\n\n\u001B[1mUsage:\u001B[22m\n  npm [flags...]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('empty parameters', () => {
+		test('empty parameters', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					parameters: [],
 				},
@@ -51,9 +51,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('parameters with no name', () => {
+		test('parameters with no name', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					parameters: ['<arg-a>', '[arg-b]'],
 				},
@@ -66,9 +66,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('parameters with name', () => {
+		test('parameters with name', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					parameters: ['<arg-a>', '[arg-b]'],
@@ -82,9 +82,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('parameters with optional --', () => {
+		test('parameters with optional --', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					parameters: ['<arg-a>', '[arg-b]', '--', '[arg-c]'],
@@ -98,9 +98,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('parameters with required --', () => {
+		test('parameters with required --', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					parameters: ['<arg-a>', '[arg-b]', '--', '<arg-c>'],
@@ -114,9 +114,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <arg-a> [arg-b] -- <arg-c>\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('empty commands', () => {
+		test('empty commands', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					commands: [],
 				},
@@ -129,13 +129,13 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('commands', () => {
+		test('commands', async () => {
 			const mocked = mockEnvFunctions();
 			const testCommand = command({
 				name: 'test',
 			});
 
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					commands: [
@@ -151,9 +151,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        \n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('commands with description', () => {
+		test('commands with description', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					commands: [
@@ -174,9 +174,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        test command\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('commands with help but no description', () => {
+		test('commands with help but no description', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					commands: [
@@ -197,9 +197,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        \n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('undefined flags', () => {
+		test('undefined flags', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					flags: undefined,
 				},
@@ -212,9 +212,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('empty flags', () => {
+		test('empty flags', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					flags: {},
 				},
@@ -227,9 +227,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('flags', () => {
+		test('flags', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					flags: {
 						flag: Boolean,
@@ -252,9 +252,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n      --flag                   \n      --flag-a <string>        \n      --flag-b <number>        \n      --flag-c <value>          (default: {})\n  -h, --help                   Show help\n']]);
 		});
 
-		test('help disabled', () => {
+		test('help disabled', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: false,
 				},
@@ -266,28 +266,28 @@ describe('help', () => {
 			expect(mocked.processExit.called).toBe(false);
 		});
 
-		test('help disabled but shown', () => {
+		test('help disabled but shown', async () => {
 			const mocked = mockEnvFunctions();
-			const argv = cli(
+			await cli(
 				{
 					name: 'my-cli',
 					help: false,
 				},
-				undefined,
+				(parsed) => {
+					parsed.showHelp({
+						version: '1.2.3',
+					});
+				},
 				['--help'],
 			);
-
-			argv.showHelp({
-				version: '1.2.3',
-			});
 			mocked.restore();
 
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.2.3\n']]);
 		});
 
-		test('empty help.examples', () => {
+		test('empty help.examples', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: {
 						examples: [],
@@ -302,9 +302,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('help.version with --help', () => {
+		test('help.version with --help', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: {
 						version: '1.0.0',
@@ -318,9 +318,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['v1.0.0\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('help.version with --version', () => {
+		test('help.version with --version', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					help: {
 						version: '1.0.0',
@@ -337,9 +337,9 @@ describe('help', () => {
 			});
 		});
 
-		test('help.usage string', () => {
+		test('help.usage string', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: {
 						usage: 'usage string',
@@ -354,9 +354,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  usage string\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('help.usage array', () => {
+		test('help.usage array', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: {
 						usage: [
@@ -375,9 +375,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  usage string a\n  usage string b\n  usage string c\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('help.usage false disables usage section', () => {
+		test('help.usage false disables usage section', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					help: {
@@ -397,9 +397,9 @@ describe('help', () => {
 			expect(output).toContain('Flags:');
 		});
 
-		test('help.description', () => {
+		test('help.description', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					help: {
 						description: 'test description',
@@ -414,9 +414,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('command help', () => {
+		test('command help', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					commands: [
@@ -438,9 +438,9 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli test\n\ntest command\n\n\u001B[1mUsage:\u001B[22m\n  my-cli test [flags...] <arg a> <arg b>\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('command help disabled', () => {
+		test('command help disabled', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					commands: [
@@ -473,14 +473,13 @@ describe('help', () => {
 			},
 		};
 
-		test('normal width (default)', () => {
+		test('normal width (default)', async () => {
 			const mocked = mockEnvFunctions();
-			const originalColumns = process.stdout.columns;
 			process.stdout.columns = Number.POSITIVE_INFINITY;
 
-			cli({ flags: testFlags }, undefined, ['--help']);
+			await cli({ flags: testFlags }, undefined, ['--help']);
 
-			process.stdout.columns = originalColumns;
+			process.stdout.columns = Number.POSITIVE_INFINITY;
 			mocked.restore();
 
 			const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
@@ -489,14 +488,13 @@ describe('help', () => {
 			expect(output).toContain('-b, --flag-b <number>');
 		});
 
-		test('narrow width (breakpoint > 40)', () => {
+		test('narrow width (breakpoint > 40)', async () => {
 			const mocked = mockEnvFunctions();
-			const originalColumns = process.stdout.columns;
 			process.stdout.columns = 60;
 
-			cli({ flags: testFlags }, undefined, ['--help']);
+			await cli({ flags: testFlags }, undefined, ['--help']);
 
-			process.stdout.columns = originalColumns;
+			process.stdout.columns = Number.POSITIVE_INFINITY;
 			mocked.restore();
 
 			const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
@@ -509,14 +507,13 @@ describe('help', () => {
 			expect(cleanOutput).toContain('A long description for flag-b');
 		});
 
-		test('very narrow width (breakpoint > 0)', () => {
+		test('very narrow width (breakpoint > 0)', async () => {
 			const mocked = mockEnvFunctions();
-			const originalColumns = process.stdout.columns;
 			process.stdout.columns = 30;
 
-			cli({ flags: testFlags }, undefined, ['--help']);
+			await cli({ flags: testFlags }, undefined, ['--help']);
 
-			process.stdout.columns = originalColumns;
+			process.stdout.columns = Number.POSITIVE_INFINITY;
 			mocked.restore();
 
 			const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
@@ -527,9 +524,9 @@ describe('help', () => {
 	});
 
 	describe('invalid usage', () => {
-		test('missing required parameter', () => {
+		test('missing required parameter', async () => {
 			const mocked = mockEnvFunctions();
-			cli(
+			await cli(
 				{
 					name: 'my-cli',
 					parameters: ['<value-a>'],
@@ -544,9 +541,9 @@ describe('help', () => {
 		});
 	});
 
-	test('show version', () => {
+	test('show version', async () => {
 		const mocked = mockEnvFunctions();
-		cli(
+		await cli(
 			{
 				version: '1.0.0',
 			},
@@ -559,9 +556,9 @@ describe('help', () => {
 		expect(mocked.consoleLog.calls).toStrictEqual([['1.0.0']]);
 	});
 
-	test('smoke test', () => {
+	test('smoke test', async () => {
 		const mocked = mockEnvFunctions();
-		cli({
+		await cli({
 			name: 'my-cli',
 
 			version: '1.1.1',
@@ -628,7 +625,7 @@ describe('help', () => {
 		expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...] <urls...>\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  my-command        my command description\n\n\u001B[1mFlags:\u001B[22m\n  -d, --dark-mode                Show tweet in dark mode\n  -h, --help                     Show help\n      --locale <locale>          Locale (default: "en")\n  -o, --output-dir <path>        Tweet screenshot output directory\n  -t, --show-tweet               Show tweet thread\n      --version                  Show version\n  -w, --width <width>            Width of tweet (default: 550)\n\n\u001B[1mExamples:\u001B[22m\n  # Snapshot a tweet\n  snap-tweet https://twitter.com/jack/status/20\n  \n  # Snapshot a tweet with Japanese locale\n  snap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n  \n  # Snapshot a tweet with dark mode and 900px width\n  snap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode\n']]);
 	});
 
-	test('help customization', () => {
+	test('help customization', async () => {
 		const simpleFlags = {
 			bundle: {
 				type: Boolean,
@@ -652,7 +649,7 @@ describe('help', () => {
 		};
 
 		const mocked = mockEnvFunctions();
-		cli({
+		await cli({
 			name: 'esbuild',
 
 			version: '1.0.0',
@@ -754,7 +751,7 @@ describe('help', () => {
 	});
 
 	describe('Renderers', () => {
-		test('render throws on invalid node type', () => {
+		test('render throws on invalid node type', async () => {
 			const renderers = new Renderers();
 			expect(() => {
 				renderers.render({
@@ -764,17 +761,17 @@ describe('help', () => {
 			}).toThrow('Invalid node type');
 		});
 
-		test('render with string returns string', () => {
+		test('render with string returns string', async () => {
 			const renderers = new Renderers();
 			expect(renderers.render('hello')).toBe('hello');
 		});
 
-		test('render with array joins with newlines', () => {
+		test('render with array joins with newlines', async () => {
 			const renderers = new Renderers();
 			expect(renderers.render(['a', 'b', 'c'])).toBe('a\nb\nc');
 		});
 
-		test('text renderer returns string as-is', () => {
+		test('text renderer returns string as-is', async () => {
 			const renderers = new Renderers();
 			expect(renderers.render({
 				type: 'text',
@@ -782,7 +779,7 @@ describe('help', () => {
 			})).toBe('hello world');
 		});
 
-		test('indentText with multi-line text', () => {
+		test('indentText with multi-line text', async () => {
 			const renderers = new Renderers();
 			const result = renderers.indentText({
 				text: 'line1\nline2\nline3',
@@ -791,7 +788,7 @@ describe('help', () => {
 			expect(result).toBe('  line1\n  line2\n  line3');
 		});
 
-		test('section with only title', () => {
+		test('section with only title', async () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				title: 'Title:',
@@ -801,7 +798,7 @@ describe('help', () => {
 			expect(stripVTControlCharacters(result)).toBe('Title:\n\n');
 		});
 
-		test('section with only body', () => {
+		test('section with only body', async () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				body: 'body content',
@@ -809,7 +806,7 @@ describe('help', () => {
 			expect(result).toBe('  body content\n');
 		});
 
-		test('section with indentBody: 0', () => {
+		test('section with indentBody: 0', async () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				title: 'Title:',
@@ -819,34 +816,34 @@ describe('help', () => {
 			expect(stripVTControlCharacters(result)).toBe('Title:\nno indent\n');
 		});
 
-		test('flagParameter with Boolean type', () => {
+		test('flagParameter with Boolean type', async () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(Boolean)).toBe('');
 		});
 
-		test('flagParameter with String type', () => {
+		test('flagParameter with String type', async () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(String)).toBe('<string>');
 		});
 
-		test('flagParameter with Number type', () => {
+		test('flagParameter with Number type', async () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(Number)).toBe('<number>');
 		});
 
-		test('flagParameter with custom type', () => {
+		test('flagParameter with custom type', async () => {
 			const CustomType = (value: string) => value.toUpperCase();
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(CustomType)).toBe('<value>');
 		});
 
-		test('flagParameter with array type', () => {
+		test('flagParameter with array type', async () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter([String])).toBe('<string>');
 			expect(renderers.flagParameter([Number])).toBe('<number>');
 		});
 
-		test('flagDefault with various types', () => {
+		test('flagDefault with various types', async () => {
 			const renderers = new Renderers();
 			expect(renderers.flagDefault('hello')).toBe('"hello"');
 			expect(renderers.flagDefault(42)).toBe('42');
@@ -856,7 +853,7 @@ describe('help', () => {
 	});
 
 	describe('renderFlags', () => {
-		test('sorts flags alphabetically', () => {
+		test('sorts flags alphabetically', async () => {
 			const result = renderFlags({
 				zebra: Boolean,
 				apple: Boolean,
@@ -870,7 +867,7 @@ describe('help', () => {
 			expect(tableData[2][0].data.name).toBe('zebra');
 		});
 
-		test('formats flag names to kebab-case', () => {
+		test('formats flag names to kebab-case', async () => {
 			const result = renderFlags({
 				myFlag: Boolean,
 				anotherOne: String,
@@ -881,7 +878,7 @@ describe('help', () => {
 			expect(tableData[1][0].data.flagFormatted).toBe('--my-flag');
 		});
 
-		test('detects aliases and enables aliasesEnabled', () => {
+		test('detects aliases and enables aliasesEnabled', async () => {
 			const result = renderFlags({
 				noAlias: Boolean,
 				hasAlias: {
@@ -899,7 +896,7 @@ describe('help', () => {
 			expect(tableData[1][0].data.aliasFormatted).toBeUndefined();
 		});
 
-		test('returns table with breakpoints', () => {
+		test('returns table with breakpoints', async () => {
 			const result = renderFlags({
 				flag: Boolean,
 			});
@@ -911,4 +908,4 @@ describe('help', () => {
 			expect(result.data.tableBreakpoints['> 0']).toBeDefined();
 		});
 	});
-});
+}, { parallel: false });

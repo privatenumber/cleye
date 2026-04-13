@@ -6,23 +6,19 @@ import { cli, command } from '#cleye';
 describe('arguments', () => {
 	describe('error handling', () => {
 		describe('parameters', () => {
-			test('invalid parameter format', () => {
-				expect(() => {
-					cli({
-						parameters: ['value-a'],
-					});
-				}).toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+			test('invalid parameter format', async () => {
+				await expect(cli({
+					parameters: ['value-a'],
+				})).rejects.toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
-			test('invalid parameter character', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value.a]'],
-					});
-				}).toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
+			test('invalid parameter character', async () => {
+				await expect(cli({
+					parameters: ['[value.a]'],
+				})).rejects.toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
 			});
 
-			test('invalid parameter - all special characters', () => {
+			test('invalid parameter - all special characters', async () => {
 				// Pattern from cli.ts: /[|\\{}()[\]^$+*?.]/
 				const specialChars = [
 					'|',
@@ -42,67 +38,53 @@ describe('arguments', () => {
 				];
 
 				for (const char of specialChars) {
-					expect(() => {
-						cli({
-							parameters: [`<value${char}a>`],
-						});
-					}).toThrow('Invalid character found');
+					await expect(cli({
+						parameters: [`<value${char}a>`],
+					})).rejects.toThrow('Invalid character found');
 				}
 			});
 
-			test('duplicate parameters', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a]', '[value-a]', '[value-a]'],
-					});
-				}).toThrow('Invalid parameter: "value-a" is used more than once');
+			test('duplicate parameters', async () => {
+				await expect(cli({
+					parameters: ['[value-a]', '[value-a]', '[value-a]'],
+				})).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
-			test('duplicate parameters across --', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a]', '--', '[value-a]'],
-					});
-				}).toThrow('Invalid parameter: "value-a" is used more than once');
+			test('duplicate parameters across --', async () => {
+				await expect(cli({
+					parameters: ['[value-a]', '--', '[value-a]'],
+				})).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
-			test('multiple --', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
-					});
-				}).toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+			test('multiple --', async () => {
+				await expect(cli({
+					parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
+				})).rejects.toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
-			test('optional parameter before required parameter', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a]', '<value-b>'],
-					});
-				}).toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
+			test('optional parameter before required parameter', async () => {
+				await expect(cli({
+					parameters: ['[value-a]', '<value-b>'],
+				})).rejects.toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
 			});
 
-			test('multiple spread not last', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a...]', '<value-b>'],
-					});
-				}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+			test('multiple spread not last', async () => {
+				await expect(cli({
+					parameters: ['[value-a...]', '<value-b>'],
+				})).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 
-			test('multiple spread parameters', () => {
-				expect(() => {
-					cli({
-						parameters: ['[value-a...]', '<value-b...>'],
-					});
-				}).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+			test('multiple spread parameters', async () => {
+				await expect(cli({
+					parameters: ['[value-a...]', '<value-b...>'],
+				})).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 		});
 
 		describe('arguments', () => {
-			test('missing parameter', () => {
+			test('missing parameter', async () => {
 				const mocked = mockEnvFunctions();
-				cli(
+				await cli(
 					{
 						parameters: ['<value-a>'],
 					},
@@ -116,9 +98,9 @@ describe('arguments', () => {
 				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
 
-			test('missing spread parameter', () => {
+			test('missing spread parameter', async () => {
 				const mocked = mockEnvFunctions();
-				cli(
+				await cli(
 					{
 						parameters: ['<value-a...>'],
 					},
@@ -132,9 +114,9 @@ describe('arguments', () => {
 				expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			});
 
-			test('missing -- parameter', () => {
+			test('missing -- parameter', async () => {
 				const mocked = mockEnvFunctions();
-				cli(
+				await cli(
 					{
 						parameters: ['--', '<value-a>'],
 					},
@@ -151,9 +133,9 @@ describe('arguments', () => {
 	});
 
 	describe('parses arguments', () => {
-		test('simple parsing', () => {
+		test('simple parsing', async () => {
 			const callback = spy();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a>', '[value-B]', '[value c]', '[value_d]', '[value=e]', '[value/f]'],
 				},
@@ -175,9 +157,9 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('simple parsing across --', () => {
+		test('simple parsing across --', async () => {
 			const callback = spy();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a>', '[value-b]', '[value c]', '--', '<value-d>', '[value-e]', '[value f]'],
 				},
@@ -196,9 +178,9 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('simple parsing with empty --', () => {
+		test('simple parsing with empty --', async () => {
 			const callback = spy();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a>', '[value-b]', '[value c]', '--', '[value-d]'],
 				},
@@ -215,9 +197,9 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('spread', () => {
+		test('spread', async () => {
 			const callback = spy();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a...>'],
 				},
@@ -232,9 +214,9 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('spread with --', () => {
+		test('spread with --', async () => {
 			const callback = spy();
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a...>', '--', '<value-b...>'],
 				},
@@ -251,7 +233,7 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('command', () => {
+		test('command', async () => {
 			const callback = spy();
 
 			const testCommand = command({
@@ -262,7 +244,7 @@ describe('arguments', () => {
 				callback();
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: ['<value-a...>'],
 
@@ -282,8 +264,8 @@ describe('arguments', () => {
 	});
 
 	describe('EOF edge cases', () => {
-		test('EOF at beginning of parameters', () => {
-			const parsed = cli(
+		test('EOF at beginning of parameters', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['--', '<value>'],
 				},
@@ -294,8 +276,8 @@ describe('arguments', () => {
 			expect<string>(parsed._.value).toBe('test');
 		});
 
-		test('empty EOF section', () => {
-			const parsed = cli(
+		test('empty EOF section', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<arg>', '--', '[optional]'],
 				},
@@ -307,8 +289,8 @@ describe('arguments', () => {
 			expect<string | undefined>(parsed._.optional).toBeUndefined();
 		});
 
-		test('EOF parameters are always set as properties', () => {
-			const parsed = cli(
+		test('EOF parameters are always set as properties', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<arg>', '--', '[optional]'],
 				},

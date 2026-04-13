@@ -8,7 +8,7 @@
 import { cli } from '#cleye';
 
 // Parse argv
-const argv = cli({
+const argv = await cli({
 	name: 'greet.js',
 
 	// Define parameters

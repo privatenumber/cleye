@@ -9,7 +9,7 @@ import { install } from './commands/install.ts';
 import { runScript } from './commands/run-script.ts';
 import { cli } from '#cleye';
 
-const argv = cli({
+const argv = await cli({
 	name: 'npm',
 
 	commands: [

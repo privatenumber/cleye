@@ -6,21 +6,21 @@ import { cli, command } from '#cleye';
 
 describe('command', () => {
 	describe('error handling', () => {
-		test('missing options', () => {
+		test('missing options', async () => {
 			expect(() => {
 				// @ts-expect-error no options
 				command();
 			}).toThrow('Command options are required');
 		});
 
-		test('missing command name', () => {
+		test('missing command name', async () => {
 			expect(() => {
 				// @ts-expect-error no name
 				command({});
 			}).toThrow('Command name is required');
 		});
 
-		test('empty command name', () => {
+		test('empty command name', async () => {
 			expect(() => {
 				command({
 					name: '',
@@ -28,7 +28,7 @@ describe('command', () => {
 			}).toThrow('Invalid command name ""');
 		});
 
-		test('invalid command name', () => {
+		test('invalid command name', async () => {
 			expect(() => {
 				command({
 					name: 'a b c',
@@ -36,53 +36,49 @@ describe('command', () => {
 			}).toThrow('Invalid command name "a b c". Command names must be one word.');
 		});
 
-		test('duplicate command name', () => {
-			expect(() => {
-				cli(
-					{
-						commands: [
-							command({
-								name: 'duplicate',
-							}),
-							command({
-								name: 'duplicate',
-							}),
-						],
-					},
-					undefined,
-					['commandA', '--flagA', 'valueA'],
-				);
-			}).toThrow('Duplicate command name found: "duplicate"');
+		test('duplicate command name', async () => {
+			await expect(cli(
+				{
+					commands: [
+						command({
+							name: 'duplicate',
+						}),
+						command({
+							name: 'duplicate',
+						}),
+					],
+				},
+				undefined,
+				['commandA', '--flagA', 'valueA'],
+			)).rejects.toThrow('Duplicate command name found: "duplicate"');
 		});
 
-		test('duplicate command alias', () => {
-			expect(() => {
-				cli(
-					{
-						commands: [
-							command({
-								name: 'duplicate',
-							}),
-							command({
-								name: 'command',
-								alias: 'duplicate',
-							}),
-						],
-					},
-					undefined,
-					['commandA', '--flagA', 'valueA'],
-				);
-			}).toThrow('Duplicate command name found: "duplicate"');
+		test('duplicate command alias', async () => {
+			await expect(cli(
+				{
+					commands: [
+						command({
+							name: 'duplicate',
+						}),
+						command({
+							name: 'command',
+							alias: 'duplicate',
+						}),
+					],
+				},
+				undefined,
+				['commandA', '--flagA', 'valueA'],
+			)).rejects.toThrow('Duplicate command name found: "duplicate"');
 		});
 
-		test('empty alias string is ignored', () => {
+		test('empty alias string is ignored', async () => {
 			const callback = spy();
 			const commandA = command({
 				name: 'commandA',
 				alias: '',
 			}, callback);
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [commandA],
 				},
@@ -94,14 +90,14 @@ describe('command', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('empty alias array is ignored', () => {
+		test('empty alias array is ignored', async () => {
 			const callback = spy();
 			const commandA = command({
 				name: 'commandA',
 				alias: [],
 			}, callback);
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [commandA],
 				},
@@ -115,7 +111,7 @@ describe('command', () => {
 	});
 
 	describe('command', () => {
-		test('invoking command', () => {
+		test('invoking command', async () => {
 			const callback = spy();
 
 			const commandA = command({
@@ -129,7 +125,7 @@ describe('command', () => {
 				callback();
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [
 						commandA,
@@ -152,7 +148,7 @@ describe('command', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('invoking command via alias', () => {
+		test('invoking command via alias', async () => {
 			const callback = spy();
 
 			const commandA = command({
@@ -169,7 +165,7 @@ describe('command', () => {
 				callback();
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [
 						commandA,
@@ -192,7 +188,7 @@ describe('command', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('invoking command via alias array', () => {
+		test('invoking command via alias array', async () => {
 			const callback = spy();
 
 			const commandA = command({
@@ -209,7 +205,7 @@ describe('command', () => {
 				callback();
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [
 						commandA,
@@ -232,7 +228,7 @@ describe('command', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('smoke', () => {
+		test('smoke', async () => {
 			const callback = spy();
 
 			const commandA = command({
@@ -261,7 +257,7 @@ describe('command', () => {
 				expect<boolean | undefined>(parsed.flags.help);
 			});
 
-			const argv = cli(
+			const argv = await cli(
 				{
 					version: '1.0.0',
 
@@ -310,7 +306,7 @@ describe('command', () => {
 	});
 
 	describe('ignoreArgv', () => {
-		test('ignore after arguments', () => {
+		test('ignore after arguments', async () => {
 			const callback = spy();
 			const argv = ['commandA', '--unknown', 'arg', '--help'];
 
@@ -334,7 +330,7 @@ describe('command', () => {
 				callback();
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [
 						commandA,
@@ -356,7 +352,7 @@ describe('command', () => {
 	});
 
 	describe('command vs flag ambiguity', () => {
-		test('command name conflicts with flag name', () => {
+		test('command name conflicts with flag name', async () => {
 			const commandCallback = spy();
 			const cliCallback = spy();
 
@@ -364,7 +360,7 @@ describe('command', () => {
 				name: 'test',
 			}, commandCallback);
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					flags: {
 						test: Boolean, // Flag with the same name as the command
@@ -385,7 +381,7 @@ describe('command', () => {
 	});
 
 	describe('async command callbacks', () => {
-		test('cli Promise waits for command callback to complete', async () => {
+		test('cli awaits command callback completion', async () => {
 			let commandCompleted = false;
 
 			const testCommand = command({
@@ -395,7 +391,7 @@ describe('command', () => {
 				commandCompleted = true;
 			});
 
-			const result = cli(
+			await cli(
 				{
 					commands: [testCommand],
 				},
@@ -403,15 +399,10 @@ describe('command', () => {
 				['test'],
 			);
 
-			// Command callback shouldn't have completed yet
-			expect(commandCompleted).toBe(false);
-
-			// After awaiting cli, command callback should be complete
-			await result;
 			expect(commandCompleted).toBe(true);
 		});
 
-		test('cli Promise never resolves if command callback never resolves', async () => {
+		test('cli never resolves if command callback never resolves', async () => {
 			let cliResolved = false;
 
 			const testCommand = command({
@@ -421,29 +412,24 @@ describe('command', () => {
 				await new Promise(() => {});
 			});
 
-			const result = cli(
+			const cliPromise = cli(
 				{
 					commands: [testCommand],
 				},
 				undefined,
 				['test'],
-			);
+			).then(() => {
+				cliResolved = true;
+			});
 
-			// Race the cli promise against a timeout
-			await Promise.race([
-				result.then(() => {
-					cliResolved = true;
-				}),
-				setImmediate(50),
-			]);
+			await Promise.race([cliPromise, setImmediate(50)]);
 
-			// cli should not have resolved
 			expect(cliResolved).toBe(false);
 		});
 	});
 
 	describe('strictFlags inheritance', () => {
-		test('command inherits strictFlags from parent', () => {
+		test('command inherits strictFlags from parent', async () => {
 			const mocked = mockEnvFunctions();
 
 			const buildCommand = command({
@@ -453,7 +439,7 @@ describe('command', () => {
 				},
 			});
 
-			cli(
+			await cli(
 				{
 					strictFlags: true,
 					commands: [buildCommand],
@@ -469,7 +455,7 @@ describe('command', () => {
 			expect(mocked.processExit.calls).toStrictEqual([[1]]);
 		});
 
-		test('command can override strictFlags to false', () => {
+		test('command can override strictFlags to false', async () => {
 			const mocked = mockEnvFunctions();
 
 			const buildCommand = command({
@@ -480,7 +466,7 @@ describe('command', () => {
 				strictFlags: false,
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					strictFlags: true,
 					commands: [buildCommand],
@@ -495,7 +481,7 @@ describe('command', () => {
 			expect(parsed.unknownFlags.unknown).toEqual([true]);
 		});
 
-		test('command can enable strictFlags independently', () => {
+		test('command can enable strictFlags independently', async () => {
 			const mocked = mockEnvFunctions();
 
 			const buildCommand = command({
@@ -506,7 +492,7 @@ describe('command', () => {
 				strictFlags: true,
 			});
 
-			cli(
+			await cli(
 				{
 					commands: [buildCommand],
 				},
@@ -521,7 +507,7 @@ describe('command', () => {
 	});
 
 	describe('booleanFlagNegation inheritance', () => {
-		test('command inherits booleanFlagNegation from parent', () => {
+		test('command inherits booleanFlagNegation from parent', async () => {
 			const buildCommand = command({
 				name: 'build',
 				flags: {
@@ -529,7 +515,7 @@ describe('command', () => {
 				},
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					booleanFlagNegation: true,
 					commands: [buildCommand],
@@ -544,7 +530,7 @@ describe('command', () => {
 			}
 		});
 
-		test('command can override booleanFlagNegation to false', () => {
+		test('command can override booleanFlagNegation to false', async () => {
 			const buildCommand = command({
 				name: 'build',
 				flags: {
@@ -553,7 +539,7 @@ describe('command', () => {
 				booleanFlagNegation: false,
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					booleanFlagNegation: true,
 					commands: [buildCommand],
@@ -569,7 +555,7 @@ describe('command', () => {
 			}
 		});
 
-		test('command can enable booleanFlagNegation independently', () => {
+		test('command can enable booleanFlagNegation independently', async () => {
 			const buildCommand = command({
 				name: 'build',
 				flags: {
@@ -578,7 +564,7 @@ describe('command', () => {
 				booleanFlagNegation: true,
 			});
 
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					commands: [buildCommand],
 				},

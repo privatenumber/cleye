@@ -9,7 +9,6 @@ import type {
 	HelpOptions,
 	HelpDocumentNode,
 	StrictOptions,
-	MaybePromise,
 } from './types.ts';
 import type { Command } from './command.ts';
 import { generateHelp, Renderers } from './render-help/index.ts';
@@ -164,7 +163,7 @@ const handleUnknownFlags = (
 	process.exit(1);
 };
 
-function cliBase<
+async function cliBase<
 	CommandName extends string | undefined,
 	Options extends CliOptionsInternal,
 	Parameters extends string[],
@@ -296,23 +295,13 @@ function cliBase<
 		showHelp,
 	};
 
-	// Already flattened
 	const result = {
 		command,
 		...parsedWithApi,
 	};
 
 	if (typeof callback === 'function') {
-		const callbackResult = callback(parsedWithApi as any);
-
-		// Make it awaitable in case the callback returns a promise
-		if (callbackResult && 'then' in callbackResult) {
-			return Object.assign(
-				// We wrap the promise again incase a fake promise was returned
-				Promise.resolve(callbackResult),
-				result,
-			);
-		}
+		await callback(parsedWithApi as any);
 	}
 
 	return result;
@@ -355,9 +344,9 @@ function cli<
 	options: StrictOptions<Options>
 		& CliOptions<undefined, [...Parameters]>
 		& { commands?: undefined },
-	callback?: undefined,
+	callback?: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
 	argv?: string[],
-): {
+): Promise<{
 	[
 	Key in keyof ParseArgv<
 		Options,
@@ -369,38 +358,9 @@ function cli<
 		Parameters,
 		undefined
 	>[Key];
-};
+}>;
 
-// Overload 2: No commands, with callback - returns MaybePromise based on callback return
-function cli<
-	Options extends CliOptions<undefined, [...Parameters]>,
-	Parameters extends string[],
-	CallbackReturn extends void | Promise<void>,
->(
-	options: StrictOptions<Options>
-		& CliOptions<undefined, [...Parameters]>
-		& { commands?: undefined },
-	callback: (parsed: ParseArgv<Options, Parameters>) => CallbackReturn,
-	argv?: string[],
-): MaybePromise<
-	{
-		[
-		Key in keyof ParseArgv<
-			Options,
-			Parameters,
-			undefined
-		>
-		]: ParseArgv<
-			Options,
-			Parameters,
-			undefined
-		>[Key];
-	},
-	CallbackReturn
->;
-
-// Overload 3: With commands, no callback
-// Always returns Promise since commands may have async callbacks
+// Overload 2: With commands
 function cli<
 	Options extends CliOptions<[...Commands], [...Parameters]>,
 	Commands extends Command[],
@@ -409,9 +369,9 @@ function cli<
 	options: StrictOptions<Options>
 		& CliOptions<[...Commands], [...Parameters]>
 		& { commands: [...Commands] },
-	callback?: undefined,
+	callback?: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
 	argv?: string[],
-): (
+): Promise<
 	{
 		[
 		Key in keyof ParseArgv<
@@ -437,58 +397,16 @@ function cli<
 				) : never
 		);
 	}[number]
-) & Promise<void>;
-
-// Overload 4: With commands, with callback
-// Always returns Promise since commands may have async callbacks
-function cli<
-	Options extends CliOptions<[...Commands], [...Parameters]>,
-	Commands extends Command[],
-	Parameters extends string[],
->(
-	options: StrictOptions<Options>
-		& CliOptions<[...Commands], [...Parameters]>
-		& { commands: [...Commands] },
-	callback: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
-	argv?: string[],
-): (
-	(
-		{
-			[
-			Key in keyof ParseArgv<
-				Options,
-				Parameters,
-				undefined
-			>
-			]: ParseArgv<
-				Options,
-				Parameters,
-				undefined
-			>[Key];
-		}
-		| {
-			[KeyA in keyof Commands]: (
-				Commands[KeyA] extends Command
-					? (
-						{
-							[
-							KeyB in keyof Commands[KeyA][typeof parsedType]
-							]: Commands[KeyA][typeof parsedType][KeyB];
-						}
-					) : never
-			);
-		}[number]
-	) & Promise<void>
-);
+>;
 
 // General overload for Parameters<typeof cli> to extract from
 function cli(
 	options: CliOptions,
 	callback?: CallbackFunction<any>,
 	argv?: string[],
-): ParseArgv<CliOptions, string[], undefined>;
+): Promise<ParseArgv<CliOptions, string[], undefined>>;
 
-function cli<
+async function cli<
 	Options extends CliOptions<[...Commands], [...Parameters]>,
 	Commands extends Command[],
 	Parameters extends string[],
@@ -496,7 +414,7 @@ function cli<
 	options: Options | (Options & CliOptions<[...Commands], [...Parameters]>),
 	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
 	argv = process.argv.slice(2),
-): any {
+): Promise<any> {
 	// Because if not configured, it's probably being misused or overlooked
 	if (!options) {
 		throw new Error('Options is required');

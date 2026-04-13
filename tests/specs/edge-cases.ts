@@ -5,8 +5,8 @@ import { cli, command } from '#cleye';
 
 describe('edge cases', () => {
 	describe('camelCase conversion', () => {
-		test('already camelCase input', () => {
-			const parsed = cli(
+		test('already camelCase input', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<myValue>'],
 				},
@@ -17,8 +17,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.myValue).toBe('test');
 		});
 
-		test('multiple consecutive separators', () => {
-			const parsed = cli(
+		test('multiple consecutive separators', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<value--name>'],
 				},
@@ -29,8 +29,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.valueName).toBe('test');
 		});
 
-		test('mixed separators', () => {
-			const parsed = cli(
+		test('mixed separators', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<value_name-here>'],
 				},
@@ -41,8 +41,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.valueNameHere).toBe('test');
 		});
 
-		test('leading separator', () => {
-			const parsed = cli(
+		test('leading separator', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<-value>'],
 				},
@@ -54,8 +54,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.Value).toBe('test');
 		});
 
-		test('trailing separator', () => {
-			const parsed = cli(
+		test('trailing separator', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<value_>'],
 				},
@@ -66,8 +66,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.value).toBe('test');
 		});
 
-		test('numbers in parameter name', () => {
-			const parsed = cli(
+		test('numbers in parameter name', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<value1>'],
 				},
@@ -78,8 +78,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.value1).toBe('test');
 		});
 
-		test('leading number in parameter name', () => {
-			const parsed = cli(
+		test('leading number in parameter name', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<1value>'],
 				},
@@ -90,7 +90,7 @@ describe('edge cases', () => {
 			expect<string>(parsed._['1value']).toBe('test');
 		});
 
-		test('camelCase utility directly', () => {
+		test('camelCase utility directly', async () => {
 			expect(camelCase('hello world')).toBe('helloWorld');
 			expect(camelCase('hello-world')).toBe('helloWorld');
 			expect(camelCase('hello_world')).toBe('helloWorld');
@@ -106,44 +106,44 @@ describe('edge cases', () => {
 	});
 
 	describe('kebabCase conversion', () => {
-		test('basic camelCase to kebab-case', () => {
+		test('basic camelCase to kebab-case', async () => {
 			expect(kebabCase('helloWorld')).toBe('hello-world');
 			expect(kebabCase('myValue')).toBe('my-value');
 			expect(kebabCase('getValue')).toBe('get-value');
 		});
 
-		test('multiple uppercase letters', () => {
+		test('multiple uppercase letters', async () => {
 			expect(kebabCase('getHTTPResponse')).toBe('get-h-t-t-p-response');
 			expect(kebabCase('XMLParser')).toBe('x-m-l-parser');
 		});
 
-		test('already kebab-case input', () => {
+		test('already kebab-case input', async () => {
 			expect(kebabCase('hello-world')).toBe('hello-world');
 			expect(kebabCase('my-value')).toBe('my-value');
 		});
 
-		test('single character', () => {
+		test('single character', async () => {
 			expect(kebabCase('a')).toBe('a');
 			expect(kebabCase('A')).toBe('a');
 		});
 
-		test('all lowercase', () => {
+		test('all lowercase', async () => {
 			expect(kebabCase('helloworld')).toBe('helloworld');
 		});
 
-		test('all uppercase', () => {
+		test('all uppercase', async () => {
 			expect(kebabCase('ABC')).toBe('a-b-c');
 		});
 
-		test('empty string', () => {
+		test('empty string', async () => {
 			expect(kebabCase('')).toBe('');
 		});
 
-		test('leading uppercase', () => {
+		test('leading uppercase', async () => {
 			expect(kebabCase('HelloWorld')).toBe('hello-world');
 		});
 
-		test('numbers in name', () => {
+		test('numbers in name', async () => {
 			expect(kebabCase('value1Name')).toBe('value1-name');
 			expect(kebabCase('get2ndValue')).toBe('get2nd-value');
 		});
@@ -153,8 +153,8 @@ describe('edge cases', () => {
 		// Skipping: test('parameter with only brackets' - causes test suite to fail
 		// The empty parameter name causes the parser to throw but also print help
 
-		test('parameter with special characters', () => {
-			const parsed = cli(
+		test('parameter with special characters', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<file-path>'],
 				},
@@ -165,9 +165,9 @@ describe('edge cases', () => {
 			expect<string>(parsed._.filePath).toBe('test.txt');
 		});
 
-		test('very long parameter name', () => {
+		test('very long parameter name', async () => {
 			const longName = '<this-is-a-very-long-parameter-name-with-many-words>';
-			const parsed = cli(
+			const parsed = await cli(
 				{
 					parameters: [longName],
 				},
@@ -178,8 +178,8 @@ describe('edge cases', () => {
 			expect<string>(parsed._.thisIsAVeryLongParameterNameWithManyWords).toBe('value');
 		});
 
-		test('parameter with uppercase letters', () => {
-			const parsed = cli(
+		test('parameter with uppercase letters', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<FileNAME>'],
 				},
@@ -194,8 +194,8 @@ describe('edge cases', () => {
 		// Skipped: empty string parameter value triggers validation error and help output
 		// which cannot be easily tested with expect().toThrow()
 
-		test('whitespace-only parameter value', () => {
-			const parsed = cli(
+		test('whitespace-only parameter value', async () => {
+			const parsed = await cli(
 				{
 					parameters: ['<value>'],
 				},
@@ -208,8 +208,8 @@ describe('edge cases', () => {
 	});
 
 	describe('flag value edge cases', () => {
-		test('flag with empty string value', () => {
-			const parsed = cli(
+		test('flag with empty string value', async () => {
+			const parsed = await cli(
 				{
 					flags: {
 						value: String,
@@ -222,8 +222,8 @@ describe('edge cases', () => {
 			expect<string | undefined>(parsed.flags.value).toBe('');
 		});
 
-		test('flag with whitespace value', () => {
-			const parsed = cli(
+		test('flag with whitespace value', async () => {
+			const parsed = await cli(
 				{
 					flags: {
 						value: String,
@@ -236,8 +236,8 @@ describe('edge cases', () => {
 			expect<string | undefined>(parsed.flags.value).toBe('   ');
 		});
 
-		test('number flag with zero', () => {
-			const parsed = cli(
+		test('number flag with zero', async () => {
+			const parsed = await cli(
 				{
 					flags: {
 						value: Number,
@@ -250,8 +250,8 @@ describe('edge cases', () => {
 			expect<number | undefined>(parsed.flags.value).toBe(0);
 		});
 
-		test('number flag with negative', () => {
-			const parsed = cli(
+		test('number flag with negative', async () => {
+			const parsed = await cli(
 				{
 					flags: {
 						value: Number,
@@ -264,8 +264,8 @@ describe('edge cases', () => {
 			expect<number | undefined>(parsed.flags.value).toBe(-42);
 		});
 
-		test('number flag with decimal', () => {
-			const parsed = cli(
+		test('number flag with decimal', async () => {
+			const parsed = await cli(
 				{
 					flags: {
 						value: Number,
@@ -280,91 +280,85 @@ describe('edge cases', () => {
 	});
 
 	describe('command name edge cases', () => {
-		test('command name with numbers', () => {
+		test('command name with numbers', async () => {
 			const cmd1 = command({
 				name: 'cmd1',
 			});
 
-			expect(() => {
-				cli(
-					{
-						commands: [cmd1],
-					},
-					undefined,
-					['cmd1'],
-				);
-			}).not.toThrow();
+			await cli(
+				{
+					commands: [cmd1],
+				},
+				undefined,
+				['cmd1'],
+			);
 		});
 
-		test('command name with dash', () => {
+		test('command name with dash', async () => {
 			const myCommand = command({
 				name: 'my-command',
 			});
 
-			expect(() => {
-				cli(
-					{
-						commands: [myCommand],
-					},
-					undefined,
-					['my-command'],
-				);
-			}).not.toThrow();
+			await cli(
+				{
+					commands: [myCommand],
+				},
+				undefined,
+				['my-command'],
+			);
 		});
 
-		test('command name with underscore', () => {
+		test('command name with underscore', async () => {
 			const myCommand = command({
 				name: 'my_command',
 			});
 
-			expect(() => {
-				cli(
-					{
-						commands: [myCommand],
-					},
-					undefined,
-					['my_command'],
-				);
-			}).not.toThrow();
+			await cli(
+				{
+					commands: [myCommand],
+				},
+				undefined,
+				['my_command'],
+			);
 		});
 	});
 
 	describe('isValidScriptName edge cases', () => {
-		test('empty string is invalid', () => {
+		test('empty string is invalid', async () => {
 			expect(isValidScriptName('')).toBe(false);
 		});
 
-		test('single space is invalid', () => {
+		test('single space is invalid', async () => {
 			expect(isValidScriptName(' ')).toBe(false);
 		});
 
-		test('multiple spaces is invalid', () => {
+		test('multiple spaces is invalid', async () => {
 			expect(isValidScriptName('   ')).toBe(false);
 		});
 
-		test('name with space is invalid', () => {
+		test('name with space is invalid', async () => {
 			expect(isValidScriptName('my command')).toBe(false);
 		});
 
-		test('tab character is valid (not a space)', () => {
+		test('tab character is valid (not a space)', async () => {
 			// The current implementation only checks for space character
 			expect(isValidScriptName('my\tcommand')).toBe(true);
 		});
 
-		test('newline character is valid (not a space)', () => {
+		test('newline character is valid (not a space)', async () => {
 			// The current implementation only checks for space character
 			expect(isValidScriptName('my\ncommand')).toBe(true);
 		});
 
-		test('leading space is invalid', () => {
+		test('leading space is invalid', async () => {
 			expect(isValidScriptName(' command')).toBe(false);
 		});
 
-		test('trailing space is invalid', () => {
+		test('trailing space is invalid', async () => {
 			expect(isValidScriptName('command ')).toBe(false);
 		});
 
-		test('valid names', () => {
+		test('valid names', async () => {
 			expect(isValidScriptName('command')).toBe(true);
 			expect(isValidScriptName('my-command')).toBe(true);
 			expect(isValidScriptName('my_command')).toBe(true);
@@ -372,12 +366,12 @@ describe('edge cases', () => {
 			expect(isValidScriptName('a')).toBe(true);
 		});
 
-		test('unicode characters are valid', () => {
+		test('unicode characters are valid', async () => {
 			expect(isValidScriptName('命令')).toBe(true);
 			expect(isValidScriptName('café')).toBe(true);
 		});
 
-		test('special characters are valid', () => {
+		test('special characters are valid', async () => {
 			expect(isValidScriptName('@scope/package')).toBe(true);
 			expect(isValidScriptName('name.ext')).toBe(true);
 		});

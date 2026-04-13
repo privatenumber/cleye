@@ -226,14 +226,3 @@ export type ParseArgv<
  * when excess properties are passed.
  */
 export type StrictOptions<T> = T & Record<Exclude<keyof T, keyof CliOptions>, never>;
-
-/**
- * Helper type to conditionally add Promise<void> to return type
- * only when callback returns a Promise.
- */
-export type MaybePromise<
-	Result,
-	CallbackReturn,
-> = CallbackReturn extends Promise<void>
-	? Result & Promise<void>
-	: Result;
