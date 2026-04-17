@@ -172,6 +172,14 @@ cli({
 // help: false  — disables --help handling; call argv.showHelp() manually
 ```
 
+Tip: import `name`, `version`, and `description` from `package.json` to avoid keeping them in sync manually:
+
+```ts
+import { name, version, description } from './package.json' with { type: 'json' }
+
+cli({ name, version, help: { description } })
+```
+
 ## Custom Flag Types
 
 Any function `(value: string) => T` works as a flag type — the return type is inferred.

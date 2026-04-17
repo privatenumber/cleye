@@ -366,6 +366,14 @@ $ my-script --version
 
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
 
+> [!TIP]
+> Import `name`, `version`, and `description` directly from `package.json` to avoid keeping them in sync manually:
+> ```ts
+> import { name, version, description } from './package.json' with { type: 'json' }
+>
+> cli({ name, version, help: { description } })
+> ```
+
 #### Strict flags
 To reject unknown flags with an error, enable `strictFlags`:
 
