@@ -1,4 +1,4 @@
-import { command } from '../../../src';
+import { command } from '../../../src/index.ts';
 
 export const install = command({
 	name: 'install',

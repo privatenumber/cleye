@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
-import { camelCase, kebabCase } from '../../src/utils/convert-case.js';
-import { isValidScriptName } from '../../src/utils/script-name.js';
+import { camelCase, kebabCase } from '../../src/utils/convert-case.ts';
+import { isValidScriptName } from '../../src/utils/script-name.ts';
 import { cli, command } from '#cleye';
 
 describe('edge cases', () => {

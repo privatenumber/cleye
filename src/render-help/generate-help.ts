@@ -1,9 +1,9 @@
 import type {
 	CliOptionsInternal,
 	HelpDocumentNode,
-} from '../types';
-import type { CommandOptions } from '../command';
-import { renderFlags } from './render-flags';
+} from '../types.ts';
+import type { CommandOptions } from '../command.ts';
+import { renderFlags } from './render-flags.ts';
 
 type Options = CliOptionsInternal | CommandOptions;
 

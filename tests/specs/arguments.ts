@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
-import { mockEnvFunctions } from '../utils/mock-env-functions';
+import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 import { cli, command } from '#cleye';
 
 describe('arguments', () => {

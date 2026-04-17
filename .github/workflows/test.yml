@@ -31,7 +31,7 @@ jobs:
           # https://github.com/nodejs/node/blob/v16.18.0/lib/internal/tty.js#L167
           pnpm test
 
-          pnpm --use-node-version=20.19.4 test
+          pnpm --use-node-version=20.19.4 exec tsx tests
 
       - name: Lint
         run: pnpm lint

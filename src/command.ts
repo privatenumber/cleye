@@ -5,8 +5,8 @@ import type {
 	HelpOptions,
 	ParseArgv,
 	parsedType,
-} from './types';
-import { isValidScriptName } from './utils/script-name';
+} from './types.ts';
+import { isValidScriptName } from './utils/script-name.ts';
 
 export type CommandOptions<Parameters = string[]> = {
 

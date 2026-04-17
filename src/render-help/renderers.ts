@@ -4,8 +4,8 @@ import {
 	breakpoints,
 	type Options as TerminalColumnsOptions,
 } from 'terminal-columns';
-import type { HelpDocumentNode } from '../types';
-import type { FlagData } from './render-flags';
+import type { HelpDocumentNode } from '../types.ts';
+import type { FlagData } from './render-flags.ts';
 
 type TypeFunction = (value: any) => any;
 
