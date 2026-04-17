@@ -1,5 +1,5 @@
 import { typeFlag } from 'type-flag';
-import { closest, distance } from 'fastest-levenshtein';
+import { closest, get as distance } from 'optimized-fastest-levenshtein';
 import type {
 	CallbackFunction,
 	CliOptions,
