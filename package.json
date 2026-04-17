@@ -19,7 +19,8 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"skills"
 	],
 	"type": "module",
 	"main": "./dist/index.cjs",
