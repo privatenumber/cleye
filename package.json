@@ -23,14 +23,25 @@
 	],
 	"type": "module",
 	"exports": {
-		"types": "./dist/index.d.mts",
-		"default": "./dist/index.mjs"
+		".": {
+			"types": "./dist/index.d.mts",
+			"default": "./dist/index.mjs"
+		},
+		"./renderers/responsive": {
+			"types": "./dist/renderers/responsive.d.mts",
+			"default": "./dist/renderers/responsive.mjs"
+		}
 	},
 	"imports": {
 		"#cleye": {
 			"types": "./src/index.ts",
 			"development": "./src/index.ts",
 			"default": "./dist/index.mjs"
+		},
+		"#cleye/renderers/responsive": {
+			"types": "./src/renderers/responsive.ts",
+			"development": "./src/renderers/responsive.ts",
+			"default": "./dist/renderers/responsive.mjs"
 		}
 	},
 	"packageManager": "pnpm@10.13.1",
@@ -47,6 +58,7 @@
 		"node": ">=22.22.2"
 	},
 	"dependencies": {
+		"string-width": "^8.2.0",
 		"terminal-columns": "^2.0.0",
 		"type-flag": "^4.1.0"
 	},

@@ -1,9 +1,6 @@
 import tty from 'tty';
-import {
-	terminalColumns,
-	breakpoints,
-	type Options as TerminalColumnsOptions,
-} from 'terminal-columns';
+import type { Options as TerminalColumnsOptions } from 'terminal-columns';
+import { renderPaddedTable } from '../renderers/simple.ts';
 import type { HelpDocumentNode } from '../types.ts';
 import type { FlagData } from './render-flags.ts';
 
@@ -71,19 +68,12 @@ export class Renderers {
 		);
 	}
 
-	table({
-		tableData,
-		tableOptions,
-		tableBreakpoints,
-	}: {
+	table(args: {
 		tableData: string[][];
 		tableOptions?: TerminalColumnsOptions;
 		tableBreakpoints?: Record<string, TerminalColumnsOptions>;
 	}) {
-		return terminalColumns(
-			tableData.map(row => row.map(cell => this.render(cell))),
-			tableBreakpoints ? breakpoints(tableBreakpoints) : tableOptions,
-		);
+		return renderPaddedTable(args, cell => this.render(cell));
 	}
 
 	flagParameter(

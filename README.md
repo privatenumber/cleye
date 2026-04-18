@@ -513,10 +513,23 @@ cli({
 })
 ```
 
-#### Responsive tables
-_Cleye_'s "Flags" table in the help document is responsive and wraps cell text content based on the column & terminal width. It also has [breakpoints to display more vertically-optimized tables](/src/render-help/render-flags.ts#L4) for narrower viewports.
+#### Responsive tables (opt-in)
+By default, _Cleye_'s help document renders plain, non-wrapping tables — kept minimal so the main entry has no heavy dependencies.
 
-This feature is powered by [terminal-columns](https://github.com/privatenumber/terminal-columns) and can be configured via the `renderers.table` renderer.
+For responsive tables that wrap descriptions onto their own line on narrow terminals (powered by [terminal-columns](https://github.com/privatenumber/terminal-columns)), opt in by importing `createRenderer` from `cleye/renderers/responsive` and passing the result to `help.render`:
+
+```ts
+import { cli } from 'cleye'
+import { createRenderer } from 'cleye/renderers/responsive'
+
+await cli({
+    help: {
+        render: createRenderer()
+    }
+})
+```
+
+`createRenderer()` also accepts a `breakpoints` option to override the default responsive breakpoints — see [terminal-columns](https://github.com/privatenumber/terminal-columns)' `breakpoints()` for the shape.
 
 <table>
 	<tr>
