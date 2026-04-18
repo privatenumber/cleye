@@ -23,17 +23,30 @@
 		"skills"
 	],
 	"type": "module",
+	"sideEffects": false,
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.cts",
 	"exports": {
-		"require": {
-			"types": "./dist/index.d.cts",
-			"default": "./dist/index.cjs"
+		".": {
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			},
+			"import": {
+				"types": "./dist/index.d.mts",
+				"default": "./dist/index.mjs"
+			}
 		},
-		"import": {
-			"types": "./dist/index.d.mts",
-			"default": "./dist/index.mjs"
+		"./formats": {
+			"require": {
+				"types": "./dist/formats.d.cts",
+				"default": "./dist/formats.cjs"
+			},
+			"import": {
+				"types": "./dist/formats.d.mts",
+				"default": "./dist/formats.mjs"
+			}
 		}
 	},
 	"imports": {
@@ -41,6 +54,11 @@
 			"types": "./src/index.ts",
 			"development": "./src/index.ts",
 			"default": "./dist/index.mjs"
+		},
+		"#cleye/formats": {
+			"types": "./src/formats.ts",
+			"development": "./src/formats.ts",
+			"default": "./dist/formats.mjs"
 		}
 	},
 	"packageManager": "pnpm@10.13.1",

@@ -177,7 +177,11 @@ Tip: import `name`, `version`, and `description` from `package.json` to avoid ke
 ```ts
 import { name, version, description } from './package.json' with { type: 'json' }
 
-cli({ name, version, help: { description } })
+cli({
+    name,
+    version,
+    help: { description }
+})
 ```
 
 ## Custom Flag Types
@@ -217,6 +221,23 @@ const Env = (v: string): Record<string, string | true> => {
 cli({ flags: { env: [Env] } })
 // --env.TOKEN=abc --env.CI → merge to { TOKEN: 'abc', CI: true }
 ```
+
+## Type Helpers (`cleye/formats`)
+
+`cleye/formats` ships composable, tree-shakable type-function helpers. Import only what you need.
+
+```ts
+import {
+    oneOf, commaList, integer, float, range, url
+} from 'cleye/formats'
+```
+
+- `oneOf('a', 'b', 'c')` — infers `'a' | 'b' | 'c'`; throws if the value is not in the list.
+- `commaList(itemType)` — splits `"a,b,c"` → `T[]`; trims whitespace; composes with other helpers (e.g. `commaList(integer())`).
+- `integer()` — base-10 integer; throws on floats/non-numeric.
+- `float()` — finite float; throws on `Infinity`/non-numeric.
+- `range(min, max)` — returns `(input: string) => number`; validates input parses to a number in `[min, max]`.
+- `url()` — parses with `new URL()`; returns a `URL` object (not a string).
 
 ## Help Customization
 
