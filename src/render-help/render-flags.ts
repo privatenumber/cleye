@@ -1,5 +1,5 @@
+import { flagNameToKebab } from 'type-flag';
 import type { Flags } from '../types.ts';
-import { kebabCase } from '../utils/convert-case.ts';
 
 const tableBreakpoints = {
 	'> 80': [
@@ -73,7 +73,7 @@ export function renderFlags(flags: Flags) {
 			return {
 				name,
 				flag,
-				flagFormatted: `--${kebabCase(name)}`,
+				flagFormatted: `--${flagNameToKebab(name)}`,
 				aliasesEnabled,
 				aliasFormatted: hasAlias ? `-${flag.alias}` : undefined,
 			};

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'manten';
-import { camelCase, kebabCase } from '../../src/utils/convert-case.ts';
+import { camelCase } from '../../src/utils/convert-case.ts';
 import { isValidScriptName } from '../../src/utils/script-name.ts';
 import { cli, command } from '#cleye';
 
@@ -102,50 +102,6 @@ describe('edge cases', () => {
 			expect(camelCase('myValue')).toBe('myValue');
 			expect(camelCase('value1')).toBe('value1');
 			expect(camelCase('1value')).toBe('1value');
-		});
-	});
-
-	describe('kebabCase conversion', () => {
-		test('basic camelCase to kebab-case', async () => {
-			expect(kebabCase('helloWorld')).toBe('hello-world');
-			expect(kebabCase('myValue')).toBe('my-value');
-			expect(kebabCase('getValue')).toBe('get-value');
-		});
-
-		test('multiple uppercase letters', async () => {
-			expect(kebabCase('getHTTPResponse')).toBe('get-h-t-t-p-response');
-			expect(kebabCase('XMLParser')).toBe('x-m-l-parser');
-		});
-
-		test('already kebab-case input', async () => {
-			expect(kebabCase('hello-world')).toBe('hello-world');
-			expect(kebabCase('my-value')).toBe('my-value');
-		});
-
-		test('single character', async () => {
-			expect(kebabCase('a')).toBe('a');
-			expect(kebabCase('A')).toBe('a');
-		});
-
-		test('all lowercase', async () => {
-			expect(kebabCase('helloworld')).toBe('helloworld');
-		});
-
-		test('all uppercase', async () => {
-			expect(kebabCase('ABC')).toBe('a-b-c');
-		});
-
-		test('empty string', async () => {
-			expect(kebabCase('')).toBe('');
-		});
-
-		test('leading uppercase', async () => {
-			expect(kebabCase('HelloWorld')).toBe('hello-world');
-		});
-
-		test('numbers in name', async () => {
-			expect(kebabCase('value1Name')).toBe('value1-name');
-			expect(kebabCase('get2ndValue')).toBe('get2nd-value');
 		});
 	});
 

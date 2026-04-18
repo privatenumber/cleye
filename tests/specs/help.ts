@@ -844,4 +844,30 @@ describe('help', () => {
 			expect(result.data.tableBreakpoints['> 0']).toBeDefined();
 		});
 	});
+	test('acronyms in flag names render as single words (issue #38)', async () => {
+		const mocked = mockEnvFunctions();
+		await cli(
+			{
+				flags: {
+					orgID: {
+						type: String,
+						description: 'Organization ID',
+					},
+					apiURL: {
+						type: String,
+						description: 'API endpoint',
+					},
+				},
+			},
+			undefined,
+			['--help'],
+		);
+		mocked.restore();
+
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).toContain('--org-id');
+		expect(output).toContain('--api-url');
+		expect(output).not.toContain('--org-i-d');
+		expect(output).not.toContain('--api-u-r-l');
+	});
 }, { parallel: false });

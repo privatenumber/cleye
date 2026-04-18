@@ -530,6 +530,38 @@ describe('flags', () => {
 		});
 	});
 
+	describe('acronym flag names (issue #38)', () => {
+		test('acronym flags parse from kebab-case argv', async () => {
+			const parsed = await cli(
+				{
+					flags: {
+						orgID: { type: String },
+						apiURL: { type: String },
+					},
+				},
+				undefined,
+				['--org-id=acme', '--api-url=https://example.com'],
+			);
+
+			expect(parsed.flags.orgID).toBe('acme');
+			expect(parsed.flags.apiURL).toBe('https://example.com');
+			expect(parsed.unknownFlags).toStrictEqual({});
+		});
+
+		test('naive kebab-case does not match acronym flags', async () => {
+			const parsed = await cli(
+				{
+					flags: { orgID: { type: String } },
+				},
+				undefined,
+				['--org-i-d=acme'],
+			);
+
+			expect(parsed.flags.orgID).toBeUndefined();
+			expect(parsed.unknownFlags).toStrictEqual({ 'org-i-d': ['acme'] });
+		});
+	});
+
 	describe('booleanFlagNegation', () => {
 		test('--no-flag sets boolean flag to false', async () => {
 			const parsed = await cli(
