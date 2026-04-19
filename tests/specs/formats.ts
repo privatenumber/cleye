@@ -133,8 +133,8 @@ describe('formats', () => {
 		});
 	});
 
-	test('cli() integrates with cleye/formats helpers', () => {
-		const parsed = cli(
+	test('cli() integrates with cleye/formats helpers', async () => {
+		const parsed = await cli(
 			{
 				flags: {
 					format: { type: oneOf('json', 'yaml') },
@@ -144,11 +144,9 @@ describe('formats', () => {
 			undefined,
 			['--format=json', '--tags=a,b,c'],
 		);
-		if (parsed.command === undefined) {
-			expect(parsed.flags.format).toBe('json');
-			expect(parsed.flags.tags).toStrictEqual(['a', 'b', 'c']);
-			expectTypeOf(parsed.flags.format).toEqualTypeOf<'json' | 'yaml' | undefined>();
-			expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[] | undefined>();
-		}
+		expect(parsed.flags.format).toBe('json');
+		expect(parsed.flags.tags).toStrictEqual(['a', 'b', 'c']);
+		expectTypeOf(parsed.flags.format).toEqualTypeOf<'json' | 'yaml' | undefined>();
+		expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[] | undefined>();
 	});
 });
