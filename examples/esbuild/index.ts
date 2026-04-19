@@ -190,8 +190,7 @@ const advancedFlags = {
 	},
 };
 
-const app = cli({
-
+await cli({
 	name: 'esbuild',
 
 	version: '1.0.0',
@@ -282,7 +281,9 @@ const app = cli({
 							data: {
 								...flags,
 								tableData: flagsTableData.filter(
-									([flagName]: [{ data: { name: string } }]) => flagName.data.name in advancedFlags,
+									([flagName]: [{ data: { name: string } }]) => (
+										flagName.data.name in advancedFlags
+									),
 								),
 							},
 						},
@@ -294,6 +295,9 @@ const app = cli({
 			]);
 		},
 	},
+}, (argv) => {
+	console.log(argv);
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-console.log(app);

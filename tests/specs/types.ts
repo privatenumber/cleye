@@ -1,12 +1,181 @@
 import { describe, test } from 'manten';
 import { expectTypeOf } from 'expect-type';
-import { cli, command, type Flags } from '#cleye';
+import { cli, type Flags } from '#cleye';
 
 describe('types', () => {
-	test('cli with parameters and flags', async () => {
+	test('cli() returns a Promise', async () => {
+		const result = cli({
+			flags: {
+				foo: String,
+			},
+		}, undefined, []);
+
+		expectTypeOf(result).toEqualTypeOf<Promise<Awaited<typeof result>>>();
+		expectTypeOf(result.then).toBeFunction();
+		expectTypeOf(result.catch).toBeFunction();
+		expectTypeOf(result.finally).toBeFunction();
+	});
+
+	test('resolved type has correct shape', async () => {
+		const parsed = await cli({
+			flags: {
+				foo: String,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags).toEqualTypeOf<{
+			foo: string | undefined;
+			help: boolean | undefined;
+		}>();
+
+		expectTypeOf(parsed._).toMatchTypeOf<string[]>();
+		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
+
+		expectTypeOf(parsed.command).toEqualTypeOf<string | undefined>();
+		type RunCommand = ((context?: unknown) => Promise<void>) | undefined;
+		expectTypeOf(parsed.runCommand).toEqualTypeOf<RunCommand>();
+		expectTypeOf(parsed.showHelp).toBeFunction();
+		expectTypeOf(parsed.showVersion).toBeFunction();
+		expectTypeOf(parsed.unknownFlags).toEqualTypeOf<{
+			[flagName: string]: (string | boolean)[];
+		}>();
+	});
+
+	test('flag types without defaults', async () => {
+		const parsed = await cli({
+			flags: {
+				stringFlag: String,
+				numberFlag: Number,
+				booleanFlag: Boolean,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.stringFlag).toEqualTypeOf<string | undefined>();
+		expectTypeOf(parsed.flags.numberFlag).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.booleanFlag).toEqualTypeOf<boolean | undefined>();
+		expectTypeOf(parsed.flags.help).toEqualTypeOf<boolean | undefined>();
+	});
+
+	test('flag types with defaults', async () => {
+		const parsed = await cli({
+			flags: {
+				stringFlag: {
+					type: String,
+					default: 'default',
+				},
+				numberFlag: {
+					type: Number,
+					default: 42,
+				},
+				booleanFlag: {
+					type: Boolean,
+					default: true,
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.stringFlag).toBeString();
+		expectTypeOf(parsed.flags.numberFlag).toBeNumber();
+		expectTypeOf(parsed.flags.booleanFlag).toBeBoolean();
+	});
+
+	test('array flag types', async () => {
+		const parsed = await cli({
+			flags: {
+				stringArray: [String],
+				numberArray: {
+					type: [Number],
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.stringArray).toEqualTypeOf<string[]>();
+		expectTypeOf(parsed.flags.numberArray).toEqualTypeOf<number[]>();
+	});
+
+	test('custom type function', async () => {
+		const parsed = await cli({
+			flags: {
+				date: (value: string) => new Date(value),
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.date).toEqualTypeOf<Date | undefined>();
+	});
+
+	test('flag with alias and description', async () => {
+		const parsed = await cli({
+			flags: {
+				extraOptions: {
+					type: Boolean,
+					alias: 'e',
+					default: false,
+					description: 'Some description',
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.extraOptions).toBeBoolean();
+	});
+
+	test('version flag is added when version is set', async () => {
+		const parsed = await cli({
+			version: '1.0.0',
+			flags: {
+				foo: String,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags).toEqualTypeOf<{
+			foo: string | undefined;
+			version: boolean | undefined;
+			help: boolean | undefined;
+		}>();
+	});
+
+	test('help flag is not added when help is false', async () => {
+		const parsed = await cli({
+			help: false,
+			flags: {
+				foo: String,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags).toEqualTypeOf<{
+			foo: string | undefined;
+		}>();
+	});
+
+	test('required and optional parameters', async () => {
+		const parsed = await cli({
+			parameters: ['<required>', '[optional]'],
+		}, undefined, ['req']);
+
+		expectTypeOf(parsed._.required).toBeString();
+		expectTypeOf(parsed._.optional).toEqualTypeOf<string | undefined>();
+	});
+
+	test('spread parameters', async () => {
 		const parsed = await cli({
 			parameters: ['<foo>', '[bar...]'],
+		}, undefined, ['value1']);
 
+		expectTypeOf(parsed._.foo).toBeString();
+		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
+	});
+
+	test('parameter name normalization to camelCase', async () => {
+		const parsed = await cli({
+			parameters: ['<hello world>'],
+		}, undefined, ['a']);
+
+		expectTypeOf(parsed._).toHaveProperty('helloWorld');
+		expectTypeOf(parsed._.helloWorld).toBeString();
+	});
+
+	test('parameters with flags', async () => {
+		const parsed = await cli({
+			parameters: ['<foo>', '[bar...]'],
 			flags: {
 				booleanFlag: Boolean,
 				booleanFlagDefault: {
@@ -32,205 +201,20 @@ describe('types', () => {
 			},
 		}, undefined, ['value1']);
 
-		// Type check when no command is matched
-		if (parsed.command === undefined) {
-			// Check parameters
-			expectTypeOf(parsed._.foo).toBeString();
-			expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
+		expectTypeOf(parsed._.foo).toBeString();
+		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
+		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 
-			// Check it's also an Arguments type (has '--')
-			expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
-
-			expectTypeOf(parsed.flags).toEqualTypeOf<{
-				booleanFlag: boolean | undefined;
-				booleanFlagDefault: boolean;
-				stringFlag: string | undefined;
-				stringFlagDefault: string;
-				numberFlag: number | undefined;
-				numberFlagDefault: number;
-				extraOptions: boolean;
-				help: boolean | undefined;
-			}>();
-		}
-	});
-
-	test('cli with commands', async () => {
-		const parsed = await cli({
-			flags: {
-				booleanFlag: Boolean,
-				booleanFlagDefault: {
-					type: Boolean,
-					default: false,
-				},
-				stringFlag: String,
-				stringFlagDefault: {
-					type: String,
-					default: 'hello',
-				},
-				numberFlag: Number,
-				numberFlagDefault: {
-					type: Number,
-					default: 1,
-				},
-				extraOptions: {
-					type: Boolean,
-					alias: 'e',
-					default: false,
-					description: 'Some description',
-				},
-			},
-
-			commands: [
-				command({
-					name: 'commandA',
-
-					parameters: [
-						'<foo>',
-						'<hello world>',
-						'[bar...]',
-					],
-
-					flags: {
-						booleanFlag: Boolean,
-						booleanFlagDefault: {
-							type: Boolean,
-							default: false,
-						},
-						stringFlag: String,
-						stringFlagDefault: {
-							type: String,
-							default: 'hello',
-						},
-						numberFlag: Number,
-						numberFlagDefault: {
-							type: Number,
-							default: 1,
-						},
-						extraOptions: {
-							type: Boolean,
-							alias: 'e',
-							default: false,
-							description: 'Some description',
-						},
-					},
-				}),
-			],
-		}, undefined, ['commandA', 'value1', 'value2']);
-
-		// Type check when commandA is matched
-		if (parsed.command === 'commandA') {
-			// Check parameters
-			expectTypeOf(parsed._.foo).toBeString();
-			expectTypeOf(parsed._.helloWorld).toBeString();
-			expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
-
-			// Check it's also an Arguments type (has '--')
-			expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
-
-			expectTypeOf(parsed.flags).toEqualTypeOf<{
-				booleanFlag: boolean | undefined;
-				booleanFlagDefault: boolean;
-				stringFlag: string | undefined;
-				stringFlagDefault: string;
-				numberFlag: number | undefined;
-				numberFlagDefault: number;
-				extraOptions: boolean;
-				help: boolean | undefined;
-			}>();
-		}
-	});
-
-	test('parameter name normalization', async () => {
-		const parsed = await cli({
-			parameters: [
-				'<hello world>',
-			],
-		}, undefined, ['a']);
-
-		if (parsed.command === undefined) {
-			// Parameter with spaces should normalize to camelCase
-			expectTypeOf(parsed._).toHaveProperty('helloWorld');
-			expectTypeOf(parsed._.helloWorld).toBeString();
-		}
-	});
-
-	test('flag types without defaults', async () => {
-		const parsed = await cli({
-			flags: {
-				stringFlag: String,
-				numberFlag: Number,
-				booleanFlag: Boolean,
-			},
-		}, undefined, []);
-
-		if (parsed.command === undefined) {
-			expectTypeOf(parsed.flags.stringFlag).toEqualTypeOf<string | undefined>();
-			expectTypeOf(parsed.flags.numberFlag).toEqualTypeOf<number | undefined>();
-			expectTypeOf(parsed.flags.booleanFlag).toEqualTypeOf<boolean | undefined>();
-			expectTypeOf(parsed.flags.help).toEqualTypeOf<boolean | undefined>();
-		}
-	});
-
-	test('flag types with defaults', async () => {
-		const parsed = await cli({
-			flags: {
-				stringFlag: {
-					type: String,
-					default: 'default',
-				},
-				numberFlag: {
-					type: Number,
-					default: 42,
-				},
-				booleanFlag: {
-					type: Boolean,
-					default: true,
-				},
-			},
-		}, undefined, []);
-
-		if (parsed.command === undefined) {
-			expectTypeOf(parsed.flags.stringFlag).toBeString();
-			expectTypeOf(parsed.flags.numberFlag).toBeNumber();
-			expectTypeOf(parsed.flags.booleanFlag).toBeBoolean();
-		}
-	});
-
-	test('optional and required parameters', async () => {
-		const parsed = await cli({
-			parameters: ['<required>', '[variadic...]'],
-		}, undefined, ['req', 'var1', 'var2']);
-
-		if (parsed.command === undefined) {
-			expectTypeOf(parsed._.required).toBeString();
-			expectTypeOf(parsed._.variadic).toEqualTypeOf<string[]>();
-		}
-	});
-
-	test('command discriminated union', async () => {
-		const parsed = await cli({
-			commands: [
-				command({
-					name: 'cmd1',
-					parameters: ['<param1>'],
-				}),
-				command({
-					name: 'cmd2',
-					parameters: ['<param2>'],
-				}),
-			],
-		}, undefined, ['cmd1', 'value']);
-
-		// Type narrows correctly based on command name
-		if (parsed.command === 'cmd1') {
-			expectTypeOf(parsed._).toHaveProperty('param1');
-			expectTypeOf(parsed._).not.toHaveProperty('param2');
-		}
-
-		if (parsed.command === 'cmd2') {
-			expectTypeOf(parsed._).toHaveProperty('param2');
-			expectTypeOf(parsed._).not.toHaveProperty('param1');
-		}
+		expectTypeOf(parsed.flags).toEqualTypeOf<{
+			booleanFlag: boolean | undefined;
+			booleanFlagDefault: boolean;
+			stringFlag: string | undefined;
+			stringFlagDefault: string;
+			numberFlag: number | undefined;
+			numberFlagDefault: number;
+			extraOptions: boolean;
+			help: boolean | undefined;
+		}>();
 	});
 
 	test('no parameters', async () => {
@@ -240,26 +224,18 @@ describe('types', () => {
 			},
 		}, undefined, []);
 
-		if (parsed.command === undefined) {
-			// Check it's an Arguments type (has '--' property)
-			expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
-			// And extends string[]
-			expectTypeOf(parsed._).toMatchTypeOf<string[]>();
-		}
+		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
+		expectTypeOf(parsed._).toMatchTypeOf<string[]>();
 	});
 
 	test('double dash arguments', async () => {
 		const parsed = await cli({}, undefined, ['--', 'arg1', 'arg2']);
 
-		if (parsed.command === undefined) {
-			expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
-		}
+		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 	});
 
-	test('command callback flag types', async () => {
-		command({
-			name: 'commandA',
-
+	test('callback type inference', async () => {
+		await cli({
 			flags: {
 				booleanFlag: Boolean,
 				booleanFlagDefault: {
@@ -267,60 +243,38 @@ describe('types', () => {
 					default: false,
 				},
 			},
-		}, (argv) => {
-			expectTypeOf(argv.flags).toEqualTypeOf<{
+		}, (parsed) => {
+			expectTypeOf(parsed.flags).toEqualTypeOf<{
 				help: boolean | undefined;
 				booleanFlag: boolean | undefined;
 				booleanFlagDefault: boolean;
 			}>();
-		});
+		}, []);
 	});
 
-	test('await cli() with async callback returns parsed argv', async () => {
-		const result = await cli({
+	test('callback receives runCommand as second argument', async () => {
+		await cli({
 			flags: {
 				foo: String,
 			},
-		}, async (argv) => {
-			console.log(argv.flags.foo);
+		}, (_parsed, runCommand) => {
+			expectTypeOf(runCommand).toEqualTypeOf<((context?: unknown) => Promise<void>) | undefined>();
 		}, []);
-
-		expectTypeOf(result.flags).toEqualTypeOf<{
-			foo: string | undefined;
-			help: boolean | undefined;
-		}>();
 	});
 
-	test('await cli() with sync callback returns parsed argv', async () => {
-		const result = await cli({
+	test('async callback', async () => {
+		const result = cli({
 			flags: {
-				bar: Number,
+				foo: String,
 			},
-		}, (argv) => {
-			console.log(argv.flags.bar);
+		}, async (parsed) => {
+			expectTypeOf(parsed.flags.foo).toEqualTypeOf<string | undefined>();
 		}, []);
 
-		expectTypeOf(result.flags).toEqualTypeOf<{
-			bar: number | undefined;
-			help: boolean | undefined;
-		}>();
-	});
-
-	test('await cli() without callback returns parsed argv', async () => {
-		const result = await cli({
-			flags: {
-				baz: String,
-			},
-		});
-
-		expectTypeOf(result.flags).toEqualTypeOf<{
-			baz: string | undefined;
-			help: boolean | undefined;
-		}>();
+		expectTypeOf(result).toEqualTypeOf<Promise<Awaited<typeof result>>>();
 	});
 
 	test('Flags type is exported and usable', async () => {
-		// Flags type should be importable and usable for defining shared flags
 		const sharedFlags = {
 			verbose: {
 				type: Boolean,
@@ -334,44 +288,35 @@ describe('types', () => {
 			},
 		} satisfies Flags;
 
-		// Flags type should be assignable
 		const flags: Flags = sharedFlags;
 		expectTypeOf(flags).toMatchTypeOf<Flags>();
 
-		// Should work with await cli()
-		const result = await cli({
+		const parsed = await cli({
 			flags: sharedFlags,
 		}, undefined, []);
 
-		expectTypeOf(result.flags.verbose).toEqualTypeOf<boolean | undefined>();
-		expectTypeOf(result.flags.config).toEqualTypeOf<string | undefined>();
+		expectTypeOf(parsed.flags.verbose).toEqualTypeOf<boolean | undefined>();
+		expectTypeOf(parsed.flags.config).toEqualTypeOf<string | undefined>();
 	});
 
-	test('unknown cli options cause type errors', async () => {
-		// This test verifies that TypeScript catches typos in cli options
-		// at compile time via @ts-expect-error directives.
-		// The StrictOptions type maps unknown keys to `never`.
-
-		await cli({
+	test('unknown cli options cause type errors', () => {
+		cli({
 			name: 'test',
 			// @ts-expect-error - 'params' is not a valid option (typo for 'parameters')
 			params: ['<foo>'],
 		});
 
-		await cli({
+		cli({
 			name: 'test',
 			// @ts-expect-error - 'unknownOption' is not a valid option
 			unknownOption: true,
 		});
 	});
 
-	test('ignoreArgv callback with 3 parameters', async () => {
-		// Issue #26: ignoreArgv should accept callbacks with all 3 parameters
-		// The third parameter (value) is optional but users should be able to declare it
-		await cli({
+	test('ignoreArgv callback with 3 parameters', () => {
+		cli({
 			name: 'test',
 			ignoreArgv(type, flagOrArgv, value) {
-				// All parameters should be properly typed
 				expectTypeOf(type).toEqualTypeOf<'argument' | 'known-flag' | 'unknown-flag'>();
 				expectTypeOf(flagOrArgv).toBeString();
 				expectTypeOf(value).toEqualTypeOf<string | undefined>();
@@ -379,8 +324,7 @@ describe('types', () => {
 			},
 		});
 
-		// Should also work with required third parameter
-		await cli({
+		cli({
 			name: 'test',
 			ignoreArgv(_type, _flagOrArgv, _value) {
 				return false;
@@ -388,30 +332,19 @@ describe('types', () => {
 		});
 	});
 
-	test('Parameters<typeof cli> is not never', async () => {
-		// Issue #36: Parameters<typeof cli> should not resolve to never
-		// This ensures cli function signature is properly typed for wrapper functions
+	test('Parameters<typeof cli> is not never', () => {
 		type CliParameters = Parameters<typeof cli>;
 
-		// Should not be never - if it is, this test will fail at compile time
 		expectTypeOf<CliParameters>().not.toBeNever();
-
-		// Should be a tuple with at least one element (the options parameter)
 		expectTypeOf<CliParameters[0]>().not.toBeNever();
 	});
 
-	test('await cli() return type is not void', async () => {
-		// Issue #36: await cli({}) return type should not be void
+	test('cli() return type is not void', async () => {
 		const result = await cli({});
 
-		// Return type should have flags property
 		expectTypeOf(result).toHaveProperty('flags');
-
-		// Return type should have showHelp and showVersion
 		expectTypeOf(result).toHaveProperty('showHelp');
 		expectTypeOf(result).toHaveProperty('showVersion');
-
-		// Return type should not be void
 		expectTypeOf(result).not.toBeVoid();
 	});
 });

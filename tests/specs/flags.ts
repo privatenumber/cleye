@@ -203,15 +203,17 @@ describe('flags', () => {
 		});
 
 		test('throws on invalid custom type', async () => {
-			await expect(cli(
-				{
-					flags: {
-						size: Size,
+			await expect(
+				cli(
+					{
+						flags: {
+							size: Size,
+						},
 					},
-				},
-				undefined,
-				['--size', 'xlarge'],
-			)).rejects.toThrow('Invalid size: "xlarge"');
+					undefined,
+					['--size', 'xlarge'],
+				),
+			).rejects.toThrow('Invalid size: "xlarge"');
 		});
 	});
 

@@ -4,14 +4,14 @@ import { underline } from 'kolorist';
 import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 import { Renderers } from '../../src/render-help/renderers.ts';
 import { renderFlags } from '../../src/render-help/render-flags.ts';
-import { cli, command } from '#cleye';
+import { cli } from '#cleye';
 
 describe('help', () => {
 	describe('show help', () => {
 		test('empty cli', async () => {
 			const mocked = mockEnvFunctions();
 			await cli(
-				{},
+				{ name: '' },
 				undefined,
 				['--help'],
 			);
@@ -40,6 +40,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					parameters: [],
 				},
 				undefined,
@@ -55,6 +56,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					parameters: ['<arg-a>', '[arg-b]'],
 				},
 				undefined,
@@ -118,7 +120,8 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
-					commands: [],
+					name: '',
+					commands: {},
 				},
 				undefined,
 				['--help'],
@@ -131,16 +134,12 @@ describe('help', () => {
 
 		test('commands', async () => {
 			const mocked = mockEnvFunctions();
-			const testCommand = command({
-				name: 'test',
-			});
-
 			await cli(
 				{
 					name: 'my-cli',
-					commands: [
-						testCommand,
-					],
+					commands: {
+						test: () => {},
+					},
 				},
 				undefined,
 				['--help'],
@@ -156,14 +155,12 @@ describe('help', () => {
 			await cli(
 				{
 					name: 'my-cli',
-					commands: [
-						command({
-							name: 'test',
-							help: {
-								description: 'test command',
-							},
-						}),
-					],
+					commands: {
+						test: {
+							description: 'test command',
+							loader: () => {},
+						},
+					},
 				},
 				undefined,
 				['--help'],
@@ -174,19 +171,16 @@ describe('help', () => {
 			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1mUsage:\u001B[22m\n  my-cli [flags...]\n  my-cli <command>\n\n\u001B[1mCommands:\u001B[22m\n  test        test command\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
 		});
 
-		test('commands with help but no description', async () => {
+		test('commands without description', async () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
 					name: 'my-cli',
-					commands: [
-						command({
-							name: 'test',
-							help: {
-								usage: 'custom usage',
-							},
-						}),
-					],
+					commands: {
+						test: {
+							loader: () => {},
+						},
+					},
 				},
 				undefined,
 				['--help'],
@@ -201,6 +195,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					flags: undefined,
 				},
 				undefined,
@@ -216,6 +211,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					flags: {},
 				},
 				undefined,
@@ -231,6 +227,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					flags: {
 						flag: Boolean,
 						flagA: String,
@@ -289,6 +286,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					help: {
 						examples: [],
 					},
@@ -306,6 +304,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					help: {
 						version: '1.0.0',
 					},
@@ -341,6 +340,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					help: {
 						usage: 'usage string',
 					},
@@ -358,6 +358,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					help: {
 						usage: [
 							'usage string a',
@@ -401,6 +402,7 @@ describe('help', () => {
 			const mocked = mockEnvFunctions();
 			await cli(
 				{
+					name: '',
 					help: {
 						description: 'test description',
 					},
@@ -412,50 +414,6 @@ describe('help', () => {
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 			expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
-		});
-
-		test('command help', async () => {
-			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					commands: [
-						command({
-							name: 'test',
-							parameters: ['<arg a>', '<arg b>'],
-							help: {
-								description: 'test command',
-							},
-						}),
-					],
-				},
-				undefined,
-				['test', '--help'],
-			);
-			mocked.restore();
-
-			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli test\n\ntest command\n\n\u001B[1mUsage:\u001B[22m\n  my-cli test [flags...] <arg a> <arg b>\n\n\u001B[1mFlags:\u001B[22m\n  -h, --help        Show help\n']]);
-		});
-
-		test('command help disabled', async () => {
-			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					commands: [
-						command({
-							name: 'test',
-							help: false,
-						}),
-					],
-				},
-				undefined,
-				['test', '--help'],
-			);
-			mocked.restore();
-
-			expect(mocked.processExit.called).toBe(false);
 		});
 	});
 
@@ -494,19 +452,18 @@ describe('help', () => {
 
 	test('smoke test', async () => {
 		const mocked = mockEnvFunctions();
+		process.stdout.columns = Number.POSITIVE_INFINITY;
 		await cli({
 			name: 'my-cli',
 
 			version: '1.1.1',
 
-			commands: [
-				command({
-					name: 'my-command',
-					help: {
-						description: 'my command description',
-					},
-				}),
-			],
+			commands: {
+				'my-command': {
+					description: 'my command description',
+					loader: () => {},
+				},
+			},
 
 			parameters: ['<urls...>'],
 
@@ -555,6 +512,7 @@ describe('help', () => {
 				],
 			},
 		}, undefined, ['--help']);
+		process.stdout.columns = Number.POSITIVE_INFINITY;
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -585,6 +543,7 @@ describe('help', () => {
 		};
 
 		const mocked = mockEnvFunctions();
+		process.stdout.columns = Number.POSITIVE_INFINITY;
 		await cli({
 			name: 'esbuild',
 
@@ -680,14 +639,15 @@ describe('help', () => {
 				},
 			},
 		}, undefined, ['--help']);
+		process.stdout.columns = Number.POSITIVE_INFINITY;
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
-		expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mUsage:\u001B[22m\n  esbuild [options...] [entry points]\n\n\u001B[1mDocumentation:\u001B[22m\n  \u001B[4mhttps://esbuild.github.io/\u001B[24m\n\n\u001B[1mSimple options:\u001B[22m\n  --bundle            Bundle all dependencies into the output files\n  --define=...        Substitute K with V while parsing\n\n\u001B[1mAdvanced options:\u001B[22m\n  --allow-overwrite        Allow output files to overwrite input files\n  --asset-names            Path template to use for "file" loader files (default "[name]-[hash]")\n\n\u001B[1mExamples:\u001B[22m\n  # Produces dist/entry_point.js and dist/entry_point.js.map\n  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap\n\nReceived value: 123']]);
+		expect(mocked.consoleLog.calls).toStrictEqual([[`\u001B[1mUsage:\u001B[22m\n  esbuild [options...] [entry points]\n\n\u001B[1mDocumentation:\u001B[22m\n  ${underline('https://esbuild.github.io/')}\n\n\u001B[1mSimple options:\u001B[22m\n  --bundle            Bundle all dependencies into the output files\n  --define=...        Substitute K with V while parsing\n\n\u001B[1mAdvanced options:\u001B[22m\n  --allow-overwrite        Allow output files to overwrite input files\n  --asset-names            Path template to use for "file" loader files (default "[name]-[hash]")\n\n\u001B[1mExamples:\u001B[22m\n  # Produces dist/entry_point.js and dist/entry_point.js.map\n  esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap\n\nReceived value: 123`]]);
 	});
 
 	describe('Renderers', () => {
-		test('render throws on invalid node type', async () => {
+		test('render throws on invalid node type', () => {
 			const renderers = new Renderers();
 			expect(() => {
 				renderers.render({
@@ -697,17 +657,17 @@ describe('help', () => {
 			}).toThrow('Invalid node type');
 		});
 
-		test('render with string returns string', async () => {
+		test('render with string returns string', () => {
 			const renderers = new Renderers();
 			expect(renderers.render('hello')).toBe('hello');
 		});
 
-		test('render with array joins with newlines', async () => {
+		test('render with array joins with newlines', () => {
 			const renderers = new Renderers();
 			expect(renderers.render(['a', 'b', 'c'])).toBe('a\nb\nc');
 		});
 
-		test('text renderer returns string as-is', async () => {
+		test('text renderer returns string as-is', () => {
 			const renderers = new Renderers();
 			expect(renderers.render({
 				type: 'text',
@@ -715,7 +675,7 @@ describe('help', () => {
 			})).toBe('hello world');
 		});
 
-		test('indentText with multi-line text', async () => {
+		test('indentText with multi-line text', () => {
 			const renderers = new Renderers();
 			const result = renderers.indentText({
 				text: 'line1\nline2\nline3',
@@ -724,7 +684,7 @@ describe('help', () => {
 			expect(result).toBe('  line1\n  line2\n  line3');
 		});
 
-		test('section with only title', async () => {
+		test('section with only title', () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				title: 'Title:',
@@ -734,7 +694,7 @@ describe('help', () => {
 			expect(stripVTControlCharacters(result)).toBe('Title:\n\n');
 		});
 
-		test('section with only body', async () => {
+		test('section with only body', () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				body: 'body content',
@@ -742,7 +702,7 @@ describe('help', () => {
 			expect(result).toBe('  body content\n');
 		});
 
-		test('section with indentBody: 0', async () => {
+		test('section with indentBody: 0', () => {
 			const renderers = new Renderers();
 			const result = renderers.section({
 				title: 'Title:',
@@ -752,34 +712,34 @@ describe('help', () => {
 			expect(stripVTControlCharacters(result)).toBe('Title:\nno indent\n');
 		});
 
-		test('flagParameter with Boolean type', async () => {
+		test('flagParameter with Boolean type', () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(Boolean)).toBe('');
 		});
 
-		test('flagParameter with String type', async () => {
+		test('flagParameter with String type', () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(String)).toBe('<string>');
 		});
 
-		test('flagParameter with Number type', async () => {
+		test('flagParameter with Number type', () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(Number)).toBe('<number>');
 		});
 
-		test('flagParameter with custom type', async () => {
+		test('flagParameter with custom type', () => {
 			const CustomType = (value: string) => value.toUpperCase();
 			const renderers = new Renderers();
 			expect(renderers.flagParameter(CustomType)).toBe('<value>');
 		});
 
-		test('flagParameter with array type', async () => {
+		test('flagParameter with array type', () => {
 			const renderers = new Renderers();
 			expect(renderers.flagParameter([String])).toBe('<string>');
 			expect(renderers.flagParameter([Number])).toBe('<number>');
 		});
 
-		test('flagDefault with various types', async () => {
+		test('flagDefault with various types', () => {
 			const renderers = new Renderers();
 			expect(renderers.flagDefault('hello')).toBe('"hello"');
 			expect(renderers.flagDefault(42)).toBe('42');
@@ -789,7 +749,7 @@ describe('help', () => {
 	});
 
 	describe('renderFlags', () => {
-		test('sorts flags alphabetically', async () => {
+		test('sorts flags alphabetically', () => {
 			const result = renderFlags({
 				zebra: Boolean,
 				apple: Boolean,
@@ -803,7 +763,7 @@ describe('help', () => {
 			expect(tableData[2][0].data.name).toBe('zebra');
 		});
 
-		test('formats flag names to kebab-case', async () => {
+		test('formats flag names to kebab-case', () => {
 			const result = renderFlags({
 				myFlag: Boolean,
 				anotherOne: String,
@@ -814,7 +774,7 @@ describe('help', () => {
 			expect(tableData[1][0].data.flagFormatted).toBe('--my-flag');
 		});
 
-		test('detects aliases and enables aliasesEnabled', async () => {
+		test('detects aliases and enables aliasesEnabled', () => {
 			const result = renderFlags({
 				noAlias: Boolean,
 				hasAlias: {
@@ -832,7 +792,7 @@ describe('help', () => {
 			expect(tableData[1][0].data.aliasFormatted).toBeUndefined();
 		});
 
-		test('returns table with breakpoints', async () => {
+		test('returns table with breakpoints', () => {
 			const result = renderFlags({
 				flag: Boolean,
 			});

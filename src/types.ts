@@ -3,10 +3,7 @@ import type {
 	Flags as BaseFlags,
 	IgnoreFunction,
 } from 'type-flag';
-import type { Command } from './command.ts';
 import type { Renderers } from './render-help/renderers.ts';
-
-export declare const parsedType: unique symbol;
 
 export type Flags = BaseFlags<{
 
@@ -30,27 +27,6 @@ export type Flags = BaseFlags<{
 	*/
 	placeholder?: string;
 }>;
-
-export type CallbackFunction<Parsed> = (parsed: {
-	// This exposes the content of "TypeFlag<T>" in type hints
-	[Key in keyof Parsed]: Parsed[Key];
-}) => void | Promise<void>;
-
-type HasVersion<Options extends { flags?: Flags }> = (
-	Options extends { version: string }
-		? Options['flags'] & { version: BooleanConstructor }
-		: Options['flags']
-);
-
-type HasHelp<Options extends { flags?: Flags }> = (
-	Options extends { help: false }
-		? Options['flags']
-		: Options['flags'] & { help: BooleanConstructor }
-);
-
-type HasHelpOrVersion<Options extends { flags?: Flags }> = (
-	HasVersion<Options> & HasHelp<Options>
-);
 
 export type HelpDocumentNode<Types extends PropertyKey = keyof Renderers> = {
 	id?: string;
@@ -89,8 +65,23 @@ export type HelpOptions = {
 	) => string;
 };
 
+/**
+ * A command entry in the commands map.
+ *
+ * - Shorthand: a function to call when the command is matched
+ * - Full form: an object with metadata for help + a loader function
+ */
+export type CommandEntry =
+	| ((argument?: any) => any)
+	| {
+		description?: string;
+		alias?: string | string[];
+		loader: (argument?: any) => any;
+	};
+
+export type Commands = Record<string, CommandEntry>;
+
 export type CliOptions<
-	Commands = Command[],
 	Parameters extends string[] = string[],
 > = {
 
@@ -149,12 +140,6 @@ export type CliOptions<
 	booleanFlagNegation?: boolean;
 };
 
-export type CliOptionsInternal<
-	Commands = Command[],
-> = CliOptions<Commands> & {
-	parent?: CliOptions;
-};
-
 type AlphabetLowercase = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z';
 type Numeric = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
 type AlphaNumeric = AlphabetLowercase | Uppercase<AlphabetLowercase> | Numeric;
@@ -189,14 +174,23 @@ type ParameterType<Parameter extends string> = (
 				: never
 );
 
-type WithCommand<
-	Options extends TypeFlag,
-	CommandName extends string | undefined = undefined,
-> = {
-	command: CommandName;
-} & Options;
+type HasVersion<Options extends { flags?: Flags }> = (
+	Options extends { version: string }
+		? Options['flags'] & { version: BooleanConstructor }
+		: Options['flags']
+);
 
-type TypeFlagWrapper<
+type HasHelp<Options extends { flags?: Flags }> = (
+	Options extends { help: false }
+		? Options['flags']
+		: Options['flags'] & { help: BooleanConstructor }
+);
+
+type HasHelpOrVersion<Options extends { flags?: Flags }> = (
+	HasVersion<Options> & HasHelp<Options>
+);
+
+export type ParsedArgv<
 	Options extends { flags?: Flags },
 	Parameters extends string[],
 > = TypeFlag<HasHelpOrVersion<Options>> & {
@@ -206,19 +200,24 @@ type TypeFlagWrapper<
 		as CamelCase<StripBrackets<Parameter>>
 		]: ParameterType<Parameter>;
 	};
+
+	/** Name of the matched command, or undefined if no command matched */
+	command: string | undefined;
+
+	/** Trigger the matched command. Undefined if no command matched. Callable at most once. */
+	runCommand: ((context?: unknown) => Promise<void>) | undefined;
+
+	/** Show help documentation */
 	showHelp: (options?: HelpOptions) => void;
+
+	/** Show version */
 	showVersion: () => void;
 };
 
-export type ParseArgv<
-	Options extends { flags?: Flags },
-	Parameters extends string[],
-	CommandName extends string | undefined = '',
-> = (
-	CommandName extends ''
-		? TypeFlagWrapper<Options, Parameters>
-		: WithCommand<TypeFlagWrapper<Options, Parameters>, CommandName>
-);
+export type CallbackFunction<Parsed> = (
+	parsed: { [Key in keyof Parsed]: Parsed[Key] },
+	runCommand: ((context?: unknown) => Promise<void>) | undefined,
+) => void | Promise<void>;
 
 /**
  * Helper type to reject unknown properties in cli() options.

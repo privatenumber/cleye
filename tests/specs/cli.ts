@@ -11,26 +11,10 @@ describe('cli', () => {
 			).rejects.toThrow('Options is required');
 		});
 
-		test('missing name', async () => {
-			await expect(
-				cli({
-					name: '',
-				}),
-			).rejects.toThrow('Invalid script name: ""');
-		});
-
-		test('invalid name format', async () => {
-			await expect(
-				cli({
-					name: 'a b',
-				}),
-			).rejects.toThrow('Invalid script name: "a b"');
-		});
-
-		test('allowed name format', async () => {
-			await cli({
-				name: 'a.b_',
-			});
+		test('allows any name including spaces and empty string', async () => {
+			await cli({ name: '' });
+			await cli({ name: 'a b' });
+			await cli({ name: 'a.b_' });
 		});
 	});
 
@@ -61,19 +45,8 @@ describe('cli', () => {
 		});
 	});
 
-	describe('Promise behavior', () => {
-		test('cli Promise waits for callback to complete', async () => {
-			let callbackCompleted = false;
-
-			await cli({}, async () => {
-				await setImmediate();
-				callbackCompleted = true;
-			});
-
-			expect(callbackCompleted).toBe(true);
-		});
-
-		test('result is the parsed argv', async () => {
+	describe('Promise edge cases', () => {
+		test('result properties accessible after await', async () => {
 			const result = await cli({
 				parameters: ['<value>'],
 			}, async () => {
@@ -81,6 +54,42 @@ describe('cli', () => {
 			}, ['test']);
 
 			expect<string>(result._.value).toBe('test');
+		});
+
+		test('cli Promise waits for callback to complete', async () => {
+			let callbackCompleted = false;
+
+			const resultPromise = cli({}, async () => {
+				await setImmediate();
+				callbackCompleted = true;
+			});
+
+			// Callback shouldn't have completed yet
+			expect(callbackCompleted).toBe(false);
+
+			// After awaiting cli, callback should be complete
+			await resultPromise;
+			expect(callbackCompleted).toBe(true);
+		});
+
+		test('cli Promise never resolves if callback never resolves', async () => {
+			let cliResolved = false;
+
+			const resultPromise = cli({}, async () => {
+				// Never resolve - hang forever
+				await new Promise(() => {});
+			});
+
+			// Race the cli promise against a timeout
+			await Promise.race([
+				resultPromise.then(() => {
+					cliResolved = true;
+				}),
+				setImmediate(50),
+			]);
+
+			// cli should not have resolved
+			expect(cliResolved).toBe(false);
 		});
 	});
 });

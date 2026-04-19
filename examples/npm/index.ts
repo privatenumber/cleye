@@ -5,22 +5,24 @@
  *  npx esno examples/npm i --help
  */
 
-import { install } from './commands/install.ts';
-import { runScript } from './commands/run-script.ts';
 import { cli } from '#cleye';
 
-const argv = await cli({
+await cli({
 	name: 'npm',
 
-	commands: [
-		install,
-		runScript,
-	],
+	commands: {
+		install: {
+			description: 'Install a package',
+			alias: ['i', 'isntall', 'add'],
+			loader: () => import('./commands/install.ts'),
+		},
+		'run-script': {
+			description: 'Run a script',
+			alias: ['run', 'rum', 'urn'],
+			loader: () => import('./commands/run-script.ts'),
+		},
+	},
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-// Type narrowing by command name
-if (argv.command === 'install') {
-	console.log(argv.flags);
-} else {
-	console.log(argv.flags);
-}

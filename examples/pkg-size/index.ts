@@ -7,7 +7,7 @@
 
 import { cli } from '#cleye';
 
-const argv = cli({
+await cli({
 	name: 'pkg-size',
 
 	version: '1.0.0',
@@ -72,6 +72,9 @@ const argv = cli({
 			'pkg-size -u metric_octet',
 		],
 	},
+}, (argv) => {
+	console.log(argv);
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-console.log(argv);

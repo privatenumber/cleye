@@ -7,8 +7,7 @@
 
 import { cli } from '#cleye';
 
-// Parse argv
-const argv = await cli({
+await cli({
 	name: 'greet.js',
 
 	// Define parameters
@@ -28,12 +27,15 @@ const argv = await cli({
 			default: 'morning',
 		},
 	},
+}, (argv) => {
+	const name = [argv._.firstName, argv._.lastName].filter(Boolean).join(' ');
+
+	if (argv.flags.time === 'morning') {
+		console.log(`Good morning ${name}!`);
+	} else {
+		console.log(`Good evening ${name}!`);
+	}
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-const name = [argv._.firstName, argv._.lastName].filter(Boolean).join(' ');
-
-if (argv.flags.time === 'morning') {
-	console.log(`Good morning ${name}!`);
-} else {
-	console.log(`Good evening ${name}!`);
-}

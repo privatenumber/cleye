@@ -11,13 +11,15 @@
 The intuitive command-line interface (CLI) development tool.
 
 ### Features
-- Minimal API surface
-- Powerful flag parsing
+- Single API — just `cli()`
 - Strongly typed parameters and flags
-- Command support
-- Help documentation generation (customizable too!)
+- Commands as lazy imports with automatic argv routing
+- Nested command support
+- Middleware-style callbacks with data passing
+- `--help` documentation generation (customizable)
+- Strict mode for flags and commands with typo suggestions
 
-→ [Try it out online](https://stackblitz.com/edit/cleye-demo?devtoolsheight=50&file=examples/greet.ts&view=editor)
+> [Try it out online](https://stackblitz.com/edit/cleye-demo?devtoolsheight=50&file=examples/greet.ts&view=editor)
 
 <br>
 
@@ -33,7 +35,7 @@ The intuitive command-line interface (CLI) development tool.
 npm i cleye
 ```
 
-## About
+## Quick start
 _Cleye_ makes it very easy to develop command-line scripts in Node.js. It handles argv parsing to give you strongly typed parameters + flags and generates `--help` documentation based on the provided information.
 
 Here's an example script that simply logs: `Good morning/evening <name>!`:
@@ -42,48 +44,47 @@ _greet.js:_
 ```ts
 import { cli } from 'cleye'
 
-// Parse argv
-const argv = cli({
+await cli({
     name: 'greet.js',
 
-    // Define parameters
     parameters: [
-        '<first name>', // First name is required
-        '[last name]' // Last name is optional
+        '<first name>',
+        '[last name]'
     ],
 
-    // Define flags/options
     flags: {
-
-        // Parses `--time` as a string
         time: {
             type: String,
             description: 'Time of day to greet (morning or evening)',
             default: 'morning'
         }
     }
+}, (argv) => {
+    const name = [argv._.firstName, argv._.lastName].filter(Boolean).join(' ')
+
+    if (argv.flags.time === 'morning') {
+        console.log(`Good morning ${name}!`)
+    } else {
+        console.log(`Good evening ${name}!`)
+    }
 })
-
-const name = [argv._.firstName, argv._.lastName].filter(Boolean).join(' ')
-
-if (argv.flags.time === 'morning') {
-    console.log(`Good morning ${name}!`)
-} else {
-    console.log(`Good evening ${name}!`)
-}
 ```
 
-🛠 In development, type hints are provided on parsed flags and parameters:
-<p align="center">
-    <br>
-    <img src=".github/typed-flags.png" width="600">
-    <br>
-    <i>Type hints for Cleye's output are very verbose and readable</i>
-    <br>
-    <br>
-</p>
+> [!NOTE]
+> `cli()` is async — the callback runs after argv is parsed, and the returned `Promise` resolves after the callback completes.
 
-📖 Generated help documentation can be viewed with the `--help` flag:
+> [!TIP]
+> Pull `name` and `version` from your `package.json` to keep them in sync:
+> ```ts
+> import packageJson from './package.json' with { type: 'json' }
+>
+> await cli({
+>     name: packageJson.name,
+>     version: packageJson.version
+> })
+> ```
+
+Generated help documentation can be viewed with the `--help` flag:
 
 ```sh
 $ node greet.js --help
@@ -98,7 +99,7 @@ Flags:
       --time <string>        Time of day to greet (morning or evening) (default: "morning")
 ```
 
-✅ Run the script to see it in action:
+Run the script to see it in action:
 
 ```sh
 $ node greet.js John Doe --time evening
@@ -106,7 +107,7 @@ $ node greet.js John Doe --time evening
 Good evening John Doe!
 ```
 
-## Examples
+### Examples
 Want to dive right into some code? Check out some of these examples:
 
 - [**greet.js**](/examples/greet/index.ts): Working example from above
@@ -115,94 +116,7 @@ Want to dive right into some code? Check out some of these examples:
 - [**snap-tweet**](/examples/snap-tweet/index.ts): Reimplementation of [`snap-tweet`](https://github.com/privatenumber/snap-tweet)'s CLI
 - [**pkg-size**](/examples/pkg-size/index.ts): Reimplementation of [`pkg-size`](https://github.com/pkg-size/pkg-size)'s CLI
 
-## Usage
-
-### Arguments
-Arguments are values passed into the script that are not associated with any flags/options.
-
-For example, in the following command, the first argument is `file-a.txt` and the second is `file-b.txt`:
-
-```
-$ my-script file-a.txt file-b.txt
-```
-
-Arguments can be accessed from the `_` array-property of the returned object.
-
-Example:
-
-```ts
-const argv = cli({ /* ... */ })
-
-// $ my-script file-a.txt file-b.txt
-
-argv._ // => ["file-a.txt", "file-b.txt"] (string[])
-```
-
-#### Parameters
-Parameters (aka _positional arguments_) are the names that map against argument values. Think of parameters as variable names and arguments as values associated with the variables.
-
-Parameters can be defined in the `parameters` array-property to make specific arguments accessible by name. This is useful for writing more readable code, enforcing validation, and generating help documentation.
-
-Parameters are defined in the following formats:
-- **Required parameters** are indicated by angle brackets (eg. `<parameter name>`).
-- **Optional parameters** are indicated by square brackets (eg. `[parameter name]`).
-- **Spread parameters** are indicated by `...` suffix (eg. `<parameter name...>` or `[parameter name...]`).
-
-Note, required parameters cannot come after optional parameters, and spread parameters must be last.
-
-Parameters can be accessed in camelCase on the `_` property of the returned object.
-
-Example:
-
-```ts
-const argv = cli({
-    parameters: [
-        '<required parameter>',
-        '[optional parameter]',
-        '[optional spread...]'
-    ]
-})
-
-// $ my-script a b c d
-
-argv._.requiredParameter // => "a" (string)
-argv._.optionalParameter // => "b" (string | undefined)
-argv._.optionalSpread // => ["c", "d"] (string[])
-```
-
-#### End-of-flags
-End-of-flags (`--`) (aka _end-of-options_) allows users to pass in a subset of arguments. This is useful for passing in arguments that should be parsed separately from the rest of the arguments or passing in arguments that look like flags.
-
-An example of this is [`npm run`](https://docs.npmjs.com/cli/v8/commands/npm-run-script):
-```sh
-$ npm run <script> -- <script arguments>
-```
-The `--` indicates that all arguments afterwards should be passed into the _script_ rather than _npm_.
-
-All end-of-flag arguments will be accessible from `argv._['--']`.
-
-Additionally, you can specify `--` in the `parameters` array to parse end-of-flags arguments.
-
-Example:
-
-```ts
-const argv = cli({
-    name: 'npm-run',
-    parameters: [
-        '<script>',
-        '--',
-        '[arguments...]'
-    ]
-})
-
-// $ npm-run echo -- hello world
-
-argv._.script // => "echo" (string)
-argv._.arguments // => ["hello", "world] (string[])
-```
-
-
-### Flags
+## Flags
 Flags (aka Options) are key-value pairs passed into the script in the format `--flag-name <value>`.
 
 For example, in the following command, `--file-a` has value `data.json` and `--file-b` has value `file.txt`:
@@ -211,7 +125,7 @@ For example, in the following command, `--file-a` has value `data.json` and `--f
 $ my-script --file-a data.json --file-b=file.txt
 ```
 
-#### Parsing features
+### Parsing features
 _Cleye_'s flag parsing is powered by [`type-flag`](https://github.com/privatenumber/type-flag) and comes with many features:
 
 - Array & Custom types
@@ -223,8 +137,8 @@ _Cleye_'s flag parsing is powered by [`type-flag`](https://github.com/privatenum
 
 Read the [_type-flag_ docs](https://github.com/privatenumber/type-flag) to learn more.
 
-#### Defining flags
-Flags can be specified in the `flag` object-property, where the key is the flag name, and the value is a flag type function or an object that describes the flag.
+### Defining flags
+Flags can be specified in the `flags` object-property, where the key is the flag name, and the value is a flag type function or an object that describes the flag.
 
 The flag name is recommended to be in camelCase as it will be interpreted to parse kebab-case equivalents.
 
@@ -237,7 +151,7 @@ All of the provided information will be used to generate better help documentati
 Example:
 
 ```ts
-const argv = cli({
+await cli({
     flags: {
         someBoolean: Boolean,
 
@@ -254,20 +168,34 @@ const argv = cli({
             description: 'Array of numbers. (eg. -n 1 -n 2 -n 3)'
         }
     }
+}, (argv) => {
+    // $ my-script --some-boolean --some-string hello --some-number 1 -n 2
+
+    argv.flags.someBoolean // => true (boolean | undefined)
+    argv.flags.someString // => "hello" (string)
+    argv.flags.someNumber // => [1, 2] (number[])
 })
-
-// $ my-script --some-boolean --some-string hello --some-number 1 -n 2
-
-argv.flags.someBoolean // => true (boolean | undefined)
-argv.flags.someString // => "hello" (string)
-argv.flags.someNumber // => [1, 2] (number[])
 ```
 
-#### Boolean flag negation
-To support `--no-<flag>` syntax for boolean flags, enable `booleanFlagNegation`:
+### Boolean flag negation
+By default, boolean flags can be set to `false` by explicitly passing the value with `=`:
+
+```sh
+$ my-script --some-boolean=false
+```
+
+Without `=`, `false` is parsed as a separate argument, not as the flag's value:
+
+```sh
+$ my-script --some-boolean false
+# argv.flags.someBoolean => true
+# argv._ => ['false']
+```
+
+To also support the `--no-<flag>` prefix syntax, enable `booleanFlagNegation`:
 
 ```ts
-cli({
+await cli({
     flags: {
         verbose: Boolean
     },
@@ -292,24 +220,7 @@ $ my-script --no-verbose --verbose
 
 Only applies to flags defined as `Boolean`. For non-boolean flags, `--no-<flag>` is treated as an unknown flag.
 
-Commands inherit `booleanFlagNegation` from the parent CLI, but can override it.
-
-#### Inverting boolean flags
-Alternatively, a boolean flag can be set to `false` by passing the value using the `=` operator:
-
-```sh
-$ my-script --some-boolean=false
-```
-
-Without `=`, the `false` will be parsed as a separate argument:
-
-```sh
-$ my-script --some-boolean false
-# argv.flags.someBoolean => true
-# argv._ => ['false']
-```
-
-#### Custom flag types & validation
+### Custom flag types & validation
 Custom flag types can be created to validate flags and narrow types. Simply create a new function that accepts a string and returns the parsed value.
 
 Here's an example with a custom `Size` type that narrows the flag type to `"small" | "medium" | "large"`:
@@ -328,33 +239,33 @@ const Size = (size: Sizes) => {
     return size
 }
 
-const argv = cli({
+await cli({
     flags: {
         size: {
             type: Size,
             description: 'Size of the pizza (small, medium, large)'
         }
     }
+}, (argv) => {
+    // $ my-script --size large
+
+    argv.flags.size // => "large" ("small" | "medium" | "large")
 })
-
-// $ my-script --size large
-
-argv.flags.size // => "large" ("small" | "medium" | "large")
 ```
 
-#### Default flags
+### Default flags
 By default, _Cleye_ will try to handle the `--help, -h` and `--version` flags.
 
-##### Help flag
+#### Help flag
 Handling `--help, -h` is enabled by default.
 
 To disable it, set `help` to `false`. The help documentation can still be manually displayed by calling `.showHelp(helpOptions)` on the returned object.
 
-##### Version flag
+#### Version flag
 To enable handling `--version`, specify the `version` property.
 
 ```ts
-cli({
+await cli({
     version: '1.2.3'
 })
 ```
@@ -366,11 +277,11 @@ $ my-script --version
 
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
 
-#### Strict flags
+### Strict flags
 To reject unknown flags with an error, enable `strictFlags`:
 
 ```ts
-cli({
+await cli({
     flags: {
         foo: Boolean,
         bar: String
@@ -386,112 +297,327 @@ Error: Unknown flag: --baz. (Did you mean --bar?)
 
 When enabled, the CLI will exit with an error if any unknown flags are passed. If a similar flag name exists (within 2 edits), it will suggest the closest match.
 
-Commands inherit `strictFlags` from the parent CLI, but can override it:
+## Arguments
+Arguments are values passed into the script that are not associated with any flags/options.
 
-```ts
-command({
-    name: 'build',
-    strictFlags: false // Disable for this command
-})
+For example, in the following command, the first argument is `file-a.txt` and the second is `file-b.txt`:
+
+```
+$ my-script file-a.txt file-b.txt
 ```
 
-### Commands
-Commands allow organizing multiple "scripts" into a single script. An example of this is the [`npm install`](https://docs.npmjs.com/cli/install/) command, which is essentially an "install" script inside the "npm" script, adjacent to other commands like [`npm run`](https://docs.npmjs.com/cli/run-script/).
-
-#### Defining commands
-A command can be created by importing the `command` function and initializing it with a name. The rest of the options are the same as the `cli` function.
-
-Pass the created command into `cli` option's `commands` array-property to register it:
-
-_npm.js_
-```ts
-import { cli, command } from 'cleye'
-
-const argv = cli({
-    name: 'npm',
-
-    version: '1.2.3',
-
-    commands: [
-        command({
-            // Command name
-            name: 'install',
-
-            parameters: ['<package name>'],
-
-            flags: {
-                noSave: Boolean,
-                saveDev: Boolean
-            }
-        })
-    ]
-})
-
-// $ npm install lodash
-
-argv.command // => "install" (string)
-argv._.packageName // => "lodash" (string)
-```
-
-Depending on the command given, the resulting type can be narrowed:
-<p align="center">
-    <img src=".github/command-type-narrowing.png" width="420">
-</p>
-
-#### Command callback
-
-When a CLI app has many commands, it's recommended to organize each command in its own file. With this structure, parsed output handling for each command is better placed where they are respectively defined rather than the single `cli` output point. This can be done by passing a callback function into the `command` function (callbacks are supported in the `cli` function too).
+Arguments can be accessed from the `_` array-property of the returned object.
 
 Example:
 
-_install-command.js_ (`install` command using callback)
 ```ts
-import { command } from 'cleye'
+await cli({ /* ... */ }, (argv) => {
+    // $ my-script file-a.txt file-b.txt
 
-export const installCommand = command({
-    // Command name
-    name: 'install',
-
-    parameters: ['<package name>'],
-
-    flags: {
-        noSave: Boolean,
-        saveDev: Boolean
-    }
-}, (argv) => {
-    // $ npm install lodash
-
-    argv._.packageName // => "lodash" (string)
+    argv._ // => ["file-a.txt", "file-b.txt"] (string[])
 })
 ```
 
-_npm.js_ (CLI entry file)
+### Parameters
+Parameters (aka _positional arguments_) are the names that map against argument values. Think of parameters as variable names and arguments as values associated with the variables.
+
+Parameters can be defined in the `parameters` array-property to make specific arguments accessible by name. This is useful for writing more readable code, enforcing validation, and generating help documentation.
+
+Parameters are defined in the following formats:
+- **Required parameters** are indicated by angle brackets (eg. `<parameter name>`).
+- **Optional parameters** are indicated by square brackets (eg. `[parameter name]`).
+- **Spread parameters** are indicated by `...` suffix. Required spread (`<files...>`) needs at least one value; optional spread (`[files...]`) accepts zero or more.
+
+Note, required parameters cannot come after optional parameters, and spread parameters must be last.
+
+Parameters can be accessed in camelCase on the `_` property of the returned object.
+
+Example:
+
 ```ts
-import { installCommand } from './install-command.js'
-
-cli({
-    name: 'npm',
-
-    commands: [
-        installCommand
+await cli({
+    parameters: [
+        '<required parameter>',
+        '[optional parameter]',
+        '[optional spread...]'
     ]
+}, (argv) => {
+    // $ my-script a b c d
+
+    argv._.requiredParameter // => "a" (string)
+    argv._.optionalParameter // => "b" (string | undefined)
+    argv._.optionalSpread // => ["c", "d"] (string[])
 })
 ```
 
-### Help documentation
+### End-of-flags
+End-of-flags (`--`) (aka _end-of-options_) allows users to pass in a subset of arguments. This is useful for passing in arguments that should be parsed separately from the rest of the arguments or passing in arguments that look like flags.
+
+An example of this is [`npm run`](https://docs.npmjs.com/cli/v8/commands/npm-run-script):
+```sh
+$ npm run <script> -- <script arguments>
+```
+The `--` indicates that all arguments afterwards should be passed into the _script_ rather than _npm_.
+
+All end-of-flag arguments will be accessible from `argv._['--']`.
+
+Additionally, you can specify `--` in the `parameters` array to parse end-of-flags arguments.
+
+Example:
+
+```ts
+await cli({
+    name: 'npm-run',
+    parameters: [
+        '<script>',
+        '--',
+        '[arguments...]'
+    ]
+}, (argv) => {
+    // $ npm-run echo -- hello world
+
+    argv._.script // => "echo" (string)
+    argv._.arguments // => ["hello", "world"] (string[])
+})
+```
+
+## Commands
+
+Commands let you organize a CLI into subcommands — like `npm install` or `git remote add`. Each command is its own `cli()` call, and commands can nest indefinitely (`git remote add` is three levels deep).
+
+Every level can have its own flags and callback. Callbacks act as **middleware**: the parent's callback always runs first, and the matched command executes after it. This means each level gets a chance to parse its own flags, run setup logic, and pass data down before handing off to the child.
+
+```sh
+$ my-cli --verbose install lodash --save-dev
+```
+
+Here's the execution flow:
+
+1. **Parent parses its flags** — `--verbose` is parsed. Parsing stops at the command name `install`.
+2. **Parent callback runs** — receives `argv.flags.verbose` and `argv.command === 'install'`.
+3. **Command executes** — `install`'s file is loaded, calling its own `cli()` to parse `lodash --save-dev`.
+
+Everything before the command name belongs to the parent. Everything after belongs to the child:
+
+```sh
+$ my-cli --verbose install lodash --save-dev
+#        ^^^^^^^^^                ^^^^^^^^^^
+#        parent flag              child flags
+```
+
+If no callback is provided, step 2 is skipped and the command runs immediately. If no command matches, help is shown.
+
+> [!NOTE]
+> If a CLI has both commands and parameters, command names take priority. An argument matching a command name will trigger the command instead of being parsed as a parameter value. In practice, this is rarely an issue — parent commands typically only have flags, not parameters.
+
+### Defining commands
+
+Commands are defined as a map in the `commands` option:
+
+```ts
+await cli({
+    name: 'my-cli',
+    version: '1.0.0',
+
+    commands: {
+        // Shorthand: just a function (no metadata for --help)
+        build: () => import('./commands/build.ts'),
+
+        // Full form: metadata for --help + handler
+        install: {
+            description: 'Install a package',
+            alias: 'i',
+            loader: () => import('./commands/install.ts')
+        }
+    }
+}, async (argv) => {
+    // argv: parsed flags/params for this level
+    // if a command is matched, it runs after this callback
+})
+```
+
+### Explicit `runCommand`
+
+By default, the matched command runs automatically after the callback. To take full control — run code before and after, [pass data](#passing-data-to-commands), or catch errors — call `runCommand` explicitly. When you do, auto-invocation is skipped:
+
+```ts
+await cli({
+    commands: {
+        deploy: () => import('./commands/deploy.ts')
+    }
+}, async (argv, runCommand) => {
+    const config = await loadConfig()
+
+    try {
+        await runCommand?.({ config })
+        console.log('Deploy succeeded')
+    } catch (error) {
+        console.error('Deploy failed:', error.message)
+        process.exit(1)
+    }
+})
+```
+
+`runCommand` is idempotent — calling it multiple times returns the same Promise. See [Passing data to commands](#passing-data-to-commands) for how the child receives the argument.
+
+### Command files
+
+#### Side-effect style
+For dynamic imports.
+
+The file runs `cli()` at the top level. When dynamically imported, ESM evaluates the module which runs the command:
+
+```ts
+// commands/install.ts
+import { cli } from 'cleye'
+
+await cli({
+    parameters: ['<package>'],
+    flags: { saveDev: Boolean }
+}, (argv) => {
+    console.log(argv._.package, argv.flags.saveDev)
+})
+```
+
+The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`. Each command file also works standalone — run it directly with `node commands/install.ts` and set `name` explicitly if needed.
+
+#### Exported function style
+For static imports.
+
+```ts
+// commands/install.ts
+import { cli } from 'cleye'
+
+export default () => cli({
+    parameters: ['<package>'],
+    flags: { saveDev: Boolean }
+}, (argv) => {
+    console.log(argv._.package, argv.flags.saveDev)
+})
+```
+
+Use with static imports in the parent:
+
+```ts
+import installHandler from './commands/install.ts'
+
+await cli({
+    commands: {
+        install: installHandler
+    }
+})
+```
+
+### Passing data to commands
+
+Pass data to a command by calling `runCommand(data)`. The command file exports a function that receives it:
+
+```ts
+// cli.ts (parent)
+await cli({
+    commands: {
+        deploy: () => import('./commands/deploy.ts')
+    }
+}, async (argv, runCommand) => {
+    const config = await loadConfig()
+    await runCommand?.({ config })
+})
+```
+
+```ts
+// commands/deploy.ts (child)
+import { cli } from 'cleye'
+
+type Context = { config: Config }
+
+export default ({ config }: Context) => cli({
+    parameters: ['<target>']
+}, (argv) => {
+    console.log(`Deploying ${argv._.target}`, config)
+})
+```
+
+The argument is passed directly to the command's exported function — fully typed, no casting. If the command doesn't export a default function (side-effect style), the argument is ignored and `runCommand()` simply triggers the import.
+
+### Nested commands
+
+Since each command is its own `cli()` call, there's no limit to how deep commands can nest. Each level parses its own flags, runs its own callback as middleware, and passes the remaining argv to the next level. For example, `npm config get` is three levels deep:
+
+```ts
+// cli.ts
+await cli({
+    name: 'npm',
+    commands: {
+        config: () => import('./commands/config.ts')
+    }
+}, async (argv) => {
+    // Runs before the matched command (e.g. load shared state)
+})
+```
+
+```ts
+// commands/config.ts
+await cli({
+    commands: {
+        get: () => import('./commands/config-get.ts'),
+        set: () => import('./commands/config-set.ts')
+    }
+}, async (argv) => {
+    // Runs before get/set (e.g. load config file)
+})
+```
+
+```ts
+// commands/config-get.ts
+await cli({
+    parameters: ['<key>']
+}, (argv) => {
+    console.log(`Getting "${argv._.key}"`)
+})
+```
+
+```sh
+$ npm config get registry
+Getting "registry"
+```
+
+### Option inheritance
+
+`strictFlags` and `booleanFlagNegation` automatically inherit from parent to child through all nesting levels. A child can override any inherited option:
+
+```ts
+// Parent enables strictFlags for all commands
+await cli({
+    strictFlags: true,
+    commands: {
+        // This command disables strictFlags for itself
+        build: () => import('./commands/build.ts')
+    }
+})
+```
+
+```ts
+// commands/build.ts — overrides parent
+await cli({
+    strictFlags: false, // Override parent's strictFlags
+    flags: { watch: Boolean }
+})
+```
+
+## Help documentation
 _Cleye_ uses all information provided to generate rich help documentation. The more information you give, the better the docs!
 
-#### Help customization
+### Help customization
 The help document can be customized by passing a `render(nodes, renderers) => string` function to `help.render`.
 
-The `nodes` parameter contains an array of nodes that will be used to render the document. The `renderers` parameter is an object of functions used to render the document. Each node has properties `type` and `data`, where `type` corresponds to a property in `renderers` and `data` is passed into the render function. Nodes also have an `id` property to identify sections: `name`, `description`, `usage`, `commands`, `flags`, `examples`, and `aliases`.
+The `nodes` parameter contains an array of nodes that will be used to render the document. The `renderers` parameter is an object of functions used to render the document. Each node has properties `type` and `data`, where `type` corresponds to a property in `renderers` and `data` is passed into the render function. Nodes also have an `id` property to identify sections: `name`, `description`, `usage`, `commands`, `flags`, and `examples`.
 
 Default renderers can be found in [`/src/render-help/renderers.ts`](/src/render-help/renderers.ts).
 
 Here's an example that adds an extra sentence at the end and also updates the flags table to use the `=` operator (`--flag <value>` → `--flag=<value>`):
 
 ```ts
-cli({
+await cli({
     // ...,
 
     help: {
@@ -544,9 +670,14 @@ await cli({
 
 ## API
 
-### cli(options, callback?, argvs?)
+### cli(options, callback?, argv?)
 
-Return type:
+Returns: `Promise<ParsedArgv>`
+
+Function to parse argv by declaring parameters, flags, and commands.
+
+#### Return type
+
 ```ts
 type ParsedArgv = {
     // Parsed arguments
@@ -562,6 +693,14 @@ type ParsedArgv = {
         [flagName: string]: (string | boolean)[]
     }
 
+    // Matched command name, or undefined
+    command: string | undefined
+
+    // Trigger the matched command. Undefined if no command matched.
+    // Callable at most once — subsequent calls return the same Promise.
+    // Pass an argument to forward to the command's exported function.
+    runCommand: ((argument?: unknown) => Promise<void>) | undefined
+
     // Method to print version
     showVersion: () => void
 
@@ -570,105 +709,64 @@ type ParsedArgv = {
 }
 ```
 
-Function to parse argvs by declaring parameters and flags.
-
 #### options
 
-Options object to configure `cli`.
-##### name
-
-Type: `string`
-
-Name of the script used in the help documentation.
-
-##### version
-
-Type: `string`
-
-Version of the script used in the help documentation.
-
-Passing this in enables auto-handling `--version`. To provide a version for the documentation without auto-handling `--version`, pass it into [`help.version`](#version-1).
-
-##### parameters
-
-Type: `string[]`
-
-Parameter names to map onto arguments. Also used for validation and help documentation.
-
-Parameters must be defined in the following formats:
-| Format | Description |
-| - | - |
-| `<parameter name>` | Required parameter |
-| `[parameter name]` | Optional parameter |
-| `<parameter name...>` | Required spread parameter (1 or more) |
-| `[parameter name...]` | Optional spread parameter (0 or more) |
-
-Required parameters must be defined before optional parameters, and spread parameters must be defined at the end.
+| Property | Type | Description |
+| - | - | - |
+| `name` | `string` | Script name for `--help` output. |
+| `version` | `string` | Enables `--version` flag and shown in `--help`. Pass via `help.version` to show in help only. |
+| `parameters` | `string[]` | Positional argument definitions. Formats: `<required>`, `[optional]`, `<spread...>`, `[spread...]`. |
+| `flags` | `Flags` | Flag definitions. See [Defining flags](#defining-flags). |
+| `commands` | `Record<string, CommandEntry>` | Command definitions. See [Defining commands](#defining-commands). |
+| `help` | `false \| HelpOptions` | Help configuration or `false` to disable `--help`. See [help options](#help-1). |
+| `ignoreArgv` | `IgnoreArgvCallback` | Callback to skip certain argv tokens from parsing. |
+| `strictFlags` | `boolean` | Error on unknown flags with typo suggestions. Inherited by commands. |
+| `booleanFlagNegation` | `boolean` | Enable `--no-<flag>` for boolean flags. Inherited by commands. |
 
 ##### flags
 
-Type: An object that maps the flag name (in camelCase) to a flag type function or an object describing the flag:
+An object mapping flag names (in camelCase) to a type function or descriptor:
 
 | Property | Type | Description |
 | - | - | - |
 | `type` | `Function` | Flag value parsing function. |
 | `alias` | `string` | Single character alias for the flag. |
 | `default` | `any` | Default value for the flag. |
-| `description` | `string` | Description of the flag shown in `--help`. |
-| `placeholder` | `string` | Placeholder for the flag value shown in `--help`. |
-
-##### help
-
-Type: `false` or an object with the following properties.
-
-| Property | Type | Description |
-| - | - | - |
-| `version` | `string` | Version shown in `--help`. |
 | `description` | `string` | Description shown in `--help`. |
-| `usage` | `string \| string[] \| false` | Usage code examples shown in `--help`. Pass `false` to disable auto-generated usage. |
-| `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
-| `render` | `(nodes, renderers) => string` | Function to customize the help document. |
-
-Handling `--help, -h` is enabled by default. To disable it, pass in `false`.
+| `placeholder` | `string` | Placeholder for the flag value shown in `--help`. |
 
 ##### commands
 
-Type: `Command[]`
+A map of command names to entries:
 
-Array of [commands](#commandoptions-callback) to register.
-
-##### ignoreArgv
-
-Type:
 ```ts
-type IgnoreArgvCallback = (
-    type: 'known-flag' | 'unknown-flag' | 'argument',
-    flagOrArgv: string,
-    value: string | undefined
-) => boolean | void
+type CommandEntry =
+    | (() => void | Promise<void>)
+    | {
+        description?: string
+        alias?: string | string[]
+        loader: () => void | Promise<void>
+    }
 ```
 
-A callback to ignore argv tokens from being parsed.
+##### help
 
-##### strictFlags
+| Property | Type | Description |
+| - | - | - |
+| `version` | `string` | Version shown in `--help` without enabling `--version` flag. |
+| `description` | `string` | Description shown in `--help`. |
+| `usage` | `string \| string[] \| false` | Usage examples. `false` disables auto-generated usage. |
+| `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
+| `render` | `(nodes, renderers) => string` | Function to customize the help document. |
 
-Type: `boolean`
+#### callback(parsed, runCommand?)
 
-When enabled, prints an error and exits if unknown flags are passed. Suggests the closest matching flag name when possible. See [Strict flags](#strict-flags).
+Optional callback invoked after parsing.
 
-##### booleanFlagNegation
+- `parsed` — The parsed argv result for this level.
+- `runCommand` — Triggers the matched command. `undefined` if no command matched. Accepts an optional argument to pass to the command's exported function. Auto-invoked after callback if not called.
 
-Type: `boolean`
-
-Enable `--no-<flag>` negation for boolean flags. See [Boolean flag negation](#boolean-flag-negation).
-
-#### callback(parsed)
-
-Type:
-
-Optional callback function that is called when the script is invoked without a command. If the callback returns a Promise, the `cli()` return value will also be a Promise, allowing `await cli(...)` for async workflows.
-
-#### argvs
+#### argv
 
 Type: `string[]`
 
@@ -676,37 +774,21 @@ Default: `process.argv.slice(2)`
 
 The raw parameters array to parse.
 
-### command(options, callback?)
-
-#### options
-
-| Property | Type | Description |
-| - | - | - |
-| `name` | `string` | Required name used to invoke the command. |
-| `alias` | `string \| string[]` | Aliases used to invoke the command. Displayed in an "Aliases:" section in `--help`. |
-| `parameters` | `string[]` | Parameters for the command. Same as [`parameters`](#parameters-1). |
-| `flags` | `Flags` | Flags for the command. Same as [`flags`](#flags-1). |
-| `help` | `false \| HelpOptions` | Help options for the command. Same as [`help`](#help-1). |
-| `ignoreArgv` | `IgnoreArgvCallback` | Same as [`ignoreArgv`](#ignoreargv). |
-| `strictFlags` | `boolean` | Same as [`strictFlags`](#strictflags). Inherits from parent CLI if not specified. |
-| `booleanFlagNegation` | `boolean` | Same as [`booleanFlagNegation`](#booleanflagnegation). Inherits from parent CLI if not specified. |
-
-#### callback(parsed)
-
-Type:
-
-Optional callback function that is called when the command is invoked. If the callback returns a Promise, the `cli()` return value will also be a Promise.
-
 ### Type exports
-The following types are exported for use in TypeScript:
 
 ```ts
-import type { Flags, Renderers, TypeFlag } from 'cleye'
+import type {
+    CliOptions,
+    CommandEntry,
+    Commands,
+    Flags,
+    HelpDocumentNode,
+    HelpOptions,
+    ParsedArgv,
+    Renderers,
+    TypeFlag
+} from 'cleye'
 ```
-
-- `Flags` — Type for the `flags` option object.
-- `Renderers` — Class type for help document renderers, useful when customizing `help.render`.
-- `TypeFlag` — Re-exported from [`type-flag`](https://github.com/privatenumber/type-flag) for portable type declarations.
 
 ## Sponsors
 <p align="center">

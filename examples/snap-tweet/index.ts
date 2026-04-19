@@ -7,7 +7,7 @@
 
 import { cli } from '#cleye';
 
-const argv = cli({
+await cli({
 	name: 'snap-tweet',
 
 	version: '1.0.0',
@@ -58,6 +58,9 @@ const argv = cli({
 			'snap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode',
 		],
 	},
+}, (argv) => {
+	console.log(argv);
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-console.log(argv);

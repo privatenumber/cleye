@@ -199,7 +199,7 @@ const tableBreakpoints = {
 	],
 };
 
-const argv = cli({
+await cli({
 	flags: {
 		...commandLineFlags,
 		...commonCompilerOptions,
@@ -300,6 +300,9 @@ const argv = cli({
 			]);
 		},
 	},
+}, (argv) => {
+	console.log(argv);
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });
-
-console.log(argv);

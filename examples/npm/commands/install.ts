@@ -1,10 +1,6 @@
-import { command } from '../../../src/index.ts';
+import { cli } from '#cleye';
 
-export const install = command({
-	name: 'install',
-
-	alias: ['i', 'isntall', 'add'],
-
+await cli({
 	flags: {
 		global: {
 			type: Boolean,
@@ -39,4 +35,7 @@ export const install = command({
 	},
 }, (argv) => {
 	console.log('install!', argv);
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });

@@ -1,35 +1,31 @@
 import type {
-	CliOptionsInternal,
+	CliOptions,
+	CommandEntry,
 	HelpDocumentNode,
 } from '../types.ts';
-import type { CommandOptions } from '../command.ts';
 import { renderFlags } from './render-flags.ts';
 
-type Options = CliOptionsInternal | CommandOptions;
+type Options = CliOptions & {
+	// flags may be augmented with help/version before passing in
+	flags?: CliOptions['flags'];
+};
 
-const getVersion = (options?: CliOptionsInternal) => (
-	!options || (
-		options.version ?? (
-			options.help
-				? options.help.version
-				: undefined
-		)
+const getVersion = (options: Options) => (
+	options.version ?? (
+		options.help
+			? (typeof options.help === 'object' ? options.help.version : undefined)
+			: undefined
 	)
 );
-
-const getName = (options: Options) => {
-	const parentName = ('parent' in options) && options.parent?.name;
-	return (parentName ? `${parentName} ` : '') + options.name;
-};
 
 function getNameAndVersion(options: Options) {
 	const name = [];
 
 	if (options.name) {
-		name.push(getName(options));
+		name.push(options.name);
 	}
 
-	const version = getVersion(options) ?? (('parent' in options) && getVersion(options.parent));
+	const version = getVersion(options);
 	if (version) {
 		name.push(`v${version}`);
 	}
@@ -49,6 +45,7 @@ function getDescription(options: Options) {
 	const { help } = options;
 	if (
 		!help
+		|| typeof help !== 'object'
 		|| !help.description
 	) {
 		return;
@@ -62,7 +59,7 @@ function getDescription(options: Options) {
 }
 
 function getUsage(options: Options) {
-	const help = options.help || {};
+	const help = (typeof options.help === 'object' && options.help) || {};
 
 	if ('usage' in help) {
 		if (!help.usage) {
@@ -84,7 +81,7 @@ function getUsage(options: Options) {
 	} if (options.name) {
 		const usages: string[] = [];
 
-		const usage = [getName(options)];
+		const usage = [options.name];
 
 		if (
 			options.flags
@@ -117,8 +114,8 @@ function getUsage(options: Options) {
 		}
 
 		if (
-			'commands' in options
-			&& options.commands?.length
+			options.commands
+			&& Object.keys(options.commands).length > 0
 		) {
 			usages.push(`${options.name} <command>`);
 		}
@@ -136,19 +133,23 @@ function getUsage(options: Options) {
 	}
 }
 
+function getCommandDescription(entry: CommandEntry): string {
+	if (typeof entry === 'object' && 'description' in entry) {
+		return entry.description ?? '';
+	}
+	return '';
+}
+
 function getCommands(options: Options) {
 	if (
-		!('commands' in options)
-		|| !options.commands?.length
+		!options.commands
+		|| Object.keys(options.commands).length === 0
 	) {
 		return;
 	}
 
-	const commands = options.commands.map(
-		(command) => {
-			const { help } = command.options;
-			return [command.options.name, (typeof help === 'object' && help.description) || ''];
-		},
+	const commands = Object.entries(options.commands).map(
+		([name, entry]) => [name, getCommandDescription(entry)],
 	);
 
 	const commandsTable = {
@@ -199,6 +200,7 @@ function getExamples(options: Options) {
 	const { help } = options;
 	if (
 		!help
+		|| typeof help !== 'object'
 		|| !help.examples
 		|| help.examples.length === 0
 	) {
@@ -223,27 +225,6 @@ function getExamples(options: Options) {
 	}
 }
 
-function getAliases(options: Options) {
-	if (
-		!('alias' in options)
-		|| !options.alias
-	) {
-		return;
-	}
-
-	const { alias } = options;
-	const aliases = Array.isArray(alias) ? alias.join(', ') : alias;
-
-	return {
-		id: 'aliases',
-		type: 'section',
-		data: {
-			title: 'Aliases:',
-			body: aliases,
-		},
-	} as const;
-}
-
 type Truthy = <T>(value?: T) => value is T;
 
 export const generateHelp = (options: Options): HelpDocumentNode[] => (
@@ -254,7 +235,6 @@ export const generateHelp = (options: Options): HelpDocumentNode[] => (
 		getCommands,
 		getFlags,
 		getExamples,
-		getAliases,
 	].map(
 		helpSectionGenerator => helpSectionGenerator(options),
 	).filter(

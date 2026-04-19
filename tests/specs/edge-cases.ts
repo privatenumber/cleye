@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'manten';
 import { camelCase } from '../../src/utils/convert-case.ts';
-import { isValidScriptName } from '../../src/utils/script-name.ts';
-import { cli, command } from '#cleye';
+import { cli } from '#cleye';
 
 describe('edge cases', () => {
 	describe('camelCase conversion', () => {
@@ -90,7 +89,7 @@ describe('edge cases', () => {
 			expect<string>(parsed._['1value']).toBe('test');
 		});
 
-		test('camelCase utility directly', async () => {
+		test('camelCase utility directly', () => {
 			expect(camelCase('hello world')).toBe('helloWorld');
 			expect(camelCase('hello-world')).toBe('helloWorld');
 			expect(camelCase('hello_world')).toBe('helloWorld');
@@ -237,99 +236,45 @@ describe('edge cases', () => {
 
 	describe('command name edge cases', () => {
 		test('command name with numbers', async () => {
-			const cmd1 = command({
-				name: 'cmd1',
-			});
-
-			await cli(
-				{
-					commands: [cmd1],
-				},
-				undefined,
-				['cmd1'],
-			);
+			await expect(async () => {
+				await cli(
+					{
+						commands: {
+							cmd1: () => {},
+						},
+					},
+					undefined,
+					['cmd1'],
+				);
+			}).not.toThrow();
 		});
 
 		test('command name with dash', async () => {
-			const myCommand = command({
-				name: 'my-command',
-			});
-
-			await cli(
-				{
-					commands: [myCommand],
-				},
-				undefined,
-				['my-command'],
-			);
+			await expect(async () => {
+				await cli(
+					{
+						commands: {
+							'my-command': () => {},
+						},
+					},
+					undefined,
+					['my-command'],
+				);
+			}).not.toThrow();
 		});
 
 		test('command name with underscore', async () => {
-			const myCommand = command({
-				name: 'my_command',
-			});
-
-			await cli(
-				{
-					commands: [myCommand],
-				},
-				undefined,
-				['my_command'],
-			);
-		});
-	});
-
-	describe('isValidScriptName edge cases', () => {
-		test('empty string is invalid', async () => {
-			expect(isValidScriptName('')).toBe(false);
-		});
-
-		test('single space is invalid', async () => {
-			expect(isValidScriptName(' ')).toBe(false);
-		});
-
-		test('multiple spaces is invalid', async () => {
-			expect(isValidScriptName('   ')).toBe(false);
-		});
-
-		test('name with space is invalid', async () => {
-			expect(isValidScriptName('my command')).toBe(false);
-		});
-
-		test('tab character is valid (not a space)', async () => {
-			// The current implementation only checks for space character
-			expect(isValidScriptName('my\tcommand')).toBe(true);
-		});
-
-		test('newline character is valid (not a space)', async () => {
-			// The current implementation only checks for space character
-			expect(isValidScriptName('my\ncommand')).toBe(true);
-		});
-
-		test('leading space is invalid', async () => {
-			expect(isValidScriptName(' command')).toBe(false);
-		});
-
-		test('trailing space is invalid', async () => {
-			expect(isValidScriptName('command ')).toBe(false);
-		});
-
-		test('valid names', async () => {
-			expect(isValidScriptName('command')).toBe(true);
-			expect(isValidScriptName('my-command')).toBe(true);
-			expect(isValidScriptName('my_command')).toBe(true);
-			expect(isValidScriptName('cmd123')).toBe(true);
-			expect(isValidScriptName('a')).toBe(true);
-		});
-
-		test('unicode characters are valid', async () => {
-			expect(isValidScriptName('命令')).toBe(true);
-			expect(isValidScriptName('café')).toBe(true);
-		});
-
-		test('special characters are valid', async () => {
-			expect(isValidScriptName('@scope/package')).toBe(true);
-			expect(isValidScriptName('name.ext')).toBe(true);
+			await expect(async () => {
+				await cli(
+					{
+						commands: {
+							my_command: () => {},
+						},
+					},
+					undefined,
+					['my_command'],
+				);
+			}).not.toThrow();
 		});
 	});
 });

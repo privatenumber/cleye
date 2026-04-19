@@ -1,19 +1,18 @@
+import path from 'node:path';
 import { typeFlag } from 'type-flag';
 import { closest, distance } from 'fastest-levenshtein';
 import type {
 	CallbackFunction,
 	CliOptions,
-	CliOptionsInternal,
-	ParseArgv,
-	parsedType,
+	CommandEntry,
+	ParsedArgv,
 	HelpOptions,
 	HelpDocumentNode,
 	StrictOptions,
 } from './types.ts';
-import type { Command } from './command.ts';
 import { generateHelp, Renderers } from './render-help/index.ts';
 import { camelCase } from './utils/convert-case.ts';
-import { isValidScriptName } from './utils/script-name.ts';
+import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
 const { stringify } = JSON;
 
@@ -137,7 +136,6 @@ const findClosestFlag = (
 	unknown: string,
 	knownFlags: string[],
 ): string | undefined => {
-	// Don't suggest for very short flags (e.g. -a vs -b)
 	if (unknown.length < 3 || knownFlags.length === 0) {
 		return undefined;
 	}
@@ -163,18 +161,118 @@ const handleUnknownFlags = (
 	process.exit(1);
 };
 
-async function cliBase<
-	CommandName extends string | undefined,
-	Options extends CliOptionsInternal,
+const getCommandHandler = (entry: CommandEntry): ((argument?: unknown) => unknown) => {
+	if (typeof entry === 'function') {
+		return entry;
+	}
+	return entry.loader;
+};
+
+type CommandIndex = {
+	names: Set<string>;
+	aliases: Map<string, string>;
+};
+
+const buildCommandIndex = (commands: Record<string, CommandEntry>): CommandIndex => {
+	const names = new Set<string>();
+	const aliases = new Map<string, string>();
+	for (const [name, entry] of Object.entries(commands)) {
+		names.add(name);
+		if (typeof entry === 'object' && entry.alias) {
+			const entryAliases = Array.isArray(entry.alias) ? entry.alias : [entry.alias];
+			for (const alias of entryAliases) {
+				if (aliases.has(alias)) {
+					throw new Error(`Duplicate command alias: ${stringify(alias)}`);
+				}
+				names.add(alias);
+				aliases.set(alias, name);
+			}
+		}
+	}
+	return {
+		names,
+		aliases,
+	};
+};
+
+const resolveCommand = (
+	potentialCommand: string,
+	commands: Record<string, CommandEntry>,
+	aliases: Map<string, string>,
+): { name: string;
+	handler: (argument?: unknown) => unknown; } | undefined => {
+	const resolvedName = potentialCommand in commands
+		? potentialCommand
+		: aliases.get(potentialCommand);
+
+	if (resolvedName) {
+		return {
+			name: resolvedName,
+			handler: getCommandHandler(commands[resolvedName]),
+		};
+	}
+
+	return undefined;
+};
+
+// Overload: with callback
+function cli<
+	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
 >(
-	command: CommandName,
-	options: Options,
-	callback: CallbackFunction<ParseArgv<Options, Parameters>> | undefined,
-	argv: string[],
-) {
+	options: StrictOptions<Options> & CliOptions<[...Parameters]>,
+	callback: CallbackFunction<ParsedArgv<Options, Parameters>>,
+	argv?: string[],
+): Promise<ParsedArgv<Options, Parameters>>;
+
+// Overload: without callback
+function cli<
+	Options extends CliOptions<[...Parameters]>,
+	Parameters extends string[],
+>(
+	options: StrictOptions<Options> & CliOptions<[...Parameters]>,
+	callback?: undefined,
+	argv?: string[],
+): Promise<ParsedArgv<Options, Parameters>>;
+
+// General overload
+function cli(
+	options: CliOptions,
+	callback?: CallbackFunction<any>,
+	argv?: string[],
+): Promise<any>;
+
+async function cli<
+	Options extends CliOptions<[...Parameters]>,
+	Parameters extends string[],
+>(
+	options: Options | (Options & CliOptions<[...Parameters]>),
+	callback?: CallbackFunction<ParsedArgv<Options, Parameters>>,
+	argvInput?: string[],
+): Promise<any> {
+	if (!options) {
+		throw new Error('Options is required');
+	}
+
+	// Check AsyncLocalStorage for parent context
+	const parentContext = getCliContext();
+	const rawArgv = argvInput ?? parentContext?.argv ?? process.argv.slice(2);
+	const parentOptions = parentContext?.parentOptions;
+
+	const effectiveName = options.name ?? parentContext?.name ?? path.basename(process.argv[1] ?? '');
+
+	const commandIndex: CommandIndex = options.commands
+		? buildCommandIndex(options.commands)
+		: {
+			names: new Set(),
+			aliases: new Map(),
+		};
+
+	const argv = rawArgv;
+	let hitCommand = false;
+
+	// Parse flags
 	const flags = { ...options.flags };
-	// Expected to work even if flag is overwritten; add tests
 	const isVersionEnabled = options.version && !('version' in flags);
 
 	if (isVersionEnabled) {
@@ -187,7 +285,6 @@ async function cliBase<
 	const { help } = options;
 	const isHelpEnabled = helpEnabled(help);
 
-	// Expected to work even if overwritten; add tests
 	if (isHelpEnabled && !('help' in flags)) {
 		flags.help = {
 			type: Boolean,
@@ -200,8 +297,19 @@ async function cliBase<
 		flags,
 		argv,
 		{
-			ignore: options.ignoreArgv,
-			booleanNegation: options.booleanFlagNegation ?? options.parent?.booleanFlagNegation,
+			ignore(type, flagOrArgv, value) {
+				if (hitCommand) {
+					return true;
+				}
+
+				if (type === 'argument' && commandIndex.names.has(flagOrArgv)) {
+					hitCommand = true;
+					return true;
+				}
+
+				return options.ignoreArgv?.(type, flagOrArgv, value);
+			},
+			booleanNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 		},
 	);
 
@@ -211,8 +319,6 @@ async function cliBase<
 
 	if (
 		isVersionEnabled
-
-		// Can be overridden to different type
 		&& parsed.flags.version === true
 	) {
 		showVersion();
@@ -229,6 +335,7 @@ async function cliBase<
 	const showHelp = (helpOptions?: HelpOptions) => {
 		const nodes = generateHelp({
 			...options,
+			name: effectiveName,
 			...(helpOptions ? { help: helpOptions } : {}),
 			flags,
 		});
@@ -238,23 +345,21 @@ async function cliBase<
 
 	if (
 		isHelpEnabled
-
-		// Can be overridden to different type
 		&& parsed.flags.help === true
 	) {
 		showHelp();
 		return process.exit(0);
 	}
 
-	// Check for unknown flags if strictFlags is enabled
-	// Inherit from parent if not explicitly set
-	const strictFlags = options.strictFlags ?? options.parent?.strictFlags;
+	// Strict flags
+	const strictFlags = options.strictFlags ?? parentOptions?.strictFlags;
 	if (strictFlags) {
 		handleUnknownFlags(parsed.unknownFlags, getKnownFlagNames(flags));
 	}
 
+	// Map parameters
 	if (options.parameters) {
-		let { parameters } = options;
+		let parameters = options.parameters as string[];
 		let cliArguments = parsed._ as string[];
 		const hasEof = parameters.indexOf('--');
 		const eofParameters = parameters.slice(hasEof + 1);
@@ -289,164 +394,81 @@ async function cliBase<
 		);
 	}
 
-	const parsedWithApi = {
-		...parsed,
-		showVersion,
-		showHelp,
+	let matchedCommand: {
+		name: string;
+		handler: (argument?: unknown) => unknown;
+	} | undefined;
+
+	if (hitCommand && argv.length > 0) {
+		matchedCommand = resolveCommand(argv[0], options.commands!, commandIndex.aliases);
+	}
+
+	// runCommand is callable at most once — subsequent calls return the same promise
+	let runCommandPromise: Promise<void> | undefined;
+	let runCommandCalled = false;
+
+	const resolvedOptions: CliOptions = {
+		strictFlags,
+		booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 	};
 
+	const runCommand = matchedCommand
+		? (handlerArgument?: unknown) => {
+			if (!runCommandCalled) {
+				runCommandCalled = true;
+				const commandArgv = argv.slice(1);
+				const context: CliContext = {
+					name: matchedCommand!.name,
+					argv: commandArgv,
+					parentOptions: resolvedOptions,
+				};
+				runCommandPromise = (async () => {
+					const result = await runWithCliContext(
+						context,
+						() => matchedCommand!.handler(handlerArgument),
+					);
+
+					// `loader: () => import('./cmd.ts')` resolves to a module namespace;
+					// call its default export as the handler if present.
+					if (
+						result
+						&& typeof result === 'object'
+						&& 'default' in result
+						&& typeof result.default === 'function'
+					) {
+						await result.default(handlerArgument);
+					}
+				})();
+			}
+			return runCommandPromise!;
+		}
+		: undefined;
+
 	const result = {
-		command,
-		...parsedWithApi,
+		...parsed,
+		command: matchedCommand?.name,
+		runCommand,
+		showHelp,
+		showVersion,
 	};
 
 	if (typeof callback === 'function') {
-		await callback(parsedWithApi as any);
+		await callback(result as any, runCommand);
+	}
+
+	if (runCommand && !runCommandCalled) {
+		await runCommand();
+	} else if (
+		!matchedCommand
+		&& options.commands
+		&& commandIndex.names.size > 0
+		&& typeof callback !== 'function'
+	) {
+		showHelp();
+		process.exit(1);
 	}
 
 	return result;
-}
-
-function getCommand<Commands extends Command[]>(
-	potentialCommand: string,
-	commands: [...Commands],
-) {
-	const commandMap = new Map<string, Command>();
-	for (const command of commands) {
-		const names = [command.options.name];
-
-		const { alias } = command.options;
-		if (alias) {
-			if (Array.isArray(alias)) {
-				names.push(...alias);
-			} else {
-				names.push(alias);
-			}
-		}
-
-		for (const name of names) {
-			if (commandMap.has(name)) {
-				throw new Error(`Duplicate command name found: ${stringify(name)}`);
-			}
-
-			commandMap.set(name, command);
-		}
-	}
-
-	return commandMap.get(potentialCommand);
-}
-
-// Overload 1: No commands, no callback - returns without Promise
-function cli<
-	Options extends CliOptions<undefined, [...Parameters]>,
-	Parameters extends string[],
->(
-	options: StrictOptions<Options>
-		& CliOptions<undefined, [...Parameters]>
-		& { commands?: undefined },
-	callback?: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
-	argv?: string[],
-): Promise<{
-	[
-	Key in keyof ParseArgv<
-		Options,
-		Parameters,
-		undefined
-	>
-	]: ParseArgv<
-		Options,
-		Parameters,
-		undefined
-	>[Key];
-}>;
-
-// Overload 2: With commands
-function cli<
-	Options extends CliOptions<[...Commands], [...Parameters]>,
-	Commands extends Command[],
-	Parameters extends string[],
->(
-	options: StrictOptions<Options>
-		& CliOptions<[...Commands], [...Parameters]>
-		& { commands: [...Commands] },
-	callback?: (parsed: ParseArgv<Options, Parameters>) => void | Promise<void>,
-	argv?: string[],
-): Promise<
-	{
-		[
-		Key in keyof ParseArgv<
-			Options,
-			Parameters,
-			undefined
-		>
-		]: ParseArgv<
-			Options,
-			Parameters,
-			undefined
-		>[Key];
-	}
-	| {
-		[KeyA in keyof Commands]: (
-			Commands[KeyA] extends Command
-				? (
-					{
-						[
-						KeyB in keyof Commands[KeyA][typeof parsedType]
-						]: Commands[KeyA][typeof parsedType][KeyB];
-					}
-				) : never
-		);
-	}[number]
->;
-
-// General overload for Parameters<typeof cli> to extract from
-function cli(
-	options: CliOptions,
-	callback?: CallbackFunction<any>,
-	argv?: string[],
-): Promise<ParseArgv<CliOptions, string[], undefined>>;
-
-async function cli<
-	Options extends CliOptions<[...Commands], [...Parameters]>,
-	Commands extends Command[],
-	Parameters extends string[],
->(
-	options: Options | (Options & CliOptions<[...Commands], [...Parameters]>),
-	callback?: CallbackFunction<ParseArgv<Options, Parameters>>,
-	argv = process.argv.slice(2),
-): Promise<any> {
-	// Because if not configured, it's probably being misused or overlooked
-	if (!options) {
-		throw new Error('Options is required');
-	}
-
-	if ('name' in options && (!options.name || !isValidScriptName(options.name))) {
-		throw new Error(`Invalid script name: ${stringify(options.name)}`);
-	}
-
-	const potentialCommand = argv[0];
-
-	if (
-		options.commands
-		&& potentialCommand
-		&& isValidScriptName(potentialCommand)
-	) {
-		const command = getCommand(potentialCommand, options.commands);
-
-		if (command) {
-			return cliBase(
-				command.options.name,
-				{
-					...command.options,
-					parent: options,
-				},
-				command.callback,
-				argv.slice(1),
-			);
-		}
-	}
-
-	return cliBase(undefined, options, callback, argv);
 }
 
 export { cli };

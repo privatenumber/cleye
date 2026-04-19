@@ -1,10 +1,6 @@
-import { command } from '../../../src/index.ts';
+import { cli } from '#cleye';
 
-export const runScript = command({
-	name: 'run-script',
-
-	alias: ['run', 'rum', 'urn'],
-
+await cli({
 	parameters: ['<command>', '--', '[args...]'],
 
 	help: {
@@ -15,4 +11,7 @@ export const runScript = command({
 		command: argv._.command,
 		args: argv._.args,
 	});
+}).catch((error) => {
+	console.error(error);
+	process.exit(1);
 });

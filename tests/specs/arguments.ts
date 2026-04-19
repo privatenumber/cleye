@@ -1,21 +1,25 @@
 import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
-import { cli, command } from '#cleye';
+import { cli } from '#cleye';
 
 describe('arguments', () => {
 	describe('error handling', () => {
 		describe('parameters', () => {
 			test('invalid parameter format', async () => {
-				await expect(cli({
-					parameters: ['value-a'],
-				})).rejects.toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+				await expect(
+					cli({
+						parameters: ['value-a'],
+					}),
+				).rejects.toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
 			test('invalid parameter character', async () => {
-				await expect(cli({
-					parameters: ['[value.a]'],
-				})).rejects.toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
+				await expect(
+					cli({
+						parameters: ['[value.a]'],
+					}),
+				).rejects.toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
 			});
 
 			test('invalid parameter - all special characters', async () => {
@@ -38,96 +42,82 @@ describe('arguments', () => {
 				];
 
 				for (const char of specialChars) {
-					await expect(cli({
-						parameters: [`<value${char}a>`],
-					})).rejects.toThrow('Invalid character found');
+					await expect(
+						cli({
+							parameters: [`<value${char}a>`],
+						}),
+					).rejects.toThrow('Invalid character found');
 				}
 			});
 
 			test('duplicate parameters', async () => {
-				await expect(cli({
-					parameters: ['[value-a]', '[value-a]', '[value-a]'],
-				})).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
+				await expect(
+					cli({
+						parameters: ['[value-a]', '[value-a]', '[value-a]'],
+					}),
+				).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
 			test('duplicate parameters across --', async () => {
-				await expect(cli({
-					parameters: ['[value-a]', '--', '[value-a]'],
-				})).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
+				await expect(
+					cli({
+						parameters: ['[value-a]', '--', '[value-a]'],
+					}),
+				).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
 			test('multiple --', async () => {
-				await expect(cli({
-					parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
-				})).rejects.toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+				await expect(
+					cli({
+						parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
+					}),
+				).rejects.toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
 			test('optional parameter before required parameter', async () => {
-				await expect(cli({
-					parameters: ['[value-a]', '<value-b>'],
-				})).rejects.toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
+				await expect(
+					cli({
+						parameters: ['[value-a]', '<value-b>'],
+					}),
+				).rejects.toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
 			});
 
 			test('multiple spread not last', async () => {
-				await expect(cli({
-					parameters: ['[value-a...]', '<value-b>'],
-				})).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+				await expect(
+					cli({
+						parameters: ['[value-a...]', '<value-b>'],
+					}),
+				).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 
 			test('multiple spread parameters', async () => {
-				await expect(cli({
-					parameters: ['[value-a...]', '<value-b...>'],
-				})).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+				await expect(
+					cli({
+						parameters: ['[value-a...]', '<value-b...>'],
+					}),
+				).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 		});
 
-		describe('arguments', () => {
-			test('missing parameter', async () => {
-				const mocked = mockEnvFunctions();
-				await cli(
-					{
-						parameters: ['<value-a>'],
-					},
-					undefined,
-					[],
-				);
-				mocked.restore();
+		describe('missing arguments', () => {
+			test('missing required parameters', async () => {
+				// Test all missing parameter variants sequentially
+				for (const parameters of [
+					['<value-a>'],
+					['<value-a...>'],
+					['--', '<value-a>'],
+				]) {
+					const mocked = mockEnvFunctions();
+					await cli(
+						{ parameters },
+						undefined,
+						[],
+					);
+					mocked.restore();
 
-				expect(mocked.consoleLog.called).toBe(true);
-				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-				expect(mocked.processExit.calls).toStrictEqual([[1]]);
-			});
-
-			test('missing spread parameter', async () => {
-				const mocked = mockEnvFunctions();
-				await cli(
-					{
-						parameters: ['<value-a...>'],
-					},
-					undefined,
-					[],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleLog.called).toBe(true);
-				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-				expect(mocked.processExit.calls).toStrictEqual([[1]]);
-			});
-
-			test('missing -- parameter', async () => {
-				const mocked = mockEnvFunctions();
-				await cli(
-					{
-						parameters: ['--', '<value-a>'],
-					},
-					undefined,
-					[],
-				);
-				mocked.restore();
-
-				expect(mocked.consoleLog.called).toBe(true);
-				expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
-				expect(mocked.processExit.calls).toStrictEqual([[1]]);
+					expect(mocked.consoleError.calls[0]).toStrictEqual(['Error: Missing required parameter "value-a"\n']);
+					expect(mocked.processExit.calls[0]).toStrictEqual([1]);
+				}
 			});
 		});
 	});
@@ -236,29 +226,32 @@ describe('arguments', () => {
 		test('command', async () => {
 			const callback = spy();
 
-			const testCommand = command({
-				name: 'test',
-				parameters: ['<arg-a...>'],
-			}, (callbackParsed) => {
-				expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
-				callback();
-			});
-
 			const parsed = await cli(
 				{
 					parameters: ['<value-a...>'],
 
-					commands: [
-						testCommand,
-					],
+					commands: {
+						test: async () => {
+							await cli(
+								{
+									parameters: ['<arg-a...>'],
+								},
+								(callbackParsed) => {
+									expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
+									callback();
+								},
+								['valueA', 'valueB'],
+							);
+						},
+					},
 				},
-				undefined,
+				async (_parsed, runCommand) => {
+					await runCommand!();
+				},
 				['test', 'valueA', 'valueB'],
 			);
 
-			if (parsed.command === 'test') {
-				expect<string[]>(parsed._.argA).toStrictEqual(['valueA', 'valueB']);
-			}
+			expect(parsed.command).toBe('test');
 			expect(callback.called).toBe(true);
 		});
 	});
