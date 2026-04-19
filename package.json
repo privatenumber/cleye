@@ -66,12 +66,13 @@
 		"build": "pkgroll --minify",
 		"lint": "lintroll --cache --git",
 		"type-check": "tsc",
-		"test": "node tests/index.ts",
-		"dev": "node --watch --conditions=development tests/index.ts",
+		"test": "FORCE_COLOR=1 node tests/index.ts",
+		"dev": "FORCE_COLOR=1 node --watch --conditions=development tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json",
 		"prepare": "skills-npm"
 	},
 	"dependencies": {
+		"ansis": "4.2.0",
 		"terminal-columns": "^2.0.0",
 		"type-flag": "^4.1.0"
 	},
