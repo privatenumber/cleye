@@ -1,21 +1,10 @@
-import tty from 'tty';
+import ansis, { bold } from 'ansis';
 import type { Options as TerminalColumnsOptions } from 'terminal-columns';
 import { renderPaddedTable } from '../renderers/simple.ts';
 import type { HelpDocumentNode } from '../types.ts';
 import type { FlagData } from './render-flags.ts';
 
 type TypeFunction = (value: any) => any;
-
-/**
- * process.stdout.hasColors() may not be available if stdout is not a TTY,
- * but whether the viewer can render colors is an environment concern:
- * https://github.com/nodejs/node/blob/v18.0.0/lib/internal/tty.js#L106
- *
- * In the future, they may deprecate the prototype method in favor of a
- * standalone function:
- * https://github.com/nodejs/node/pull/40240
- */
-const stdoutHasColors = tty.WriteStream.prototype.hasColors();
 
 type HelpDocumentNodeOrString<Type extends PropertyKey> = string | HelpDocumentNode<Type>;
 export class Renderers {
@@ -26,9 +15,7 @@ export class Renderers {
 	}
 
 	bold(text: string) {
-		return stdoutHasColors
-			? `\u001B[1m${text}\u001B[22m`
-			: text.toLocaleUpperCase();
+		return ansis.level > 0 ? bold(text) : text.toLocaleUpperCase();
 	}
 
 	indentText({ text, spaces }: { text: string;

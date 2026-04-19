@@ -19,13 +19,18 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"skills"
 	],
 	"type": "module",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
 			"default": "./dist/index.mjs"
+		},
+		"./formats": {
+			"types": "./dist/formats.d.mts",
+			"default": "./dist/formats.mjs"
 		},
 		"./renderers/responsive": {
 			"types": "./dist/renderers/responsive.d.mts",
@@ -38,6 +43,11 @@
 			"development": "./src/index.ts",
 			"default": "./dist/index.mjs"
 		},
+		"#cleye/formats": {
+			"types": "./src/formats.ts",
+			"development": "./src/formats.ts",
+			"default": "./dist/formats.mjs"
+		},
 		"#cleye/renderers/responsive": {
 			"types": "./src/renderers/responsive.ts",
 			"development": "./src/renderers/responsive.ts",
@@ -49,8 +59,8 @@
 		"build": "pkgroll --minify",
 		"lint": "lintroll --cache --git",
 		"type-check": "tsc",
-		"test": "node tests/index.ts",
-		"dev": "node --watch --conditions=development tests/index.ts",
+		"test": "FORCE_COLOR=1 node tests/index.ts",
+		"dev": "FORCE_COLOR=1 node --watch --conditions=development tests/index.ts",
 		"prepack": "pnpm build && clean-pkg-json",
 		"prepare": "skills-npm"
 	},
@@ -58,6 +68,7 @@
 		"node": ">=22.22.2"
 	},
 	"dependencies": {
+		"ansis": "4.2.0",
 		"string-width": "^8.2.0",
 		"terminal-columns": "^2.0.0",
 		"type-flag": "5.0.0-beta.6"

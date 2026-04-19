@@ -253,6 +253,36 @@ await cli({
 })
 ```
 
+### Composable type helpers
+
+`cleye/formats` is a tree-shakable subpath that ships ready-made type-function helpers for common flag shapes. Import only what you need.
+
+```ts
+import {
+    oneOf, commaList, integer, float, range, url
+} from 'cleye/formats'
+
+cli({
+    flags: {
+        format: { type: oneOf('json', 'yaml', 'csv') }, // => 'json' | 'yaml' | 'csv'
+        tags: { type: commaList(String) }, // => string[]
+        port: { type: range(1024, 65_535) }, // => number, validated in range
+        count: { type: integer() }, // => number (integer only)
+        ratio: { type: float() }, // => number (finite float)
+        apiUrl: { type: url() } // => URL object
+    }
+})
+```
+
+| Helper | Return type | Description |
+|--------|-------------|-------------|
+| `oneOf(...values)` | Union of the given string literals | Throws if the value is not in the list. |
+| `commaList(itemType)` | `T[]` | Splits on `,`, trims whitespace, maps each item through `itemType`. |
+| `integer()` | `number` | Parses a base-10 integer. Throws on floats or non-numeric input. |
+| `float()` | `number` | Parses a finite float. Throws on non-finite or non-numeric input. |
+| `range(min, max)` | `(input: string) => number` | Returns a parser that validates the input parses to a number in `[min, max]`. |
+| `url()` | `URL` | Parses with `new URL()`. Returns a `URL` object so callers get `.host`, `.pathname`, etc. |
+
 ### Default flags
 By default, _Cleye_ will try to handle the `--help, -h` and `--version` flags.
 
@@ -276,6 +306,18 @@ $ my-script --version
 ```
 
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
+
+> [!TIP]
+> Import `name`, `version`, and `description` directly from `package.json` to avoid keeping them in sync manually:
+> ```ts
+> import { name, version, description } from './package.json' with { type: 'json' }
+>
+> cli({
+>     name,
+>     version,
+>     help: { description }
+> })
+> ```
 
 ### Strict flags
 To reject unknown flags with an error, enable `strictFlags`:
