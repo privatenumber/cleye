@@ -14,4 +14,5 @@ describe('cleye', () => {
 	import('./specs/integration.ts');
 	import('./specs/edge-cases.ts');
 	import('./specs/formats.ts');
+	import('./specs/render.ts');
 });

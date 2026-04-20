@@ -9,3 +9,5 @@ export type {
 	HelpOptions,
 	HelpDocumentNode,
 } from './types.ts';
+export { render } from './render/render.ts';
+export type { Node } from './render/types.ts';
