@@ -32,6 +32,10 @@
 			"types": "./dist/formats.d.mts",
 			"default": "./dist/formats.mjs"
 		},
+		"./help": {
+			"types": "./dist/help.d.mts",
+			"default": "./dist/help.mjs"
+		},
 		"./renderers/responsive": {
 			"types": "./dist/renderers/responsive.d.mts",
 			"default": "./dist/renderers/responsive.mjs"
@@ -47,6 +51,11 @@
 			"types": "./src/formats.ts",
 			"development": "./src/formats.ts",
 			"default": "./dist/formats.mjs"
+		},
+		"#cleye/help": {
+			"types": "./src/help.ts",
+			"development": "./src/help.ts",
+			"default": "./dist/help.mjs"
 		},
 		"#cleye/renderers/responsive": {
 			"types": "./src/renderers/responsive.ts",
