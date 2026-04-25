@@ -1,0 +1,226 @@
+# Migration guide — cleye v2
+
+This guide covers what changes between `cleye@1.x` (the `master` release line) and the upcoming v2 (`beta`).
+
+- [Breaking changes](#breaking-changes) — code or config you must update to upgrade
+- [New features & behavior changes](#new-features--behavior-changes) — improvements that may need attention
+
+---
+
+## Breaking changes
+
+### `command()` removed — use `commands` object map
+
+`command()` is gone. Commands are now declared as a plain object inside `cli()`.
+
+**Before:**
+
+```ts
+import { cli, command } from 'cleye'
+
+cli({
+    name: 'npm',
+    commands: [
+        command({
+            name: 'install',
+            parameters: ['<package name>'],
+            flags: { saveDev: Boolean }
+        }, (argv) => {
+            console.log(argv._.packageName)
+        })
+    ]
+})
+```
+
+**After:**
+
+```ts
+import { cli } from 'cleye'
+
+cli({
+    name: 'npm',
+    commands: {
+        install: {
+            description: 'Install a package',
+            loader: async () => {
+                const argv = await cli({
+                    parameters: ['<package name>'],
+                    flags: { saveDev: Boolean }
+                })
+                console.log(argv._.packageName)
+            }
+        }
+    }
+})
+```
+
+The key in the `commands` map is the command name. Nested `cli()` calls inside `loader` inherit `strictFlags`, `booleanFlagNegation`, and the parent command name via `AsyncLocalStorage`. The `Command` type export is also removed.
+
+---
+
+### `cli()` is always async
+
+`cli()` now always returns a `Promise`. Callers that used it synchronously must add `await` (or `.then()`).
+
+**Before:**
+
+```ts
+const argv = cli({ /* ... */ })
+console.log(argv.flags.verbose)
+```
+
+**After:**
+
+```ts
+const argv = await cli({ /* ... */ })
+console.log(argv.flags.verbose)
+```
+
+> [!NOTE]
+> Top-level `await` works out of the box in ESM (and `cleye` is now ESM-only — see below). The `MaybePromise` type export is also removed.
+
+---
+
+### Help-rendering API rewritten
+
+This is the largest change. The old `Renderers`-class pipeline is replaced by a composable atom API.
+
+**Removed exports:**
+
+- `Renderers` class
+- `createRenderer()`
+- `HelpDocumentNode` type
+- `help.renderers` option
+- `cleye/renderers/responsive` subpath
+
+**Added:**
+
+- `cleye/help` subpath — `render`, `defaultHelp`, and atoms: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`
+- `cleye/formats` subpath — `oneOf`, `commaList`, `integer`, `float`, `range`, `url`
+
+**`help.render` callback signature changed:**
+
+| | Before | After |
+| :--- | :--- | :--- |
+| Signature | `(nodes: HelpDocumentNode[], renderers: Renderers) => string` | `(options: CliOptions, opts: { form: 'short' \| 'long' }) => string` |
+
+**Before:**
+
+```ts
+import { cli } from 'cleye'
+
+cli({
+    help: {
+        render(nodes, renderers) {
+            nodes.push('\nDocs: https://example.com/docs')
+            return renderers.render(nodes)
+        }
+    }
+})
+```
+
+**After:**
+
+```ts
+import { cli } from 'cleye'
+import { render, defaultHelp, footer } from 'cleye/help'
+
+cli({
+    help: {
+        render(options, { form }) {
+            return render(
+                defaultHelp(options, { form }),
+                footer('Docs: https://example.com/docs')
+            )
+        }
+    }
+})
+```
+
+> [!TIP]
+> If you only need the default output unchanged, omit `help.render` entirely — `defaultHelp` is now the default renderer.
+
+---
+
+### Node.js 22.22.2+ required
+
+`engines.node` is now `>=22.22.2`. Node 18 and Node 20 are no longer supported.
+
+---
+
+### CJS distribution dropped — ESM only
+
+The package no longer ships a CommonJS build. If your project uses `require()`:
+
+- Migrate to ESM (`"type": "module"` in `package.json`, `.mjs` extension, or `import` syntax), or
+- Use a dynamic `import()` call from CJS:
+
+  ```ts
+  const { cli } = await import('cleye')
+  await cli({ /* ... */ })
+  ```
+
+---
+
+## New features & behavior changes
+
+### Flag kebab-casing now respects acronyms
+
+Flag names with consecutive uppercase letters are now cased correctly on the CLI. If your users pass the old broken form, they must update.
+
+| Declaration | Before (broken) | After (correct) |
+| :--- | :--- | :--- |
+| `orgID: String` | `--org-i-d` | `--org-id` |
+| `baseURL: String` | `--base-u-r-l` | `--base-url` |
+
+Update any scripts or documentation that referenced the old broken forms.
+
+---
+
+### Single-character flag names (type-flag v5)
+
+`type-flag` v5 enables single-character flag names to be declared directly:
+
+```ts
+const _flags = { v: Boolean } // parses -v
+```
+
+Previously, single-char flags could only be set as `alias`. With v5, declaring `alias` on a single-character flag name **throws at runtime**. If you were using the `alias` field to register a single-char shorthand for a flag whose key is also one character long, move the declaration to the flag name directly and drop the `alias`.
+
+---
+
+### `NO_COLOR` / `FORCE_COLOR` now respected
+
+Help output previously used `tty.WriteStream.prototype.hasColors()`, which ignores `NO_COLOR` and `FORCE_COLOR=0`.
+
+Color detection is now handled by [`ansis`](https://npm.im/ansis), which respects:
+
+- `NO_COLOR=1` — disables ANSI escapes
+- `FORCE_COLOR=1` — forces ANSI escapes even in non-TTY environments
+- `TERM=dumb`, `CI`, and other standard signals
+
+This is a **behavior fix**, not an API change — but if your test suite asserts exact help output, you may need to set `FORCE_COLOR=1` to get consistent ANSI output in CI.
+
+---
+
+### Two-tier help: `-h` (short) vs `--help` (long)
+
+`-h` and `--help` are now separate flags producing different output:
+
+- `-h` — cheatsheet: usage line, command names, one-line flag list
+- `--help` — full manual: descriptions, defaults, examples
+
+If you have a custom `help.render`, the second argument includes `{ form: 'short' | 'long' }`. You can ignore it to produce the same output for both tiers, or branch on it to implement the two levels:
+
+```ts
+import { defaultHelp } from 'cleye/help'
+
+cli({
+    help: {
+        render(options, { form }) {
+            // Delegate entirely to the default — it handles both tiers
+            return defaultHelp(options, { form })
+        }
+    }
+})
+```
