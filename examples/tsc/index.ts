@@ -1,33 +1,35 @@
 /**
- * Demo showing how `tsc --help` can be re-implemented with cleye
+ * Demonstrates an example-led help structure using the cleye/help atom API.
+ *
+ * Pattern: `usage()` → `section('COMMON COMMANDS', p(...))` → per-group
+ * `section('Flags', flags([...]))` calls. Flag lists are declared as `Flag[]`
+ * with ANSI-styled long names to match the real tsc help output.
+ *
+ * Based on the real TypeScript compiler CLI: https://github.com/microsoft/TypeScript
  *
  * Usage:
- *  npx esno examples/tsc --help
+ *   node --experimental-strip-types examples/tsc/index.ts --help
  */
 
-import assert from 'assert';
+import assert from 'node:assert';
+import { blue } from 'ansis';
 import { cli } from '#cleye';
 import {
-	render, section, flags as flagsAtom, p, footer,
+	render, usage, section, flags, footer, p, type Flag,
 } from '#cleye/help/responsive';
 
-// https://github.com/microsoft/TypeScript/blob/7a12909ae3f03b1feed19df2082aa84e5c7a5081/src/executeCommandLine/executeCommandLine.ts#L111
-const blue = (string_: string) => `\u001B[94m${string_}\u001B[39m`;
+const targetValues = ['es3', 'es5', 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'esnext'] as const;
+type TargetValue = typeof targetValues[number];
 
-const targetType = ['es3', 'es5', 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'esnext'];
+const moduleValues = ['none', 'commonjs', 'amd', 'system', 'umd', 'es6', 'es2015', 'es2020', 'esnext'] as const;
+type ModuleValue = typeof moduleValues[number];
 
-const moduleTypes = ['none', 'commonjs', 'amd', 'system', 'umd', 'es6', 'es2015', 'es2020', 'esnext'] as const;
+const jsxValues = [undefined, 'preserve', 'react-native', 'react', 'react-jsx', 'react-jsxdev'] as const;
+type JsxValue = typeof jsxValues[number];
 
-const libraryTypes = ['es5', 'es6', 'es2015', 'es7', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'esnext', 'dom', 'dom.iterable', 'webworker', 'webworker.importscripts', 'webworker.iterable', 'scripthost', 'es2015.core', 'es2015.coll ection', 'es2015.generator', 'es2015.iterable', 'es2015.promise', 'es2015.proxy', 'es2015.reflect', 'es2015 .symbol', 'es2015.symbol.wellknown', 'es2016.array.include', 'es2017.object', 'es2017.sharedmemory', 'es2 017.string', 'es2017.intl', 'es2017.typedarrays', 'es2018.asyncgenerator', 'es2018.asynciterable', 'es201 8.intl', 'es2018.promise', 'es2018.regexp', 'es2019.array', 'es2019.object', 'es2019.string', 'es2019.symbo l', 'es2020.bigint', 'es2020.promise', 'es2020.sharedmemory', 'es2020.string', 'es2020.symbol.wellknown', 'es2020.intl', 'es2021.promise', 'es2021.string', 'es2021.weakref', 'esnext.array', 'esnext.symbol', 'esnext .asynciterable', 'esnext.intl', 'esnext.bigint', 'esnext.string', 'esnext.promise', 'esnext.weakref'] as const;
-
-const jsxTypes = [undefined, 'preserve', 'react-native', 'react', 'react-jsx', 'react-jsxdev'] as const;
+// ── CLI flag definitions ──────────────────────────────────────────────────
 
 const commandLineFlags = {
-	help: {
-		type: Boolean,
-		alias: 'h',
-		description: 'Print this message.',
-	},
 	watch: {
 		type: Boolean,
 		alias: 'w',
@@ -40,16 +42,16 @@ const commandLineFlags = {
 	version: {
 		type: Boolean,
 		alias: 'v',
-		description: 'Print the compiler\'s version.',
+		description: "Print the compiler's version.",
 	},
 	init: {
 		type: Boolean,
 		description: 'Initializes a TypeScript project and creates a tsconfig.json file.',
 	},
 	project: {
-		type: Boolean,
+		type: String,
 		alias: 'p',
-		description: 'Compile the project given the path to its configuration file, or to a folder with a \'tsconfig.json\'.',
+		description: "Compile the project given the path to its configuration file, or to a folder with a 'tsconfig.json'.",
 	},
 	build: {
 		type: Boolean,
@@ -63,58 +65,36 @@ const commandLineFlags = {
 };
 
 const commonCompilerOptions = {
-	pretty: {
-		type: Boolean,
-		description: 'Enable color and formatting in TypeScript\'s output to make compiler errors easier to read',
-		default: true,
-	},
-
 	target: {
-		type: (value: typeof targetType[number]) => {
-			assert.ok(targetType.includes(value), 'Invalid target type');
+		type: (value: TargetValue) => {
+			assert.ok(targetValues.includes(value), 'Invalid target value');
 			return value;
 		},
 		alias: 't',
-		description: `Set the JavaScript language version for emitted JavaScript and include compatible library declarations.\none of: ${targetType.join(', ')}`,
+		description: `Set the JavaScript language version for emitted JavaScript and include compatible library declarations.\none of: ${targetValues.join(', ')}`,
 		default: 'ES3',
 	},
 
 	module: {
-		type: (value: typeof moduleTypes[number]) => {
-			assert.ok(moduleTypes.includes(value), 'Invalid module type');
+		type: (value: ModuleValue) => {
+			assert.ok(moduleValues.includes(value), 'Invalid module value');
 			return value;
 		},
 		alias: 'm',
-		description: `Specify what module code is generated.\none of: ${moduleTypes.join(', ')}`,
-	},
-
-	lib: {
-		type: [
-			(value: typeof libraryTypes[number]) => {
-				assert.ok(libraryTypes.includes(value), 'Invalid library type');
-				return value;
-			},
-		] as const,
-		description: `Specify a set of bundled library declaration files that describe the target runtime environment.\none or more: ${libraryTypes.join(', ')}`,
+		description: `Specify what module code is generated.\none of: ${moduleValues.join(', ')}`,
 	},
 
 	allowJs: {
 		type: Boolean,
-		description: 'Allow JavaScript files to be a part of your program. Use the `checkJS` option to get errors from these files.',
-
-	},
-
-	checkJs: {
-		type: Boolean,
-		description: 'Enable error reporting in type-checked JavaScript files.',
+		description: "Allow JavaScript files to be a part of your program. Use the 'checkJS' option to get errors from these files.",
 	},
 
 	jsx: {
-		type: (value: typeof jsxTypes[number]) => {
-			assert.ok(jsxTypes.includes(value), 'Invalid jsx type');
+		type: (value: JsxValue) => {
+			assert.ok(jsxValues.includes(value), 'Invalid jsx value');
 			return value;
 		},
-		description: `Specify what JSX code is generated.\none of: ${jsxTypes.join(', ')}`,
+		description: `Specify what JSX code is generated.\none of: ${jsxValues.filter(Boolean).join(', ')}`,
 	},
 
 	declaration: {
@@ -123,34 +103,14 @@ const commonCompilerOptions = {
 		description: 'Generate .d.ts files from TypeScript and JavaScript files in your project.',
 	},
 
-	declarationMap: {
-		type: Boolean,
-		description: 'Create sourcemaps for d.ts files.',
-	},
-
-	emitDeclarationOnly: {
-		type: Boolean,
-		description: 'Only output d.ts files and not JavaScript files.',
-	},
-
 	sourceMap: {
 		type: Boolean,
 		description: 'Create source map files for emitted JavaScript files.',
 	},
 
-	outFile: {
-		type: String,
-		description: 'Specify a file that bundles all outputs into one JavaScript file. If `declaration` is true, also designates a file that bundles all .d.ts output.',
-	},
-
 	outDir: {
 		type: String,
 		description: 'Specify an output folder for all emitted files.',
-	},
-
-	removeComments: {
-		type: Boolean,
-		description: 'Disable emitting comments.',
 	},
 
 	noEmit: {
@@ -163,16 +123,131 @@ const commonCompilerOptions = {
 		description: 'Enable all strict type-checking options.',
 	},
 
-	types: {
-		type: String,
-		description: 'Specify type package names to be included without being referenced in a source file.',
-	},
-
 	esModuleInterop: {
 		type: Boolean,
-		description: 'Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility.',
+		description: 'Emit additional JavaScript to ease support for importing CommonJS modules.',
 	},
 };
+
+// ── Flag lists for the help document ─────────────────────────────────────
+//
+// Long names are styled with ANSI blue to replicate the real tsc output.
+// Declared as Flag[] directly so help.render can compose them into named
+// sections without re-reading the cleye flag config at render time.
+
+const commandLineFlagList: Flag[] = [
+	{
+		long: blue('--help'),
+		short: 'h',
+		description: 'Print this message.',
+	},
+	{
+		long: blue('--watch'),
+		short: 'w',
+		description: 'Watch input files.',
+	},
+	{
+		long: blue('--all'),
+		description: 'Show all compiler options.',
+	},
+	{
+		long: blue('--version'),
+		short: 'v',
+		description: "Print the compiler's version.",
+	},
+	{
+		long: blue('--init'),
+		description: 'Initializes a TypeScript project and creates a tsconfig.json file.',
+	},
+	{
+		long: blue('--project'),
+		short: 'p',
+		arg: 'path',
+		description: "Compile the project at the given path or folder with a 'tsconfig.json'.",
+	},
+	{
+		long: blue('--build'),
+		short: 'b',
+		description: 'Build one or more projects and their dependencies, if out of date.',
+	},
+	{
+		long: blue('--showConfig'),
+		description: 'Print the final configuration instead of building.',
+	},
+];
+
+const compilerOptionFlagList: Flag[] = [
+	{
+		long: blue('--target'),
+		short: 't',
+		arg: 'version',
+		description: `Set the JavaScript language version for emitted JavaScript.\none of: ${targetValues.join(', ')}`,
+	},
+	{
+		long: blue('--module'),
+		short: 'm',
+		arg: 'kind',
+		description: `Specify what module code is generated.\none of: ${moduleValues.join(', ')}`,
+	},
+	{
+		long: blue('--allowJs'),
+		description: 'Allow JavaScript files to be part of your program.',
+	},
+	{
+		long: blue('--jsx'),
+		arg: 'kind',
+		description: `Specify what JSX code is generated.\none of: ${jsxValues.filter(Boolean).join(', ')}`,
+	},
+	{
+		long: blue('--declaration'),
+		short: 'd',
+		description: 'Generate .d.ts files from TypeScript and JavaScript files.',
+	},
+	{
+		long: blue('--sourceMap'),
+		description: 'Create source map files for emitted JavaScript files.',
+	},
+	{
+		long: blue('--outDir'),
+		arg: 'dir',
+		description: 'Specify an output folder for all emitted files.',
+	},
+	{
+		long: blue('--noEmit'),
+		description: 'Disable emitting files from a compilation.',
+	},
+	{
+		long: blue('--strict'),
+		description: 'Enable all strict type-checking options.',
+	},
+	{
+		long: blue('--esModuleInterop'),
+		description: 'Emit additional JavaScript to ease support for importing CommonJS modules.',
+	},
+];
+
+// ── Common commands text (replicates the COMMON COMMANDS block) ───────────
+
+const commonCommandsText = [
+	`${blue('tsc')}`,
+	'Compiles the current project (tsconfig.json in the working directory.)',
+	'',
+	`${blue('tsc app.ts util.ts')}`,
+	'Ignoring tsconfig.json, compiles the specified files with default compiler options.',
+	'',
+	`${blue('tsc -b')}`,
+	'Build a composite project in the working directory.',
+	'',
+	`${blue('tsc --init')}`,
+	'Creates a tsconfig.json with the recommended settings in the working directory.',
+	'',
+	`${blue('tsc -p ./path/to/tsconfig.json')}`,
+	'Compiles the TypeScript project located at the specified path.',
+	'',
+	`${blue('tsc --noEmit')}`,
+	`${blue('tsc --target esnext')}`,
+	'Compiles the current project, with additional settings.',
+].join('\n');
 
 await cli({
 	flags: {
@@ -181,80 +256,19 @@ await cli({
 	},
 
 	help: {
-		usage: false,
-		examples: [
-			blue('tsc'),
-			'Compiles the current project (tsconfig.json in the working directory.)',
-
-			'',
-
-			blue('tsc app.ts util.ts'),
-			'Ignoring tsconfig.json, compiles the specified files with default compiler options.',
-
-			'',
-
-			blue('tsc -b'),
-			'Build a composite project in the working directory.',
-
-			'',
-
-			blue('tsc --init'),
-			'Creates a tsconfig.json with the recommended settings in the working directory.',
-
-			'',
-
-			blue('tsc -p ./path/to/tsconfig.json'),
-			'Compiles the TypeScript project located at the specified path.',
-
-			'',
-
-			blue('tsc --help --all'),
-			'An expanded version of this information, showing all possible compiler options',
-
-			'',
-
-			blue('tsc --noEmit'),
-			blue('tsc --target esnext'),
-			'Compiles the current project, with additional settings.',
-		],
-
-		render(options) {
-			const allFlags = options.flags ?? {};
-			const help = typeof options.help === 'object' ? options.help : {};
-			const examplesText = Array.isArray(help.examples) ? help.examples.join('\n') : (help.examples ?? '');
-
-			// Convert a flag config to an atom Flag, with blue-styled long name
-			const toFlag = (flagName: string) => {
-				const config = allFlags[flagName];
-				const cfg = (config && typeof config === 'object' && !Array.isArray(config) && typeof config !== 'function')
-					? config as Record<string, unknown>
-					: { type: config };
-				const type = cfg.type ?? config;
-				const isBoolean = type === Boolean;
-				const argument = isBoolean ? undefined : 'value';
-				const short = 'alias' in cfg && typeof cfg.alias === 'string' ? cfg.alias : undefined;
-				return {
-					long: blue(`--${flagName.replaceAll(/([A-Z])/g, '-$1').toLowerCase()}`),
-					short,
-					arg: argument,
-					description: 'description' in cfg && typeof cfg.description === 'string' ? cfg.description : undefined,
-				};
-			};
-
-			const cmdFlagList = Object.keys(commandLineFlags).map(toFlag);
-			const compilerFlagList = Object.keys(commonCompilerOptions).map(toFlag);
-
+		render() {
 			return render(
 				p('tsc: The TypeScript Compiler - Version 0.0.0'),
-				section('COMMON COMMANDS', p(examplesText)),
-				section('COMMAND LINE FLAGS', flagsAtom(cmdFlagList)),
-				section('COMMON COMPILER OPTIONS', flagsAtom(compilerFlagList)),
+				usage('tsc', '[options] [file...]'),
+				section('COMMON COMMANDS', footer(commonCommandsText)),
+				section('COMMAND LINE FLAGS', flags(commandLineFlagList)),
+				section('COMMON COMPILER OPTIONS', flags(compilerOptionFlagList)),
 				footer('You can learn about all of the compiler options at https://aka.ms/tsconfig-reference'),
 			);
 		},
 	},
-}, (argv) => {
-	console.log(argv);
+}, () => {
+	console.log('would run tsc...');
 }).catch((error) => {
 	console.error(error);
 	process.exit(1);

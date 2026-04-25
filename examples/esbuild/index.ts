@@ -1,15 +1,23 @@
 /**
- * Reimplementation of esbuild CLI: https://github.com/evanw/esbuild
+ * Demonstrates multi-group flag sections using the cleye/help atom API.
+ *
+ * Pattern: build the help document from scratch inside `help.render`,
+ * declaring `Flag[]` arrays directly — one per logical group — then
+ * composing them with `section()` calls.
+ *
+ * Based on the real esbuild CLI: https://github.com/evanw/esbuild
  *
  * Usage:
- *  npx esno examples/esbuild --help
+ *   node --experimental-strip-types examples/esbuild/index.ts --help
  */
 
-import { underline } from 'kolorist';
+import { underline } from 'ansis';
 import { cli } from '#cleye';
 import {
-	render, section, flags as flagsAtom, p,
+	render, usage, section, flags, footer, type Flag,
 } from '#cleye/help';
+
+// ── Simple options ────────────────────────────────────────────────────────
 
 const simpleFlags = {
 	bundle: {
@@ -26,11 +34,11 @@ const simpleFlags = {
 	},
 	format: {
 		type: String,
-		description: 'Output format (iife | cjs | esm, no default when not bundling, otherwise default is iife when platform is browser and cjs when platform is node)',
+		description: 'Output format (iife | cjs | esm, no default when not bundling)',
 	},
 	loader: {
 		type: String,
-		description: 'Use loader L to load file extension X, where L is one of: js | jsx | ts | tsx | json | text | base64 | file | dataurl | binary',
+		description: 'Use loader L to load file extension X (js | jsx | ts | tsx | json | ...)',
 	},
 	minify: {
 		type: Boolean,
@@ -48,10 +56,6 @@ const simpleFlags = {
 		type: String,
 		description: 'Platform target (browser | node | neutral, default browser)',
 	},
-	serve: {
-		type: String,
-		description: 'Start a local HTTP server on this host:port for outputs',
-	},
 	sourcemap: {
 		type: Boolean,
 		description: 'Enable a source map',
@@ -62,7 +66,7 @@ const simpleFlags = {
 	},
 	target: {
 		type: String,
-		description: 'Environment target (e.g. es2017, chrome58, firefox57, safari11, edge16, node10, default esnext)',
+		description: 'Environment target (e.g. es2017, chrome58, node10, default esnext)',
 	},
 	watch: {
 		type: Boolean,
@@ -70,69 +74,39 @@ const simpleFlags = {
 	},
 };
 
+// ── Advanced options ──────────────────────────────────────────────────────
+
 const advancedFlags = {
 	allowOverwrite: {
 		type: Boolean,
 		description: 'Allow output files to overwrite input files',
 	},
 	assetNames: {
-		type: Boolean,
+		type: String,
 		description: 'Path template to use for "file" loader files (default "[name]-[hash]")',
 	},
-	charset: {
-		type: Boolean,
-		description: 'Do not escape UTF-8 code points',
-	},
 	chunkNames: {
-		type: Boolean,
+		type: String,
 		description: 'Path template to use for code splitting chunks (default "[name]-[hash]")',
 	},
-	color: {
-		type: Boolean,
-		description: 'Force use of color terminal escapes (true | false)',
-	},
 	entryNames: {
-		type: Boolean,
-		description: 'Path template to use for entry point output paths (default "[dir]/[name]", can also use "[hash]")',
+		type: String,
+		description: 'Path template to use for entry point output paths (default "[dir]/[name]")',
 	},
 	globalName: {
-		type: Boolean,
+		type: String,
 		description: 'The name of the global for the IIFE format',
-	},
-	jsxFactory: {
-		type: Boolean,
-		description: 'What to use for JSX instead of React.createElement',
-	},
-	jsxFragment: {
-		type: Boolean,
-		description: 'What to use for JSX instead of React.Fragment',
-	},
-	jsx: {
-		type: Boolean,
-		description: 'Set to "preserve" to disable transforming JSX to JS',
 	},
 	keepNames: {
 		type: Boolean,
 		description: 'Preserve "name" on functions and classes',
 	},
 	legalComments: {
-		type: Boolean,
-		description: 'Where to place license comments (none | inline | eof | linked | external, default eof when bundling and inline otherwise)',
-	},
-	logLevel: {
-		type: Boolean,
-		description: 'Disable logging (verbose | debug | info | warning | error | silent, default info)',
-	},
-	logLimit: {
-		type: Boolean,
-		description: 'Maximum message count or 0 to disable (default 10)',
-	},
-	mainFields: {
-		type: Boolean,
-		description: 'Override the main file order in package.json (default "browser,module,main" when platform is browser and "main,module" when platform is node)',
+		type: String,
+		description: 'Where to place license comments (none | inline | eof | linked | external)',
 	},
 	metafile: {
-		type: Boolean,
+		type: String,
 		description: 'Write metadata about the build to a JSON file',
 	},
 	minifyWhitespace: {
@@ -147,124 +121,191 @@ const advancedFlags = {
 		type: Boolean,
 		description: 'Use equivalent but shorter syntax in output files',
 	},
-	outbase: {
-		type: Boolean,
-		description: 'The base path used to determine entry point output paths (for multiple entry points)',
-	},
-	preserveSymlinks: {
-		type: Boolean,
-		description: 'Disable symlink resolution for module lookup',
-	},
-	publicPath: {
-		type: Boolean,
-		description: 'Set the base URL for the "file" loader',
-	},
 	resolveExtensions: {
-		type: Boolean,
-		description: 'A comma-separated list of implicit extensions (default ".tsx,.ts,.jsx,.js,.css,.json")',
-	},
-	servedir: {
-		type: Boolean,
-		description: 'What to serve in addition to generated output files',
-	},
-	sourceRoot: {
-		type: Boolean,
-		description: 'Sets the "sourceRoot" field in generated source maps',
-	},
-	sourcefile: {
-		type: Boolean,
-		description: 'Set the source file for the source map (for stdin)',
-	},
-	sourcesContent: {
-		type: Boolean,
-		description: 'Omit "sourcesContent" in generated source maps',
-	},
-	treeShaking: {
-		type: Boolean,
-		description: 'Set to "ignore-annotations" to work with packages that have incorrect tree-shaking annotations',
+		type: String,
+		description: 'Comma-separated list of implicit extensions (default ".tsx,.ts,.jsx,.js,.css,.json")',
 	},
 	tsconfig: {
-		type: Boolean,
+		type: String,
 		description: 'Use this tsconfig.json file instead of other ones',
 	},
-	version: {
-		type: Boolean,
-		description: 'Print the current version (0.12.14) and exit',
-	},
 };
+
+// ── Flag lists for the help document ─────────────────────────────────────
+//
+// Declared as Flag[] directly so help.render can compose them into
+// named sections without re-reading the cleye flag config at render time.
+
+const simpleFlagList: Flag[] = [
+	{
+		long: '--bundle',
+		description: 'Bundle all dependencies into the output files',
+	},
+	{
+		long: '--define',
+		arg: 'key=value',
+		description: 'Substitute K with V while parsing',
+	},
+	{
+		long: '--external',
+		arg: 'module',
+		description: 'Exclude module M from the bundle (can use * wildcards)',
+	},
+	{
+		long: '--format',
+		arg: 'iife|cjs|esm',
+		description: 'Output format',
+	},
+	{
+		long: '--loader',
+		arg: 'ext=loader',
+		description: 'Use loader L for file extension X',
+	},
+	{
+		long: '--minify',
+		description: 'Minify the output (sets all --minify-* flags)',
+	},
+	{
+		long: '--outdir',
+		arg: 'dir',
+		description: 'The output directory (for multiple entry points)',
+	},
+	{
+		long: '--outfile',
+		arg: 'file',
+		description: 'The output file (for one entry point)',
+	},
+	{
+		long: '--platform',
+		arg: 'browser|node|neutral',
+		description: 'Platform target (default browser)',
+	},
+	{
+		long: '--sourcemap',
+		description: 'Enable a source map',
+	},
+	{
+		long: '--splitting',
+		description: 'Enable code splitting (currently only for esm)',
+	},
+	{
+		long: '--target',
+		arg: 'env',
+		description: 'Environment target (e.g. es2017, chrome58, node10, default esnext)',
+	},
+	{
+		long: '--watch',
+		description: 'Watch mode: rebuild on file system changes',
+	},
+];
+
+const advancedFlagList: Flag[] = [
+	{
+		long: '--allow-overwrite',
+		description: 'Allow output files to overwrite input files',
+	},
+	{
+		long: '--asset-names',
+		arg: 'template',
+		description: 'Path template for "file" loader files (default "[name]-[hash]")',
+	},
+	{
+		long: '--chunk-names',
+		arg: 'template',
+		description: 'Path template for code splitting chunks (default "[name]-[hash]")',
+	},
+	{
+		long: '--entry-names',
+		arg: 'template',
+		description: 'Path template for entry point output paths (default "[dir]/[name]")',
+	},
+	{
+		long: '--global-name',
+		arg: 'name',
+		description: 'The name of the global for the IIFE format',
+	},
+	{
+		long: '--keep-names',
+		description: 'Preserve "name" on functions and classes',
+	},
+	{
+		long: '--legal-comments',
+		arg: 'none|inline|eof|linked|external',
+		description: 'Where to place license comments',
+	},
+	{
+		long: '--metafile',
+		arg: 'file',
+		description: 'Write build metadata to a JSON file',
+	},
+	{
+		long: '--minify-whitespace',
+		description: 'Remove whitespace in output files',
+	},
+	{
+		long: '--minify-identifiers',
+		description: 'Shorten identifiers in output files',
+	},
+	{
+		long: '--minify-syntax',
+		description: 'Use equivalent but shorter syntax in output files',
+	},
+	{
+		long: '--resolve-extensions',
+		arg: 'extensions',
+		description: 'Comma-separated implicit extensions (default ".tsx,.ts,.jsx,.js,.css,.json")',
+	},
+	{
+		long: '--tsconfig',
+		arg: 'file',
+		description: 'Use this tsconfig.json instead of others',
+	},
+];
 
 await cli({
 	name: 'esbuild',
 
-	version: '1.0.0',
+	version: '0.25.0',
 
-	parameters: ['[entry points]'],
+	parameters: ['[entry points...]'],
 
 	flags: {
 		...simpleFlags,
 		...advancedFlags,
-		help: Boolean,
 	},
 
 	help: {
-		examples: [
-			'# Produces dist/entry_point.js and dist/entry_point.js.map',
-			'esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap',
-			'',
-			'# Allow JSX syntax in .js files',
-			'esbuild --bundle entry_point.js --outfile=out.js --loader:.js=jsx',
-			'',
-			'# Substitute the identifier RELEASE for the literal true',
-			'esbuild example.js --outfile=out.js --define:RELEASE=true',
-			'',
-			'# Provide input via stdin, get output via stdout',
-			'esbuild --minify --loader=ts < input.ts > output.js',
-			'',
-			'# Automatically rebuild when input files are changed',
-			'esbuild app.ts --bundle --watch',
-			'',
-			'# Start a local HTTP server for everything in "www"',
-			'esbuild app.ts --bundle --servedir=www --outdir=www/js',
-		],
-
-		render(options) {
-			const name = options.name ?? '';
-			const allFlags = options.flags ?? {};
-			const help = typeof options.help === 'object' ? options.help : {};
-			const examplesText = Array.isArray(help.examples) ? help.examples.join('\n') : (help.examples ?? '');
-
-			// Convert a flag config to an atom Flag, using `=` for values
-			const toFlag = (flagName: string) => {
-				const config = allFlags[flagName];
-				const cfg = (config && typeof config === 'object' && !Array.isArray(config) && typeof config !== 'function')
-					? config as Record<string, unknown>
-					: { type: config };
-				const type = cfg.type ?? config;
-				const argument = type === Boolean ? undefined : '...';
-				const short = 'alias' in cfg && typeof cfg.alias === 'string' ? cfg.alias : undefined;
-				return {
-					long: `--${flagName.replaceAll(/([A-Z])/g, '-$1').toLowerCase()}`,
-					short,
-					arg: argument,
-					description: 'description' in cfg && typeof cfg.description === 'string' ? cfg.description : undefined,
-				};
-			};
-
-			const simpleFlagList = Object.keys(simpleFlags).map(toFlag);
-			const advancedFlagList = Object.keys(advancedFlags).map(toFlag);
-
+		render() {
 			return render(
-				p(`${name} [options...] [entry points]`),
-				section('Documentation', p(underline('https://esbuild.github.io/'))),
-				section('Repository', p(underline('https://github.com/evanw/esbuild'))),
-				section('Simple options', flagsAtom(simpleFlagList)),
-				section('Advanced options', flagsAtom(advancedFlagList)),
-				section('Examples', p(examplesText)),
+				usage('esbuild', '[options] [entry points...]'),
+				section('Documentation', footer(underline('https://esbuild.github.io/'))),
+				section('Repository', footer(underline('https://github.com/evanw/esbuild'))),
+				section('Simple options', flags(simpleFlagList)),
+				section('Advanced options', flags(advancedFlagList)),
+				section(
+					'Examples',
+					footer([
+						'# Bundle entry_point.js with minification and source maps',
+						'esbuild --bundle entry_point.js --outdir=dist --minify --sourcemap',
+						'',
+						'# Allow JSX syntax in .js files',
+						'esbuild --bundle entry_point.js --outfile=out.js --loader:.js=jsx',
+						'',
+						'# Substitute the identifier RELEASE for the literal true',
+						'esbuild example.js --outfile=out.js --define:RELEASE=true',
+						'',
+						'# Provide input via stdin, get output via stdout',
+						'esbuild --minify --loader=ts < input.ts > output.js',
+						'',
+						'# Watch for changes and rebuild automatically',
+						'esbuild app.ts --bundle --watch',
+					].join('\n')),
+				),
 			);
 		},
 	},
-}, (argv) => {
-	console.log(argv);
+}, () => {
+	console.log('would run esbuild...');
 }).catch((error) => {
 	console.error(error);
 	process.exit(1);
