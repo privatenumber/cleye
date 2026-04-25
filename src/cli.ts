@@ -7,10 +7,10 @@ import type {
 	CommandEntry,
 	ParsedArgv,
 	HelpOptions,
-	HelpDocumentNode,
 	StrictOptions,
 } from './types.ts';
 import { generateHelp, Renderers } from './render-help/index.ts';
+import { defaultHelp } from './render/default-help.ts';
 import { camelCase } from './utils/convert-case.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
@@ -325,22 +325,30 @@ async function cli<
 		return process.exit(0);
 	}
 
-	const helpRenderers = new Renderers();
-	const renderHelpFunction = (
-		(isHelpEnabled && help?.render)
-			? help.render
-			: (nodes: HelpDocumentNode | HelpDocumentNode[]) => helpRenderers.render(nodes)
-	);
-
 	const showHelp = (helpOptions?: HelpOptions) => {
-		const nodes = generateHelp({
-			...options,
-			name: effectiveName,
-			...(helpOptions ? { help: helpOptions } : {}),
-			flags,
-		});
+		const effectiveHelp = helpOptions ?? help;
 
-		console.log(renderHelpFunction(nodes, helpRenderers));
+		if (typeof effectiveHelp === 'object' && effectiveHelp?.render) {
+			// Legacy path: user-supplied render function gets the old node tree.
+			const helpRenderers = new Renderers();
+			const nodes = generateHelp({
+				...options,
+				name: effectiveName,
+				...(helpOptions ? { help: helpOptions } : {}),
+				flags,
+			});
+			console.log(effectiveHelp.render(nodes, helpRenderers));
+		} else {
+			// New default: atom-based composition.
+			console.log(defaultHelp(
+				{
+					...options,
+					name: effectiveName,
+					flags,
+					...(helpOptions ? { help: helpOptions } : {}),
+				},
+			));
+		}
 	};
 
 	if (

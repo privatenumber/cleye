@@ -16,4 +16,5 @@ describe('cleye', () => {
 	import('./specs/formats.ts');
 	import('./specs/render.ts');
 	import('./specs/atoms.ts');
+	import('./specs/default-help.ts');
 });

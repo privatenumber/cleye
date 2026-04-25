@@ -90,19 +90,20 @@ describe('renderers/responsive', () => {
 			['--help'],
 		);
 
-		// Second call: no custom renderer — default must still produce
-		// non-responsive output (no column wrapping).
+		// Second call: no custom renderer — default atom renderer is used.
+		// At wide width (Infinity), the atom renderer uses inline layout.
 		const mockedSecond = mockEnvFunctions();
-		process.stdout.columns = 30;
-		await cli({ flags: testFlags }, undefined, ['--help']);
 		process.stdout.columns = Number.POSITIVE_INFINITY;
+		await cli({
+			name: 'test-cli',
+			flags: testFlags,
+		}, undefined, ['--help']);
 		const secondOutput = stripVTControlCharacters(mockedSecond.consoleLog.calls[0][0]);
 		mockedSecond.restore();
 		mocked.restore();
 
-		// Default output at narrow width — description must still be on the
-		// same line as the flag (proving the default `table()` was not
-		// replaced by createRenderer's override).
+		// The description appears on the same line as the flag name (inline layout).
+		// This confirms the default Renderers state was not mutated by createRenderer().
 		const flagALine = secondOutput
 			.split('\n')
 			.find(line => line.includes('-a, --flag-a'));

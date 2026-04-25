@@ -4,3 +4,4 @@ export {
 	p, usage, footer, section, cmds, flags, flagsInline, flagsHanging,
 } from './render/atoms.ts';
 export type { Flag } from './render/atoms.ts';
+export { defaultHelp } from './render/default-help.ts';

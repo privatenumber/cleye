@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { bold, cyan, green } from 'ansis';
 import {
@@ -152,9 +153,8 @@ describe('atoms', () => {
 			// The description in line 1 starts at the same visual column as line 2
 			// (strip ANSI codes to count visible chars)
 			// Just verify both descriptions appear somewhere to the right
-			const ansiRegex = new RegExp(String.raw`${String.fromCodePoint(27)}\[[\d;]*m`, 'g');
 			for (const line of lines) {
-				const stripped = line.replaceAll(ansiRegex, '');
+				const stripped = stripVTControlCharacters(line);
 				expect(stripped.trimEnd().length).toBeGreaterThan(2);
 			}
 		});
