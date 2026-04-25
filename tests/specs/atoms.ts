@@ -13,6 +13,7 @@ import {
 	flagsHanging,
 	type Flag,
 } from '../../src/render/atoms.ts';
+import { cmds as responsiveCmds } from '../../src/help/responsive.ts';
 
 process.stdout.columns = 80;
 
@@ -123,9 +124,9 @@ describe('atoms', () => {
 			expect(result).toContain(cyan('run'));
 		});
 
-		test('CJK command names align description column correctly', () => {
+		test('CJK command names align description column (cleye/help/responsive)', () => {
 			// '部署' has display width 4 (two 2-cell wide CJK chars); 'run' has width 3.
-			// Both rows must render their descriptions at the same visual column.
+			// Default cmds uses .length, so this only holds for the responsive variant.
 			const commands = [
 				{
 					name: '部署',
@@ -136,19 +137,16 @@ describe('atoms', () => {
 					description: 'start dev server',
 				},
 			];
-			const result = cmds(commands).render();
+			const result = responsiveCmds(commands).render();
 			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
-			// Visual column = stringWidth of the prefix before the description
 			const visualCol0 = stringWidth(lines[0].slice(0, lines[0].indexOf('deploy the app')));
 			const visualCol1 = stringWidth(lines[1].slice(0, lines[1].indexOf('start dev server')));
-			// Both descriptions must start at the same visual column
 			expect(visualCol0).toBe(visualCol1);
-			// Visual column must equal indent(2) + nameWidth(4) + gap(2) = 8
 			const nameWidth = Math.max(...commands.map(c => stringWidth(c.name)));
 			expect(visualCol0).toBe(2 + nameWidth + 2);
 		});
 
-		test('emoji command names align description column correctly', () => {
+		test('emoji command names align description column (cleye/help/responsive)', () => {
 			// 'launch 🚀' has display width 9 (6 + space + rocket emoji(2)); 'short' has width 5.
 			const commands = [
 				{
@@ -160,7 +158,7 @@ describe('atoms', () => {
 					description: 'do something',
 				},
 			];
-			const result = cmds(commands).render();
+			const result = responsiveCmds(commands).render();
 			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
 			const visualCol0 = stringWidth(lines[0].slice(0, lines[0].indexOf('deploy')));
 			const visualCol1 = stringWidth(lines[1].slice(0, lines[1].indexOf('do something')));

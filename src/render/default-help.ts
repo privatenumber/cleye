@@ -2,7 +2,9 @@ import { flagNameToKebab } from 'type-flag';
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
 import { render } from './render.ts';
 import {
-	p, usage, section, cmds, flags as flagsAtom, type Flag, type Node,
+	type Atoms, type Flag, type Node,
+	p as defaultP, usage as defaultUsage, section as defaultSection,
+	cmds as defaultCmds, flags as defaultFlags,
 } from './atoms.ts';
 
 const inferFlagArgument = (typeValue: unknown): string | undefined => {
@@ -78,21 +80,19 @@ const flagsToAtomList = (rawFlags: Flags): Flag[] => {
 };
 
 /**
- * Compose the help output from CliOptions using the atom system.
- *
- * The caller must pass `options.name` already resolved to the effective name
- * (i.e., falling back to the parent context name or argv[1] basename).
- *
- * `opts.form` controls the tier:
- * - `'long'` (default) — full manual: name/version, description, usage, commands
- *   with descriptions, full flag descriptions with defaults, examples.
- * - `'short'` — cheatsheet: usage line, command names only (no descriptions),
- *   one-line flag descriptions. No lead description, no examples.
+ * Build a `defaultHelp` function bound to a specific atom set. Called once
+ * by `cleye/help` (with the default `.length`-based atoms) and once by
+ * `cleye/help/responsive` (with `stringWidth`-based atoms).
  */
-export const defaultHelp = (
+export const createDefaultHelp = (
+	atoms: Pick<Atoms, 'p' | 'usage' | 'section' | 'cmds' | 'flags'>,
+) => (
 	options: CliOptions,
 	options_: { form?: HelpForm } = {},
 ): string => {
+	const {
+		p, usage, section, cmds, flags: flagsAtom,
+	} = atoms;
 	const form = options_.form ?? 'long';
 	const isShort = form === 'short';
 	const help = typeof options.help === 'object' ? options.help : undefined;
@@ -239,3 +239,11 @@ export const defaultHelp = (
 
 	return render(...nodes);
 };
+
+export const defaultHelp = createDefaultHelp({
+	p: defaultP,
+	usage: defaultUsage,
+	section: defaultSection,
+	cmds: defaultCmds,
+	flags: defaultFlags,
+});

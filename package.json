@@ -36,9 +36,9 @@
 			"types": "./dist/help.d.mts",
 			"default": "./dist/help.mjs"
 		},
-		"./renderers/responsive": {
-			"types": "./dist/renderers/responsive.d.mts",
-			"default": "./dist/renderers/responsive.mjs"
+		"./help/responsive": {
+			"types": "./dist/help/responsive.d.mts",
+			"default": "./dist/help/responsive.mjs"
 		}
 	},
 	"imports": {
@@ -57,10 +57,10 @@
 			"development": "./src/help.ts",
 			"default": "./dist/help.mjs"
 		},
-		"#cleye/renderers/responsive": {
-			"types": "./src/renderers/responsive.ts",
-			"development": "./src/renderers/responsive.ts",
-			"default": "./dist/renderers/responsive.mjs"
+		"#cleye/help/responsive": {
+			"types": "./src/help/responsive.ts",
+			"development": "./src/help/responsive.ts",
+			"default": "./dist/help/responsive.mjs"
 		}
 	},
 	"packageManager": "pnpm@10.13.1",
