@@ -78,6 +78,7 @@
 	},
 	"dependencies": {
 		"ansis": "4.2.0",
+		"string-width": "8.2.0",
 		"type-flag": "5.0.0-beta.6"
 	},
 	"devDependencies": {

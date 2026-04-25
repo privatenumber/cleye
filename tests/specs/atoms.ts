@@ -1,6 +1,7 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { bold, cyan, green } from 'ansis';
+import stringWidth from 'string-width';
 import {
 	p,
 	usage,
@@ -121,6 +122,52 @@ describe('atoms', () => {
 			expect(result.trim()).not.toBe('');
 			expect(result).toContain(cyan('run'));
 		});
+
+		test('CJK command names align description column correctly', () => {
+			// '部署' has display width 4 (two 2-cell wide CJK chars); 'run' has width 3.
+			// Both rows must render their descriptions at the same visual column.
+			const commands = [
+				{
+					name: '部署',
+					description: 'deploy the app',
+				},
+				{
+					name: 'run',
+					description: 'start dev server',
+				},
+			];
+			const result = cmds(commands).render();
+			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
+			// Visual column = stringWidth of the prefix before the description
+			const visualCol0 = stringWidth(lines[0].slice(0, lines[0].indexOf('deploy the app')));
+			const visualCol1 = stringWidth(lines[1].slice(0, lines[1].indexOf('start dev server')));
+			// Both descriptions must start at the same visual column
+			expect(visualCol0).toBe(visualCol1);
+			// Visual column must equal indent(2) + nameWidth(4) + gap(2) = 8
+			const nameWidth = Math.max(...commands.map(c => stringWidth(c.name)));
+			expect(visualCol0).toBe(2 + nameWidth + 2);
+		});
+
+		test('emoji command names align description column correctly', () => {
+			// 'launch 🚀' has display width 9 (6 + space + rocket emoji(2)); 'short' has width 5.
+			const commands = [
+				{
+					name: 'launch 🚀',
+					description: 'deploy',
+				},
+				{
+					name: 'short',
+					description: 'do something',
+				},
+			];
+			const result = cmds(commands).render();
+			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
+			const visualCol0 = stringWidth(lines[0].slice(0, lines[0].indexOf('deploy')));
+			const visualCol1 = stringWidth(lines[1].slice(0, lines[1].indexOf('do something')));
+			expect(visualCol0).toBe(visualCol1);
+			const nameWidth = Math.max(...commands.map(c => stringWidth(c.name)));
+			expect(visualCol0).toBe(2 + nameWidth + 2);
+		});
 	});
 
 	describe('flagsInline', () => {
@@ -147,16 +194,18 @@ describe('atoms', () => {
 			expect(lines[1]).toContain('enable verbose output');
 		});
 
-		test('description columns align', () => {
+		test('description columns align across short+long and long-only', () => {
+			// Regression test: flagCellLength previously undercounted the
+			// short-flag prefix ("-x, ") by 1, misaligning descriptions when
+			// long-only flags appeared alongside short+long flags.
 			const result = flagsInline(testFlags).render();
 			const lines = result.split('\n');
-			// The description in line 1 starts at the same visual column as line 2
-			// (strip ANSI codes to count visible chars)
-			// Just verify both descriptions appear somewhere to the right
-			for (const line of lines) {
+			const descriptionColumn = (line: string, description: string) => {
 				const stripped = stripVTControlCharacters(line);
-				expect(stripped.trimEnd().length).toBeGreaterThan(2);
-			}
+				return stringWidth(stripped.slice(0, stripped.indexOf(description)));
+			};
+			expect(descriptionColumn(lines[0], 'show help'))
+				.toBe(descriptionColumn(lines[1], 'enable verbose output'));
 		});
 	});
 

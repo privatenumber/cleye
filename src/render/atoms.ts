@@ -1,4 +1,5 @@
 import { bold, cyan, green } from 'ansis';
+import stringWidth from 'string-width';
 import type { Node } from './types.ts';
 
 export type { Node };
@@ -32,7 +33,7 @@ const wrap = (text: string, width: number, contIndent: string): string => {
 	for (const word of words) {
 		if (current.length === 0) {
 			current = word;
-		} else if (current.length + 1 + word.length <= width) {
+		} else if (stringWidth(current) + 1 + stringWidth(word) <= width) {
 			current += ` ${word}`;
 		} else {
 			lines.push(current);
@@ -100,11 +101,11 @@ export const cmds = (commands: { name: string;
 	commands,
 	render: () => {
 		const width = getWidth();
-		const nameWidth = Math.max(...commands.map(c => c.name.length));
+		const nameWidth = Math.max(...commands.map(c => stringWidth(c.name)));
 		const descStart = 2 + nameWidth + 2;
 		return commands
 			.map(({ name, description }) => {
-				const padding = ' '.repeat(nameWidth - name.length + 2);
+				const padding = ' '.repeat(nameWidth - stringWidth(name) + 2);
 				const nameCell = `  ${cyan(name)}${padding}`;
 				if (!description) {
 					return nameCell.trimEnd();
@@ -126,15 +127,15 @@ const flagCellLength = (flag: Flag): number => {
 	// 2 (indent) + short-part + long-part
 	if (flag.long) {
 		// Has long form (most common case)
-		const shortPart = flag.short ? flag.short.length + 2 : 4; // "-x, " or "    "
+		const shortPart = flag.short ? stringWidth(flag.short) + 3 : 4; // "-x, " or "    "
 		const longPart = flag.arg
-			? flag.long.length + 1 + flag.arg.length + 2 // --long <ARG>  (+2 for < >)
-			: flag.long.length;
+			? stringWidth(flag.long) + 1 + stringWidth(flag.arg) + 2 // --long <ARG>  (+2 for < >)
+			: stringWidth(flag.long);
 		return 2 + shortPart + longPart;
 	}
 	// Short-only flag (e.g. -h with no --help counterpart)
-	const shortLength = flag.short ? flag.short.length + 1 : 0; // "-x"
-	const argumentPart = flag.arg ? 1 + flag.arg.length + 2 : 0; // " <ARG>"
+	const shortLength = flag.short ? stringWidth(flag.short) + 1 : 0; // "-x"
+	const argumentPart = flag.arg ? 1 + stringWidth(flag.arg) + 2 : 0; // " <ARG>"
 	return 2 + shortLength + argumentPart;
 };
 
