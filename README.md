@@ -650,30 +650,96 @@ await cli({
 _Cleye_ uses all information provided to generate rich help documentation. The more information you give, the better the docs!
 
 ### Help customization
-The help document can be customized by passing a `render(options) => string` function to `help.render`. Import atoms from `cleye/help` to compose the output.
+
+_Cleye_'s default help output is built by composing atoms — small rendering units exported from `cleye/help`. To customize the output, pass a `render(options, { form }) => string` function to `help.render`. You can either tweak the default output or build your own layout from atoms.
+
+#### Tweak the default
+
+The most common need is to append content or prepend a header. Import `defaultHelp` and delegate to it:
 
 ```ts
-import {
-    render, section, flags, p, footer
-} from 'cleye/help'
 import { cli } from 'cleye'
+import { defaultHelp } from 'cleye/help'
 
 await cli({
-    // ...,
-
+    name: 'mycli',
+    flags: { verbose: Boolean },
     help: {
-        render(options) {
-            return render(
-                p(options.name ?? ''),
-                section('Flags', flags(/* flag list */)),
-                footer('https://github.com/privatenumber/cleye')
-            )
+        render: (options, { form }) => {
+            const base = defaultHelp(options, { form })
+            return `${base}\n\nMore at https://example.com/docs`
         }
     }
 })
 ```
 
-Available atoms: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`. The `defaultHelp` export renders the standard help document and can be used as a base.
+#### Fully custom layout
+
+Build the output entirely from atoms imported from `cleye/help`:
+
+```ts
+import { cli } from 'cleye'
+import {
+    render, p, usage, section, flags, footer
+} from 'cleye/help'
+
+await cli({
+    name: 'mycli',
+    flags: { verbose: Boolean },
+    help: {
+        render: options => render(
+            p('Custom CLI description.'),
+            usage(options.name ?? 'mycli', '[flags...]'),
+            section('Options', flags([
+                {
+                    long: 'verbose',
+                    description: 'Enable verbose logging'
+                }
+            ])),
+            footer('https://example.com/docs')
+        )
+    }
+})
+```
+
+#### Force a specific flag layout
+
+`flags()` chooses inline or hanging layout based on terminal width. To force one layout regardless of width, use `flagsInline` or `flagsHanging` directly:
+
+```ts
+import { cli } from 'cleye'
+import { render, section, flagsHanging } from 'cleye/help'
+
+await cli({
+    name: 'mycli',
+    flags: { verbose: Boolean },
+    help: {
+        render: options => render(
+            section('Options', flagsHanging([
+                {
+                    long: 'verbose',
+                    description: 'Enable verbose logging'
+                }
+            ]))
+        )
+    }
+})
+```
+
+#### Available atoms (`cleye/help`)
+
+| Atom | Signature | Description |
+| - | - | - |
+| `p` | `p(text)` | Paragraph; wraps to terminal width |
+| `usage` | `usage(name, pattern)` | Styled `Usage: name pattern` line |
+| `section` | `section(title, ...body)` | Bold heading followed by body nodes |
+| `cmds` | `cmds(commands)` | Two-column command table |
+| `flags` | `flags(list)` | Auto-responsive flag table |
+| `flagsInline` | `flagsInline(list)` | Flag table, inline layout |
+| `flagsHanging` | `flagsHanging(list)` | Flag table, hanging layout |
+| `footer` | `footer(text)` | Literal trailing text |
+| `render` | `render(...nodes)` | Joins nodes with a blank line |
+| `defaultHelp` | `defaultHelp(options, { form? })` | Renders the standard help document |
 
 ## API
 
@@ -789,9 +855,10 @@ import type {
     CommandEntry,
     Commands,
     Flags,
+    HelpDocumentNode,
     HelpOptions,
-    HelpRenderer,
     ParsedArgv,
+    Renderers,
     TypeFlag
 } from 'cleye'
 ```
