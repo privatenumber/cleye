@@ -6,10 +6,13 @@ export type { Node };
 /**
  * MVP shape for a command-line flag. Later phases may extend with
  * env, group, etc.
+ *
+ * At least one of `short` or `long` must be present. A flag with only
+ * `short` (e.g. `-h` with no `--help` counterpart) is valid.
  */
 export type Flag = {
 	short?: string;
-	long: string;
+	long?: string;
 	arg?: string;
 	description?: string;
 };
@@ -120,22 +123,35 @@ export const cmds = (commands: { name: string;
  */
 const flagCellLength = (flag: Flag): number => {
 	// "  -x, --long <ARG>" broken down:
-	// 2 (indent) + short? ("-x, " = 4) : 4 spaces + long + arg?
-	const shortPart = flag.short ? flag.short.length + 2 : 4; // "-x, " or "    "
-	const longPart = flag.arg
-		? flag.long.length + 1 + flag.arg.length + 2 // --long <ARG>  (+2 for < >)
-		: flag.long.length;
-	return 2 + shortPart + longPart;
+	// 2 (indent) + short-part + long-part
+	if (flag.long) {
+		// Has long form (most common case)
+		const shortPart = flag.short ? flag.short.length + 2 : 4; // "-x, " or "    "
+		const longPart = flag.arg
+			? flag.long.length + 1 + flag.arg.length + 2 // --long <ARG>  (+2 for < >)
+			: flag.long.length;
+		return 2 + shortPart + longPart;
+	}
+	// Short-only flag (e.g. -h with no --help counterpart)
+	const shortLength = flag.short ? flag.short.length + 1 : 0; // "-x"
+	const argumentPart = flag.arg ? 1 + flag.arg.length + 2 : 0; // " <ARG>"
+	return 2 + shortLength + argumentPart;
 };
 
 /** Renders the flag name cell (without leading indent). */
 const renderFlagCell = (flag: Flag): string => {
-	const longOpt = flag.arg
-		? `${bold(cyan(flag.long))} ${cyan(`<${flag.arg}>`)}`
-		: bold(cyan(flag.long));
-	return flag.short
-		? `${bold(cyan(`-${flag.short}`))}, ${longOpt}`
-		: `    ${longOpt}`;
+	if (flag.long) {
+		const longOpt = flag.arg
+			? `${bold(cyan(flag.long))} ${cyan(`<${flag.arg}>`)}`
+			: bold(cyan(flag.long));
+		return flag.short
+			? `${bold(cyan(`-${flag.short}`))}, ${longOpt}`
+			: `    ${longOpt}`;
+	}
+	// Short-only flag: render as "  -x" (no long form, no indent prefix)
+	const shortOpt = flag.short ? bold(cyan(`-${flag.short}`)) : '';
+	const argumentSuffix = flag.arg ? ` ${cyan(`<${flag.arg}>`)}` : '';
+	return `${shortOpt}${argumentSuffix}`;
 };
 
 /**

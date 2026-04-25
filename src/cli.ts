@@ -5,6 +5,7 @@ import type {
 	CallbackFunction,
 	CliOptions,
 	CommandEntry,
+	HelpForm,
 	ParsedArgv,
 	HelpOptions,
 	StrictOptions,
@@ -284,10 +285,16 @@ async function cli<
 	const { help } = options;
 	const isHelpEnabled = helpEnabled(help);
 
+	if (isHelpEnabled && !('h' in flags)) {
+		flags.h = {
+			type: Boolean,
+			description: 'Show short help',
+		};
+	}
+
 	if (isHelpEnabled && !('help' in flags)) {
 		flags.help = {
 			type: Boolean,
-			alias: 'h',
 			description: 'Show help',
 		};
 	}
@@ -324,7 +331,7 @@ async function cli<
 		return process.exit(0);
 	}
 
-	const showHelp = (helpOptions?: HelpOptions) => {
+	const showHelp = (helpOptions?: HelpOptions, form: HelpForm = 'long') => {
 		const effectiveHelp = helpOptions ?? help;
 
 		const effectiveOptions = {
@@ -334,14 +341,19 @@ async function cli<
 			...(helpOptions ? { help: helpOptions } : {}),
 		};
 		const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
-		console.log(renderFunction(effectiveOptions));
+		console.log(renderFunction(effectiveOptions, { form }));
 	};
 
-	if (
-		isHelpEnabled
-		&& parsed.flags.help === true
-	) {
-		showHelp();
+	const parsedFlags = parsed.flags as Record<string, unknown>;
+
+	if (isHelpEnabled && parsedFlags.help === true) {
+		// --help wins over -h when both are present (long form is more informative)
+		showHelp(undefined, 'long');
+		return process.exit(0);
+	}
+
+	if (isHelpEnabled && parsedFlags.h === true) {
+		showHelp(undefined, 'short');
 		return process.exit(0);
 	}
 

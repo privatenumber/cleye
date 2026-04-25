@@ -27,8 +27,11 @@ export type Flags = BaseFlags<{
 	placeholder?: string;
 }>;
 
+export type HelpForm = 'short' | 'long';
+
 export type HelpRenderer = (
 	options: CliOptions,
+	options_: { form: HelpForm },
 ) => string;
 
 export type HelpOptions = {

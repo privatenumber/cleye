@@ -1,5 +1,5 @@
 import { flagNameToKebab } from 'type-flag';
-import type { CliOptions, Flags } from '../types.ts';
+import type { CliOptions, Flags, HelpForm } from '../types.ts';
 import { render } from './render.ts';
 import {
 	p, usage, section, cmds, flags as flagsAtom, type Flag, type Node,
@@ -55,13 +55,22 @@ const flagsToAtomList = (rawFlags: Flags): Flag[] => {
 		}
 
 		const aliasRaw = cfg.alias;
-		const short = typeof aliasRaw === 'string' && aliasRaw
+		const aliasShort = typeof aliasRaw === 'string' && aliasRaw
 			? aliasRaw
 			: (Array.isArray(aliasRaw) && typeof aliasRaw[0] === 'string' ? aliasRaw[0] : undefined);
 
+		// Single-char flag names are short flags (-x), not long flags (--x)
+		if (name.length === 1) {
+			return {
+				short: name,
+				arg: argument,
+				description: description || undefined,
+			} satisfies Flag;
+		}
+
 		return {
 			long: `--${flagNameToKebab(name)}`,
-			short,
+			short: aliasShort,
 			arg: argument,
 			description: description || undefined,
 		} satisfies Flag;
@@ -69,18 +78,23 @@ const flagsToAtomList = (rawFlags: Flags): Flag[] => {
 };
 
 /**
- * Compose the full help output from CliOptions using the atom system.
+ * Compose the help output from CliOptions using the atom system.
  *
  * The caller must pass `options.name` already resolved to the effective name
  * (i.e., falling back to the parent context name or argv[1] basename).
  *
- * This is the default renderer when the user has not set `help.render`.
- * The legacy Renderers + generateHelp pipeline continues to power `help.render`
- * callbacks (Phase D will remove that pipeline once no internal caller remains).
+ * `opts.form` controls the tier:
+ * - `'long'` (default) — full manual: name/version, description, usage, commands
+ *   with descriptions, full flag descriptions with defaults, examples.
+ * - `'short'` — cheatsheet: usage line, command names only (no descriptions),
+ *   one-line flag descriptions. No lead description, no examples.
  */
 export const defaultHelp = (
 	options: CliOptions,
+	options_: { form?: HelpForm } = {},
 ): string => {
+	const form = options_.form ?? 'long';
+	const isShort = form === 'short';
 	const help = typeof options.help === 'object' ? options.help : undefined;
 	const name = options.name ?? '';
 
@@ -92,10 +106,15 @@ export const defaultHelp = (
 			description: 'Show version',
 		};
 	}
+	if (!('h' in allFlags)) {
+		allFlags.h = {
+			type: Boolean,
+			description: 'Show short help',
+		};
+	}
 	if (!('help' in allFlags)) {
 		allFlags.help = {
 			type: Boolean,
-			alias: 'h',
 			description: 'Show help',
 		};
 	}
@@ -113,8 +132,8 @@ export const defaultHelp = (
 		nodes.push(p(nameWithVersion));
 	}
 
-	// ── Description ───────────────────────────────────────────────────────
-	if (help?.description) {
+	// ── Description (long form only) ──────────────────────────────────────
+	if (!isShort && help?.description) {
 		nodes.push(p(help.description));
 	}
 
@@ -180,27 +199,41 @@ export const defaultHelp = (
 	if (options.commands && Object.keys(options.commands).length > 0) {
 		const commandList = Object.entries(options.commands).map(([cmdName, entry]) => ({
 			name: cmdName,
-			description: (
-				typeof entry === 'object' && entry !== null && 'description' in entry
-					? (entry.description ?? undefined)
-					: undefined
-			),
+			// Short form: omit descriptions — names only
+			description: isShort
+				? undefined
+				: (
+					typeof entry === 'object' && entry !== null && 'description' in entry
+						? (entry.description ?? undefined)
+						: undefined
+				),
 		}));
 		nodes.push(section('Commands', cmds(commandList)));
 	}
 
 	// ── Flags ─────────────────────────────────────────────────────────────
-	const flagList = flagsToAtomList(allFlags);
+	// Short form: strip default-value annotations from descriptions so each
+	// flag fits on one line. We build a pruned copy of the flag list.
+	const flagList = isShort
+		? flagsToAtomList(allFlags).map(flag => ({
+			...flag,
+			// Drop the "(default: ...)" suffix appended during flagsToAtomList
+			description: flag.description?.replace(/ \(default: .*\)$/, '') || flag.description,
+		}))
+		: flagsToAtomList(allFlags);
+
 	if (flagList.length > 0) {
 		nodes.push(section('Flags', flagsAtom(flagList)));
 	}
 
-	// ── Examples ──────────────────────────────────────────────────────────
-	const examples = help?.examples;
-	if (examples && (!Array.isArray(examples) || examples.length > 0)) {
-		const examplesText = Array.isArray(examples) ? examples.join('\n') : examples;
-		if (examplesText) {
-			nodes.push(section('Examples', p(examplesText)));
+	// ── Examples (long form only) ─────────────────────────────────────────
+	if (!isShort) {
+		const examples = help?.examples;
+		if (examples && (!Array.isArray(examples) || examples.length > 0)) {
+			const examplesText = Array.isArray(examples) ? examples.join('\n') : examples;
+			if (examplesText) {
+				nodes.push(section('Examples', p(examplesText)));
+			}
 		}
 	}
 

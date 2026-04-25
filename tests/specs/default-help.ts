@@ -312,4 +312,93 @@ describe('defaultHelp', () => {
 			expect(output).not.toContain('Examples:');
 		});
 	});
+
+	describe('short form', () => {
+		test('short form contains usage line', () => {
+			const output = stripVTControlCharacters(defaultHelp({ name: 'my-cli' }, { form: 'short' }));
+			expect(output).toContain('Usage:');
+		});
+
+		test('short form contains -h and --help flags', () => {
+			const output = stripVTControlCharacters(defaultHelp({ name: 'my-cli' }, { form: 'short' }));
+			expect(output).toContain('-h');
+			expect(output).toContain('--help');
+		});
+
+		test('short form shows flags with one-line descriptions', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				flags: {
+					verbose: {
+						type: Boolean,
+						description: 'Enable verbose mode',
+					},
+				},
+			}, { form: 'short' }));
+			expect(output).toContain('--verbose');
+			expect(output).toContain('Enable verbose mode');
+		});
+
+		test('short form omits lead description paragraph', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				name: 'my-cli',
+				help: { description: 'A very helpful tool' },
+			}, { form: 'short' }));
+			expect(output).not.toContain('A very helpful tool');
+		});
+
+		test('short form omits examples section', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				help: { examples: 'my-cli --verbose' },
+			}, { form: 'short' }));
+			expect(output).not.toContain('Examples:');
+			expect(output).not.toContain('my-cli --verbose');
+		});
+
+		test('short form shows command names without descriptions', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				name: 'my-cli',
+				commands: {
+					build: {
+						description: 'Build the project',
+						loader: () => {},
+					},
+					deploy: {
+						description: 'Deploy the app',
+						loader: () => {},
+					},
+				},
+			}, { form: 'short' }));
+			expect(output).toContain('Commands:');
+			expect(output).toContain('build');
+			expect(output).toContain('deploy');
+			expect(output).not.toContain('Build the project');
+			expect(output).not.toContain('Deploy the app');
+		});
+
+		test('short form strips default-value suffix from flag descriptions', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				flags: {
+					retries: {
+						type: Number,
+						description: 'Retry count',
+						default: 3,
+					},
+				},
+			}, { form: 'short' }));
+			expect(output).toContain('Retry count');
+			expect(output).not.toContain('(default: 3)');
+		});
+
+		test('long form (default) includes description and examples', () => {
+			const output = stripVTControlCharacters(defaultHelp({
+				name: 'my-cli',
+				help: {
+					description: 'A very helpful tool',
+					examples: 'my-cli --verbose',
+				},
+			}));
+			expect(output).toContain('A very helpful tool');
+			expect(output).toContain('Examples:');
+		});
+	});
 });
