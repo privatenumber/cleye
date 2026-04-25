@@ -1,5 +1,4 @@
 export { cli } from './cli.ts';
-export type { Renderers } from './render-help/index.ts';
 export type {
 	Flags,
 	CliOptions,
@@ -7,5 +6,5 @@ export type {
 	Commands,
 	ParsedArgv,
 	HelpOptions,
-	HelpDocumentNode,
+	HelpRenderer,
 } from './types.ts';

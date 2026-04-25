@@ -9,7 +9,6 @@ import type {
 	HelpOptions,
 	StrictOptions,
 } from './types.ts';
-import { generateHelp, Renderers } from './render-help/index.ts';
 import { defaultHelp } from './render/default-help.ts';
 import { camelCase } from './utils/convert-case.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
@@ -328,27 +327,14 @@ async function cli<
 	const showHelp = (helpOptions?: HelpOptions) => {
 		const effectiveHelp = helpOptions ?? help;
 
-		if (typeof effectiveHelp === 'object' && effectiveHelp?.render) {
-			// Legacy path: user-supplied render function gets the old node tree.
-			const helpRenderers = new Renderers();
-			const nodes = generateHelp({
-				...options,
-				name: effectiveName,
-				...(helpOptions ? { help: helpOptions } : {}),
-				flags,
-			});
-			console.log(effectiveHelp.render(nodes, helpRenderers));
-		} else {
-			// New default: atom-based composition.
-			console.log(defaultHelp(
-				{
-					...options,
-					name: effectiveName,
-					flags,
-					...(helpOptions ? { help: helpOptions } : {}),
-				},
-			));
-		}
+		const effectiveOptions = {
+			...options,
+			name: effectiveName,
+			flags,
+			...(helpOptions ? { help: helpOptions } : {}),
+		};
+		const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
+		console.log(renderFunction(effectiveOptions));
 	};
 
 	if (

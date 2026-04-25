@@ -3,7 +3,6 @@ import type {
 	Flags as BaseFlags,
 	IgnoreFunction,
 } from 'type-flag';
-import type { Renderers } from './render-help/renderers.ts';
 
 export type Flags = BaseFlags<{
 
@@ -28,11 +27,9 @@ export type Flags = BaseFlags<{
 	placeholder?: string;
 }>;
 
-export type HelpDocumentNode<Types extends PropertyKey = keyof Renderers> = {
-	id?: string;
-	type: Types;
-	data: any;
-};
+export type HelpRenderer = (
+	options: CliOptions,
+) => string;
 
 export type HelpOptions = {
 
@@ -57,12 +54,10 @@ export type HelpOptions = {
 	examples?: string | string[];
 
 	/**
-	Function to customize the help document before it is logged.
+	Function to customize the help output. Receives the full CLI options and
+	the resolved render context. Returns the rendered help string.
 	*/
-	render?: (
-		nodes: HelpDocumentNode<keyof Renderers>[],
-		renderers: Renderers,
-	) => string;
+	render?: HelpRenderer;
 };
 
 /**

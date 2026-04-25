@@ -650,65 +650,30 @@ await cli({
 _Cleye_ uses all information provided to generate rich help documentation. The more information you give, the better the docs!
 
 ### Help customization
-The help document can be customized by passing a `render(nodes, renderers) => string` function to `help.render`.
-
-The `nodes` parameter contains an array of nodes that will be used to render the document. The `renderers` parameter is an object of functions used to render the document. Each node has properties `type` and `data`, where `type` corresponds to a property in `renderers` and `data` is passed into the render function. Nodes also have an `id` property to identify sections: `name`, `description`, `usage`, `commands`, `flags`, and `examples`.
-
-Default renderers can be found in [`/src/render-help/renderers.ts`](/src/render-help/renderers.ts).
-
-Here's an example that adds an extra sentence at the end and also updates the flags table to use the `=` operator (`--flag <value>` → `--flag=<value>`):
+The help document can be customized by passing a `render(options) => string` function to `help.render`. Import atoms from `cleye/help` to compose the output.
 
 ```ts
+import {
+    render, section, flags, p, footer
+} from 'cleye/help'
+import { cli } from 'cleye'
+
 await cli({
     // ...,
 
     help: {
-        render(nodes, renderers) {
-            /* Modify nodes... */
-
-            // Add some text at end of document
-            nodes.push('\nCheckout Cleye: https://github.com/privatenumber/cleye')
-
-            /* Extend renderers... */
-
-            // Make all flag examples use `=` as the separator
-            renderers.flagOperator = () => '='
-
-            /* Render nodes and return help */
-            return renderers.render(nodes)
+        render(options) {
+            return render(
+                p(options.name ?? ''),
+                section('Flags', flags(/* flag list */)),
+                footer('https://github.com/privatenumber/cleye')
+            )
         }
     }
 })
 ```
 
-#### Responsive tables (opt-in)
-By default, _Cleye_'s help document renders plain, non-wrapping tables — kept minimal so the main entry has no heavy dependencies.
-
-For responsive tables that wrap descriptions onto their own line on narrow terminals (powered by [terminal-columns](https://github.com/privatenumber/terminal-columns)), opt in by importing `createRenderer` from `cleye/renderers/responsive` and passing the result to `help.render`:
-
-```ts
-import { cli } from 'cleye'
-import { createRenderer } from 'cleye/renderers/responsive'
-
-await cli({
-    help: {
-        render: createRenderer()
-    }
-})
-```
-
-`createRenderer()` also accepts a `breakpoints` option to override the default responsive breakpoints — see [terminal-columns](https://github.com/privatenumber/terminal-columns)' `breakpoints()` for the shape.
-
-<table>
-	<tr>
-		<th>Normal width</th>
-		<th>Narrow width</th>
-	</tr>
-	<tr>
-		<th><img src=".github/responsive-normal.png" width="420"></th>
-		<th><img src=".github/responsive-narrow.png" width="300"></th>
-	</tr>
-</table>
+Available atoms: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`. The `defaultHelp` export renders the standard help document and can be used as a base.
 
 ## API
 
@@ -824,10 +789,9 @@ import type {
     CommandEntry,
     Commands,
     Flags,
-    HelpDocumentNode,
     HelpOptions,
+    HelpRenderer,
     ParsedArgv,
-    Renderers,
     TypeFlag
 } from 'cleye'
 ```

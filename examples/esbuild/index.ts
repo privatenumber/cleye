@@ -7,6 +7,9 @@
 
 import { underline } from 'kolorist';
 import { cli } from '#cleye';
+import {
+	render, section, flags as flagsAtom, p,
+} from '#cleye/help';
 
 const simpleFlags = {
 	bundle: {
@@ -224,75 +227,40 @@ await cli({
 			'esbuild app.ts --bundle --servedir=www --outdir=www/js',
 		],
 
-		render(nodes, renderers) {
-			const [, usage, flags, examples] = nodes;
+		render(options) {
+			const name = options.name ?? '';
+			const allFlags = options.flags ?? {};
+			const help = typeof options.help === 'object' ? options.help : {};
+			const examplesText = Array.isArray(help.examples) ? help.examples.join('\n') : (help.examples ?? '');
 
-			// Replace "flags" with "options"
-			usage.data.body = usage.data.body.replace('flags', 'options');
+			// Convert a flag config to an atom Flag, using `=` for values
+			const toFlag = (flagName: string) => {
+				const config = allFlags[flagName];
+				const cfg = (config && typeof config === 'object' && !Array.isArray(config) && typeof config !== 'function')
+					? config as Record<string, unknown>
+					: { type: config };
+				const type = cfg.type ?? config;
+				const argument = type === Boolean ? undefined : '...';
+				const short = 'alias' in cfg && typeof cfg.alias === 'string' ? cfg.alias : undefined;
+				return {
+					long: `--${flagName.replaceAll(/([A-Z])/g, '-$1').toLowerCase()}`,
+					short,
+					arg: argument,
+					description: 'description' in cfg && typeof cfg.description === 'string' ? cfg.description : undefined,
+				};
+			};
 
-			// Update renderer so flags that accept a value shows `=...`
-			renderers.flagOperator = () => '=';
-			renderers.flagParameter = flagType => (flagType === Boolean ? '' : '...');
+			const simpleFlagList = Object.keys(simpleFlags).map(toFlag);
+			const advancedFlagList = Object.keys(advancedFlags).map(toFlag);
 
-			const { tableData: flagsTableData } = flags.data.body.data;
-
-			return renderers.render([
-				usage,
-
-				// Add Documentation & Repository links
-				{
-					type: 'section',
-					data: {
-						title: 'Documentation:',
-						body: underline('https://esbuild.github.io/'),
-					},
-				},
-				{
-					type: 'section',
-					data: {
-						title: 'Repository:',
-						body: underline('https://github.com/evanw/esbuild'),
-					},
-				},
-
-				// Split Flags into "Simple options" and "Advanced options"
-				{
-					type: 'section',
-					data: {
-						title: 'Simple options:',
-						body: {
-							type: 'table',
-							data: {
-								...flags,
-								tableData: flagsTableData.filter(
-									([flagName]: [{ data: { name: string } }]) => flagName.data.name in simpleFlags,
-								),
-							},
-						},
-						indentBody: 0,
-					},
-				},
-				{
-					type: 'section',
-					data: {
-						title: 'Advanced options:',
-						body: {
-							type: 'table',
-							data: {
-								...flags,
-								tableData: flagsTableData.filter(
-									([flagName]: [{ data: { name: string } }]) => (
-										flagName.data.name in advancedFlags
-									),
-								),
-							},
-						},
-						indentBody: 0,
-					},
-				},
-				flags,
-				examples,
-			]);
+			return render(
+				p(`${name} [options...] [entry points]`),
+				section('Documentation', p(underline('https://esbuild.github.io/'))),
+				section('Repository', p(underline('https://github.com/evanw/esbuild'))),
+				section('Simple options', flagsAtom(simpleFlagList)),
+				section('Advanced options', flagsAtom(advancedFlagList)),
+				section('Examples', p(examplesText)),
+			);
 		},
 	},
 }, (argv) => {

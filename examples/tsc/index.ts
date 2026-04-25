@@ -7,6 +7,9 @@
 
 import assert from 'assert';
 import { cli } from '#cleye';
+import {
+	render, section, flags as flagsAtom, p, footer,
+} from '#cleye/help';
 
 // https://github.com/microsoft/TypeScript/blob/7a12909ae3f03b1feed19df2082aa84e5c7a5081/src/executeCommandLine/executeCommandLine.ts#L111
 const blue = (string_: string) => `\u001B[94m${string_}\u001B[39m`;
@@ -171,34 +174,6 @@ const commonCompilerOptions = {
 	},
 };
 
-const tableBreakpoints = {
-	'> 80': [
-		{
-			align: 'right',
-			width: 'content-width',
-			paddingLeft: 2,
-			paddingRight: 2,
-			paddingBottom: 1,
-		},
-		{
-			paddingBottom: 1,
-		},
-	],
-	'> 0': [
-		{
-			width: '100%',
-			paddingLeft: 2,
-			paddingRight: 2,
-		},
-		{
-			width: '100%',
-			paddingLeft: 2,
-			paddingRight: 2,
-			paddingBottom: 1,
-		},
-	],
-};
-
 await cli({
 	flags: {
 		...commandLineFlags,
@@ -243,61 +218,39 @@ await cli({
 			'Compiles the current project, with additional settings.',
 		],
 
-		render(nodes, renderers) {
-			const [flags, commonCommands] = nodes;
+		render(options) {
+			const allFlags = options.flags ?? {};
+			const help = typeof options.help === 'object' ? options.help : {};
+			const examplesText = Array.isArray(help.examples) ? help.examples.join('\n') : (help.examples ?? '');
 
-			commonCommands.data.title = 'COMMON COMMANDS';
-			commonCommands.data.body = `\n${commonCommands.data.body}`;
-			nodes.splice(1, 0, commonCommands);
-
-			const { tableData: flagsTableData } = flags.data.body.data;
-
-			renderers.flagName = function (flag) {
-				const flagName = `--${flag.name}`;
-				return blue(flagName + (flag.aliasFormatted ? `, ${flag.aliasFormatted}` : ''));
+			// Convert a flag config to an atom Flag, with blue-styled long name
+			const toFlag = (flagName: string) => {
+				const config = allFlags[flagName];
+				const cfg = (config && typeof config === 'object' && !Array.isArray(config) && typeof config !== 'function')
+					? config as Record<string, unknown>
+					: { type: config };
+				const type = cfg.type ?? config;
+				const isBoolean = type === Boolean;
+				const argument = isBoolean ? undefined : 'value';
+				const short = 'alias' in cfg && typeof cfg.alias === 'string' ? cfg.alias : undefined;
+				return {
+					long: blue(`--${flagName.replaceAll(/([A-Z])/g, '-$1').toLowerCase()}`),
+					short,
+					arg: argument,
+					description: 'description' in cfg && typeof cfg.description === 'string' ? cfg.description : undefined,
+				};
 			};
 
-			return renderers.render([
-				'tsc: The TypeScript Compiler - Version 0.0.0\n',
-				commonCommands,
-				{
-					type: 'section',
-					data: {
-						title: 'COMMAND LINE FLAGS\n',
-						body: {
-							type: 'table',
-							data: {
-								tableBreakpoints,
-								tableData: flagsTableData.filter(
-									(
-										[flagName]: [{ data: { name: string } }],
-									) => flagName.data.name in commandLineFlags,
-								),
-							},
-						},
-						indentBody: 0,
-					},
-				},
-				{
-					type: 'section',
-					data: {
-						title: 'COMMON COMPILER OPTIONS\n',
-						body: {
-							type: 'table',
-							data: {
-								tableBreakpoints,
-								tableData: flagsTableData.filter(
-									(
-										[flagName]: [{ data: { name: string } }],
-									) => flagName.data.name in commonCompilerOptions,
-								),
-							},
-						},
-						indentBody: 0,
-					},
-				},
-				'You can learn about all of the compiler options at https://aka.ms/tsconfig-reference',
-			]);
+			const cmdFlagList = Object.keys(commandLineFlags).map(toFlag);
+			const compilerFlagList = Object.keys(commonCompilerOptions).map(toFlag);
+
+			return render(
+				p('tsc: The TypeScript Compiler - Version 0.0.0'),
+				section('COMMON COMMANDS', p(examplesText)),
+				section('COMMAND LINE FLAGS', flagsAtom(cmdFlagList)),
+				section('COMMON COMPILER OPTIONS', flagsAtom(compilerFlagList)),
+				footer('You can learn about all of the compiler options at https://aka.ms/tsconfig-reference'),
+			);
 		},
 	},
 }, (argv) => {
