@@ -14,6 +14,7 @@ The intuitive command-line interface (CLI) development tool.
 - Single API — just `cli()`
 - Strongly typed parameters and flags
 - Commands as lazy imports with automatic argv routing
+- Per-command type narrowing on `runCommand` — handler args & return values flow through
 - Nested command support
 - Middleware-style callbacks with data passing
 - `--help` documentation generation (customizable)
@@ -580,6 +581,56 @@ export default ({ config }: Context) => cli({
 ```
 
 The argument is passed directly to the command's exported function — fully typed, no casting. If the command doesn't export a default function (side-effect style), the argument is ignored and `runCommand()` simply triggers the import.
+
+#### Per-command type narrowing
+
+`runCommand` is typed by the matched command. Inside the callback, narrowing on `parsed.command` unlocks the matched handler's argument and return types:
+
+```ts
+await cli({
+    commands: {
+        ping: () => 'pong' as const,
+        connect: (host: string) => ({
+            host,
+            connected: true
+        })
+    }
+}, async (parsed) => {
+    if (parsed.command === 'ping') {
+        const result = await parsed.runCommand()
+        //    ^? 'pong'
+    }
+
+    if (parsed.command === 'connect') {
+        const result = await parsed.runCommand('localhost')
+        //    ^? { host: string; connected: boolean }
+
+        // Compile error — `connect` requires a string
+        // await parsed.runCommand(123)
+    }
+})
+```
+
+For lazy loaders (`loader: () => import('./cmd.ts')`), the type unwraps to the module's `default` export's signature so the imported handler's types flow through automatically:
+
+```ts
+// commands/deploy.ts
+export default (config: { region: string }) => cli({ /* ... */ })
+
+// cli.ts
+await cli({
+    commands: {
+        deploy: { loader: () => import('./commands/deploy.ts') }
+    }
+}, async (parsed) => {
+    if (parsed.command === 'deploy') {
+        await parsed.runCommand({ region: 'us-east-1' })
+        //                       ^? typed from deploy.ts's default export
+    }
+})
+```
+
+When no command matched, `parsed.runCommand` is a no-op typed as `() => Promise<undefined>`.
 
 ### Nested commands
 

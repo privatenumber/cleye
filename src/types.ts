@@ -188,8 +188,62 @@ type HasHelpOrVersion<Options extends { flags?: Flags }> = (
 	HasVersion<Options> & HasHelp<Options>
 );
 
+/**
+ * Extract the handler function from a CommandEntry.
+ *
+ * - Function shorthand: the entry itself.
+ * - Object form: `entry.loader`.
+ */
+type EntryHandler<Entry> = Entry extends (...arguments_: any) => any
+	? Entry
+	: Entry extends { loader: infer Loader extends (...arguments_: any) => any }
+		? Loader
+		: never;
+
+/**
+ * If a handler resolves to a module namespace with a callable `default`
+ * export (the lazy-loader pattern: `loader: () => import('./cmd.ts')`),
+ * unwrap to the default export's signature. Otherwise the handler is
+ * invoked directly.
+ */
+type Invokable<Handler extends (...arguments_: any) => any> =
+	Awaited<ReturnType<Handler>> extends {
+		default: infer Default extends (...arguments_: any) => any;
+	}
+		? Default
+		: Handler;
+
+/**
+ * The shape of `runCommand` for a specific matched command — preserves the
+ * handler's argument and return-value types, wrapping the return in a Promise.
+ */
+type RunCommandFor<Entry> =
+	Invokable<EntryHandler<Entry>> extends (...arguments_: infer Arguments) => infer Return
+		? (...arguments_: Arguments) => Promise<Awaited<Return>>
+		: never;
+
+/**
+ * Discriminated union over `command`. Each branch pairs the matched command
+ * name with a `runCommand` typed for that command. The `undefined` branch is
+ * the noop case (no command matched).
+ */
+type CommandUnion<C> = C extends Commands
+	? (
+		| {
+			[K in keyof C & string]: {
+				command: K;
+				runCommand: RunCommandFor<C[K]>;
+			}
+		}[keyof C & string]
+		| { command: undefined;
+			runCommand: () => Promise<undefined>; }
+	)
+	: { command: undefined;
+		runCommand: () => Promise<undefined>; };
+
 export type ParsedArgv<
-	Options extends { flags?: Flags },
+	Options extends { flags?: Flags;
+		commands?: Commands; },
 	Parameters extends string[],
 > = TypeFlag<HasHelpOrVersion<Options>> & {
 	_: {
@@ -199,26 +253,12 @@ export type ParsedArgv<
 		]: ParameterType<Parameter>;
 	};
 
-	/** Name of the matched command, or undefined if no command matched */
-	command: string | undefined;
-
-	/**
-	Trigger the matched command. Always defined — when no command matched,
-	this is a callable noop that resolves to `undefined`, so callers can
-	always do `await argv.runCommand()` without an undefined check.
-
-	When a command matched, returns the handler's resolved value (or its
-	default export's return value if the loader resolves to a module).
-	Idempotent — repeated calls return the same Promise.
-	*/
-	runCommand: (context?: unknown) => Promise<unknown>;
-
 	/** Show help documentation */
 	showHelp: (options?: HelpOptions) => void;
 
 	/** Show version */
 	showVersion: () => void;
-};
+} & CommandUnion<Options['commands']>;
 
 export type CallbackFunction<Parsed, Return = unknown> = (
 	parsed: { [Key in keyof Parsed]: Parsed[Key] },
