@@ -142,6 +142,50 @@ cli({
 
 ---
 
+### `cli()` resolves to the callback's return value
+
+`cli()` now always resolves to whatever the callback returns. Previously the return was discarded and `cli()` resolved to `ParsedArgv` regardless of the callback's return.
+
+Without a callback, `cli()` resolves to `undefined`. To get `ParsedArgv` back, pass `(parsed) => parsed`.
+
+Auto-invocation of matched commands is unchanged: if the callback does not call `runCommand` itself, cleye still runs the matched command's handler after the callback returns. The auto-invoked handler's return value is discarded — callers wanting to capture it must call `runCommand()` themselves and forward the result.
+
+**Before:**
+
+```ts
+const argv = await cli(
+    { flags: { verbose: Boolean } },
+    (parsed) => {
+        console.log(parsed.flags.verbose)
+    },
+    process.argv.slice(2)
+)
+// argv is ParsedArgv (callback return ignored)
+```
+
+**After — callers wanting `ParsedArgv`:**
+
+```ts
+const argv = await cli(
+    { flags: { verbose: Boolean } },
+    parsed => parsed,
+    process.argv.slice(2)
+)
+```
+
+**After — callers wanting a derived value:**
+
+```ts
+const port = await cli(
+    { flags: { verbose: Boolean } },
+    async () => loadConfig().port,
+    process.argv.slice(2)
+)
+// port is whatever the callback returned (a number here)
+```
+
+---
+
 ### Node.js 22.22.2+ required
 
 `engines.node` is now `>=22.22.2`. Node 18 and Node 20 are no longer supported.

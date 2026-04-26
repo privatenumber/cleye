@@ -71,7 +71,7 @@ await cli({
 ```
 
 > [!NOTE]
-> `cli()` is async — the callback runs after argv is parsed, and the returned `Promise` resolves after the callback completes.
+> `cli()` is async. The returned `Promise` resolves to whatever the callback returns. Without a callback, it resolves to `undefined` — pass `(parsed) => parsed` if you want `ParsedArgv` back.
 
 > [!TIP]
 > Pull `name` and `version` from your `package.json` to keep them in sync:
@@ -487,11 +487,11 @@ await cli({
     commands: {
         deploy: () => import('./commands/deploy.ts')
     }
-}, async (argv, runCommand) => {
+}, async ({ runCommand }) => {
     const config = await loadConfig()
 
     try {
-        await runCommand?.({ config })
+        await runCommand({ config })
         console.log('Deploy succeeded')
     } catch (error) {
         console.error('Deploy failed:', error.message)
@@ -560,9 +560,9 @@ await cli({
     commands: {
         deploy: () => import('./commands/deploy.ts')
     }
-}, async (argv, runCommand) => {
+}, async ({ runCommand }) => {
     const config = await loadConfig()
-    await runCommand?.({ config })
+    await runCommand({ config })
 })
 ```
 
@@ -745,11 +745,11 @@ await cli({
 
 ### cli(options, callback?, argv?)
 
-Returns: `Promise<ParsedArgv>`
+Returns: `Promise<CallbackReturn>` — resolves to whatever the callback returns. Without a callback, resolves to `undefined`. Pass `(parsed) => parsed` to get `ParsedArgv` back.
 
 Function to parse argv by declaring parameters, flags, and commands.
 
-#### Return type
+#### `ParsedArgv` shape (the callback's first argument)
 
 ```ts
 type ParsedArgv = {
@@ -769,10 +769,11 @@ type ParsedArgv = {
     // Matched command name, or undefined
     command: string | undefined
 
-    // Trigger the matched command. Undefined if no command matched.
-    // Callable at most once — subsequent calls return the same Promise.
+    // Trigger the matched command. Always defined — when no command matched,
+    // it is a callable noop that resolves to `undefined`.
+    // Idempotent — repeated calls return the same Promise.
     // Pass an argument to forward to the command's exported function.
-    runCommand: ((argument?: unknown) => Promise<void>) | undefined
+    runCommand: (argument?: unknown) => Promise<unknown>
 
     // Method to print version
     showVersion: () => void
@@ -832,12 +833,13 @@ type CommandEntry =
 | `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
 | `render` | `(nodes, renderers) => string` | Function to customize the help document. |
 
-#### callback(parsed, runCommand?)
+#### callback(parsed)
 
-Optional callback invoked after parsing.
+Optional callback invoked after parsing. The `cli()` Promise resolves to whatever this callback returns.
 
-- `parsed` — The parsed argv result for this level.
-- `runCommand` — Triggers the matched command. `undefined` if no command matched. Accepts an optional argument to pass to the command's exported function. Auto-invoked after callback if not called.
+`parsed` is the `ParsedArgv` shape above — including `runCommand` as a property. Destructure to access it: `({ runCommand, flags, _ }) => { ... }`.
+
+If the callback doesn't call `runCommand`, cleye auto-invokes the matched command after the callback returns. The auto-invoke's return value is discarded — call `runCommand()` yourself to capture it.
 
 #### argv
 

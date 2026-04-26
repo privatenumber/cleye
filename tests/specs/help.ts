@@ -316,15 +316,11 @@ describe('help', () => {
 
 		test('help.version with --version', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli(
-				{
-					help: {
-						version: '1.0.0',
-					},
+			const parsed = await cli({
+				help: {
+					version: '1.0.0',
 				},
-				undefined,
-				['--version'],
-			);
+			}, p => p, ['--version']);
 			mocked.restore();
 
 			expect(mocked.processExit.called).toBe(false);

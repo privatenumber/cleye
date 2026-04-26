@@ -215,17 +215,18 @@ const resolveCommand = (
 	return undefined;
 };
 
-// Overload: with callback
+// Overload: with callback — resolves to the callback's return value
 function cli<
 	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
+	CallbackReturn,
 >(
 	options: StrictOptions<Options> & CliOptions<[...Parameters]>,
-	callback: CallbackFunction<ParsedArgv<Options, Parameters>>,
+	callback: CallbackFunction<ParsedArgv<Options, Parameters>, CallbackReturn>,
 	argv?: string[],
-): Promise<ParsedArgv<Options, Parameters>>;
+): Promise<CallbackReturn>;
 
-// Overload: without callback
+// Overload: without callback — resolves to undefined
 function cli<
 	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
@@ -233,12 +234,12 @@ function cli<
 	options: StrictOptions<Options> & CliOptions<[...Parameters]>,
 	callback?: undefined,
 	argv?: string[],
-): Promise<ParsedArgv<Options, Parameters>>;
+): Promise<void>;
 
 // General overload
 function cli(
 	options: CliOptions,
-	callback?: CallbackFunction<any>,
+	callback?: CallbackFunction<any, any>,
 	argv?: string[],
 ): Promise<any>;
 
@@ -409,8 +410,8 @@ async function cli<
 		matchedCommand = resolveCommand(argv[0], options.commands!, commandIndex.aliases);
 	}
 
-	// runCommand is callable at most once — subsequent calls return the same promise
-	let runCommandPromise: Promise<void> | undefined;
+	// runCommand is idempotent — repeated calls return the same Promise
+	let runCommandPromise: Promise<unknown> | undefined;
 	let runCommandCalled = false;
 
 	const resolvedOptions: CliOptions = {
@@ -418,37 +419,41 @@ async function cli<
 		booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 	};
 
-	const runCommand = matchedCommand
-		? (handlerArgument?: unknown) => {
-			if (!runCommandCalled) {
-				runCommandCalled = true;
-				const commandArgv = argv.slice(1);
-				const context: CliContext = {
-					name: matchedCommand!.name,
-					argv: commandArgv,
-					parentOptions: resolvedOptions,
-				};
-				runCommandPromise = (async () => {
-					const result = await runWithCliContext(
-						context,
-						() => matchedCommand!.handler(handlerArgument),
-					);
-
-					// `loader: () => import('./cmd.ts')` resolves to a module namespace;
-					// call its default export as the handler if present.
-					if (
-						result
-						&& typeof result === 'object'
-						&& 'default' in result
-						&& typeof result.default === 'function'
-					) {
-						await result.default(handlerArgument);
-					}
-				})();
-			}
-			return runCommandPromise!;
+	const runCommand = (handlerArgument?: unknown): Promise<unknown> => {
+		// No matched command — runCommand is a callable noop so callers can
+		// always do `await argv.runCommand()` without an undefined check.
+		if (!matchedCommand) {
+			return Promise.resolve(undefined);
 		}
-		: undefined;
+		if (!runCommandCalled) {
+			runCommandCalled = true;
+			const commandArgv = argv.slice(1);
+			const context: CliContext = {
+				name: matchedCommand.name,
+				argv: commandArgv,
+				parentOptions: resolvedOptions,
+			};
+			runCommandPromise = (async () => {
+				const result = await runWithCliContext(
+					context,
+					() => matchedCommand.handler(handlerArgument),
+				);
+
+				// `loader: () => import('./cmd.ts')` resolves to a module namespace;
+				// invoke its default export and return its value.
+				if (
+					result
+					&& typeof result === 'object'
+					&& 'default' in result
+					&& typeof result.default === 'function'
+				) {
+					return await result.default(handlerArgument);
+				}
+				return result;
+			})();
+		}
+		return runCommandPromise!;
+	};
 
 	const result = {
 		...parsed,
@@ -458,11 +463,16 @@ async function cli<
 		showVersion,
 	};
 
+	let callbackResult: unknown;
 	if (typeof callback === 'function') {
-		await callback(result as any, runCommand);
+		callbackResult = await callback(result as any);
 	}
 
-	if (runCommand && !runCommandCalled) {
+	// If runCommand wasn't invoked by the callback (or there was no callback),
+	// fall back to auto-invoking the matched command. The auto-invoke's return
+	// value is discarded — callers wanting the matched handler's value must
+	// call runCommand themselves and forward the result.
+	if (matchedCommand && !runCommandCalled) {
 		await runCommand();
 	} else if (
 		!matchedCommand
@@ -474,7 +484,7 @@ async function cli<
 		process.exit(1);
 	}
 
-	return result;
+	return callbackResult;
 }
 
 export { cli };

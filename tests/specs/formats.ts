@@ -134,16 +134,12 @@ describe('formats', () => {
 	});
 
 	test('cli() integrates with cleye/formats helpers', async () => {
-		const parsed = await cli(
-			{
-				flags: {
-					format: { type: oneOf('json', 'yaml') },
-					tags: { type: commaList(String) },
-				},
+		const parsed = await cli({
+			flags: {
+				format: { type: oneOf('json', 'yaml') },
+				tags: { type: commaList(String) },
 			},
-			undefined,
-			['--format=json', '--tags=a,b,c'],
-		);
+		}, p => p, ['--format=json', '--tags=a,b,c']);
 		expect(parsed.flags.format).toBe('json');
 		expect(parsed.flags.tags).toStrictEqual(['a', 'b', 'c']);
 		expectTypeOf(parsed.flags.format).toEqualTypeOf<'json' | 'yaml' | undefined>();

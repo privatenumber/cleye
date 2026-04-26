@@ -49,8 +49,9 @@ describe('cli', () => {
 		test('result properties accessible after await', async () => {
 			const result = await cli({
 				parameters: ['<value>'],
-			}, async () => {
+			}, async (parsed) => {
 				await setImmediate();
+				return parsed;
 			}, ['test']);
 
 			expect<string>(result._.value).toBe('test');

@@ -21,7 +21,7 @@ describe('types', () => {
 			flags: {
 				foo: String,
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
@@ -32,8 +32,11 @@ describe('types', () => {
 		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 
 		expectTypeOf(parsed.command).toEqualTypeOf<string | undefined>();
-		type RunCommand = ((context?: unknown) => Promise<void>) | undefined;
+		type RunCommand = (context?: unknown) => Promise<unknown>;
 		expectTypeOf(parsed.runCommand).toEqualTypeOf<RunCommand>();
+		// runCommand is always defined — `undefined` must not be in its type.
+		expectTypeOf(parsed.runCommand).not.toBeUndefined();
+		expectTypeOf<undefined>().not.toMatchTypeOf<typeof parsed.runCommand>();
 		expectTypeOf(parsed.showHelp).toBeFunction();
 		expectTypeOf(parsed.showVersion).toBeFunction();
 		expectTypeOf(parsed.unknownFlags).toEqualTypeOf<{
@@ -48,7 +51,7 @@ describe('types', () => {
 				numberFlag: Number,
 				booleanFlag: Boolean,
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.stringFlag).toEqualTypeOf<string | undefined>();
 		expectTypeOf(parsed.flags.numberFlag).toEqualTypeOf<number | undefined>();
@@ -72,7 +75,7 @@ describe('types', () => {
 					default: true,
 				},
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.stringFlag).toBeString();
 		expectTypeOf(parsed.flags.numberFlag).toBeNumber();
@@ -87,7 +90,7 @@ describe('types', () => {
 					type: [Number],
 				},
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.stringArray).toEqualTypeOf<string[]>();
 		expectTypeOf(parsed.flags.numberArray).toEqualTypeOf<number[]>();
@@ -98,7 +101,7 @@ describe('types', () => {
 			flags: {
 				date: (value: string) => new Date(value),
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.date).toEqualTypeOf<Date | undefined>();
 	});
@@ -113,7 +116,7 @@ describe('types', () => {
 					description: 'Some description',
 				},
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.extraOptions).toBeBoolean();
 	});
@@ -124,7 +127,7 @@ describe('types', () => {
 			flags: {
 				foo: String,
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
@@ -139,7 +142,7 @@ describe('types', () => {
 			flags: {
 				foo: String,
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
@@ -149,7 +152,7 @@ describe('types', () => {
 	test('required and optional parameters', async () => {
 		const parsed = await cli({
 			parameters: ['<required>', '[optional]'],
-		}, undefined, ['req']);
+		}, p => p, ['req']);
 
 		expectTypeOf(parsed._.required).toBeString();
 		expectTypeOf(parsed._.optional).toEqualTypeOf<string | undefined>();
@@ -158,7 +161,7 @@ describe('types', () => {
 	test('spread parameters', async () => {
 		const parsed = await cli({
 			parameters: ['<foo>', '[bar...]'],
-		}, undefined, ['value1']);
+		}, p => p, ['value1']);
 
 		expectTypeOf(parsed._.foo).toBeString();
 		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
@@ -167,7 +170,7 @@ describe('types', () => {
 	test('parameter name normalization to camelCase', async () => {
 		const parsed = await cli({
 			parameters: ['<hello world>'],
-		}, undefined, ['a']);
+		}, p => p, ['a']);
 
 		expectTypeOf(parsed._).toHaveProperty('helloWorld');
 		expectTypeOf(parsed._.helloWorld).toBeString();
@@ -199,7 +202,7 @@ describe('types', () => {
 					description: 'Some description',
 				},
 			},
-		}, undefined, ['value1']);
+		}, p => p, ['value1']);
 
 		expectTypeOf(parsed._.foo).toBeString();
 		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
@@ -222,14 +225,14 @@ describe('types', () => {
 			flags: {
 				flag: String,
 			},
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 		expectTypeOf(parsed._).toMatchTypeOf<string[]>();
 	});
 
 	test('double dash arguments', async () => {
-		const parsed = await cli({}, undefined, ['--', 'arg1', 'arg2']);
+		const parsed = await cli({}, p => p, ['--', 'arg1', 'arg2']);
 
 		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 	});
@@ -252,14 +255,30 @@ describe('types', () => {
 		}, []);
 	});
 
-	test('callback receives runCommand as second argument', async () => {
+	test('runCommand is on parsed (always defined)', async () => {
 		await cli({
 			flags: {
 				foo: String,
 			},
-		}, (_parsed, runCommand) => {
-			expectTypeOf(runCommand).toEqualTypeOf<((context?: unknown) => Promise<void>) | undefined>();
+		}, (parsed) => {
+			type RunCommand = (context?: unknown) => Promise<unknown>;
+			expectTypeOf(parsed.runCommand).toEqualTypeOf<RunCommand>();
+			expectTypeOf(parsed.runCommand).not.toBeUndefined();
 		}, []);
+	});
+
+	test('runCommand resolves to unknown', async () => {
+		await cli({
+			commands: {
+				build: () => 42 as const,
+			},
+		}, async ({ runCommand }) => {
+			// runCommand is always defined — no undefined check needed.
+			// Awaited return type is `unknown` since the matched handler's
+			// type isn't carried through CommandEntry.
+			const value = await runCommand();
+			expectTypeOf(value).toEqualTypeOf<unknown>();
+		}, ['build']);
 	});
 
 	test('async callback', async () => {
@@ -293,7 +312,7 @@ describe('types', () => {
 
 		const parsed = await cli({
 			flags: sharedFlags,
-		}, undefined, []);
+		}, p => p, []);
 
 		expectTypeOf(parsed.flags.verbose).toEqualTypeOf<boolean | undefined>();
 		expectTypeOf(parsed.flags.config).toEqualTypeOf<string | undefined>();
@@ -339,8 +358,14 @@ describe('types', () => {
 		expectTypeOf<CliParameters[0]>().not.toBeNever();
 	});
 
-	test('cli() return type is not void', async () => {
+	test('cli() without callback resolves to void', async () => {
 		const result = await cli({});
+
+		expectTypeOf(result).toBeVoid();
+	});
+
+	test('cli() with callback resolves to callback return value', async () => {
+		const result = await cli({}, p => p);
 
 		expectTypeOf(result).toHaveProperty('flags');
 		expectTypeOf(result).toHaveProperty('showHelp');

@@ -137,6 +137,7 @@ describe('arguments', () => {
 					expect<string | undefined>(callbackParsed._.valueE).toBe('valueE');
 					expect<string | undefined>(callbackParsed._.valueF).toBe('valueF');
 					callback();
+					return callbackParsed;
 				},
 				['valueA', 'valueB', 'valueC', 'valueD', 'valueE', 'valueF'],
 			);
@@ -158,6 +159,7 @@ describe('arguments', () => {
 					expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
 					expect<string | undefined>(callbackParsed._.valueD).toBe('valueD');
 					callback();
+					return callbackParsed;
 				},
 				['valueA', 'valueB', '--', 'valueD'],
 			);
@@ -178,6 +180,7 @@ describe('arguments', () => {
 					expect<string>(callbackParsed._.valueA).toBe('valueA');
 					expect<string | undefined>(callbackParsed._.valueB).toBe('valueB');
 					callback();
+					return callbackParsed;
 				},
 				['valueA', 'valueB'],
 			);
@@ -196,6 +199,7 @@ describe('arguments', () => {
 				(callbackParsed) => {
 					expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
 					callback();
+					return callbackParsed;
 				},
 				['valueA', 'valueB'],
 			);
@@ -214,6 +218,7 @@ describe('arguments', () => {
 					expect<string[]>(callbackParsed._.valueA).toStrictEqual(['valueA', 'valueB']);
 					expect<string[]>(callbackParsed._.valueB).toStrictEqual(['valueC', 'valueD']);
 					callback();
+					return callbackParsed;
 				},
 				['valueA', 'valueB', '--', 'valueC', 'valueD'],
 			);
@@ -226,30 +231,24 @@ describe('arguments', () => {
 		test('command', async () => {
 			const callback = spy();
 
-			const parsed = await cli(
-				{
-					parameters: ['<value-a...>'],
+			const parsed = await cli({
+				parameters: ['<value-a...>'],
 
-					commands: {
-						test: async () => {
-							await cli(
-								{
-									parameters: ['<arg-a...>'],
-								},
-								(callbackParsed) => {
-									expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
-									callback();
-								},
-								['valueA', 'valueB'],
-							);
-						},
+				commands: {
+					test: async () => {
+						await cli(
+							{
+								parameters: ['<arg-a...>'],
+							},
+							(callbackParsed) => {
+								expect<string[]>(callbackParsed._.argA).toStrictEqual(['valueA', 'valueB']);
+								callback();
+							},
+							['valueA', 'valueB'],
+						);
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
-				['test', 'valueA', 'valueB'],
-			);
+			}, p => p, ['test', 'valueA', 'valueB']);
 
 			expect(parsed.command).toBe('test');
 			expect(callback.called).toBe(true);
@@ -258,38 +257,26 @@ describe('arguments', () => {
 
 	describe('EOF edge cases', () => {
 		test('EOF at beginning of parameters', async () => {
-			const parsed = await cli(
-				{
-					parameters: ['--', '<value>'],
-				},
-				undefined,
-				['--', 'test'],
-			);
+			const parsed = await cli({
+				parameters: ['--', '<value>'],
+			}, p => p, ['--', 'test']);
 
 			expect<string>(parsed._.value).toBe('test');
 		});
 
 		test('empty EOF section', async () => {
-			const parsed = await cli(
-				{
-					parameters: ['<arg>', '--', '[optional]'],
-				},
-				undefined,
-				['value', '--'],
-			);
+			const parsed = await cli({
+				parameters: ['<arg>', '--', '[optional]'],
+			}, p => p, ['value', '--']);
 
 			expect<string>(parsed._.arg).toBe('value');
 			expect<string | undefined>(parsed._.optional).toBeUndefined();
 		});
 
 		test('EOF parameters are always set as properties', async () => {
-			const parsed = await cli(
-				{
-					parameters: ['<arg>', '--', '[optional]'],
-				},
-				undefined,
-				['value', '--'],
-			);
+			const parsed = await cli({
+				parameters: ['<arg>', '--', '[optional]'],
+			}, p => p, ['value', '--']);
 
 			// EOF parameters should always be set on the object,
 			// even when no EOF arguments are provided

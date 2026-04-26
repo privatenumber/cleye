@@ -202,8 +202,16 @@ export type ParsedArgv<
 	/** Name of the matched command, or undefined if no command matched */
 	command: string | undefined;
 
-	/** Trigger the matched command. Undefined if no command matched. Callable at most once. */
-	runCommand: ((context?: unknown) => Promise<void>) | undefined;
+	/**
+	Trigger the matched command. Always defined — when no command matched,
+	this is a callable noop that resolves to `undefined`, so callers can
+	always do `await argv.runCommand()` without an undefined check.
+
+	When a command matched, returns the handler's resolved value (or its
+	default export's return value if the loader resolves to a module).
+	Idempotent — repeated calls return the same Promise.
+	*/
+	runCommand: (context?: unknown) => Promise<unknown>;
 
 	/** Show help documentation */
 	showHelp: (options?: HelpOptions) => void;
@@ -212,10 +220,9 @@ export type ParsedArgv<
 	showVersion: () => void;
 };
 
-export type CallbackFunction<Parsed> = (
+export type CallbackFunction<Parsed, Return = unknown> = (
 	parsed: { [Key in keyof Parsed]: Parsed[Key] },
-	runCommand: ((context?: unknown) => Promise<void>) | undefined,
-) => void | Promise<void>;
+) => Return | Promise<Return>;
 
 /**
  * Helper type to reject unknown properties in cli() options.

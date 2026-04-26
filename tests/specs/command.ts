@@ -54,18 +54,15 @@ describe('command', () => {
 		test('invoking command by name', async () => {
 			const callback = spy();
 
-			const parsed = await cli(
-				{
-					commands: {
-						commandA: () => {
-							callback();
-						},
+			const parsed = await cli({
+				commands: {
+					commandA: () => {
+						callback();
 					},
 				},
-				undefined,
-				['commandA'],
-			);
+			}, p => p, ['commandA']);
 
+			await parsed.runCommand();
 			expect(parsed.command).toBe('commandA');
 			expect(callback.called).toBe(true);
 		});
@@ -73,46 +70,38 @@ describe('command', () => {
 		test('invoking command via alias string', async () => {
 			const callback = spy();
 
-			const parsed = await cli(
-				{
-					commands: {
-						commandA: {
-							alias: 'a',
-							loader: () => {
-								callback();
-							},
+			const parsed = await cli({
+				commands: {
+					commandA: {
+						alias: 'a',
+						loader: () => {
+							callback();
 						},
 					},
 				},
-				undefined,
-				['a'],
-			);
+			}, p => p, ['a']);
 
 			expect(parsed.command).toBe('commandA');
-			await parsed.runCommand!();
+			await parsed.runCommand();
 			expect(callback.called).toBe(true);
 		});
 
 		test('invoking command via alias array', async () => {
 			const callback = spy();
 
-			const parsed = await cli(
-				{
-					commands: {
-						commandA: {
-							alias: ['a', 'b'],
-							loader: () => {
-								callback();
-							},
+			const parsed = await cli({
+				commands: {
+					commandA: {
+						alias: ['a', 'b'],
+						loader: () => {
+							callback();
 						},
 					},
 				},
-				undefined,
-				['b'],
-			);
+			}, p => p, ['b']);
 
 			expect(parsed.command).toBe('commandA');
-			await parsed.runCommand!();
+			await parsed.runCommand();
 			expect(callback.called).toBe(true);
 		});
 
@@ -174,9 +163,9 @@ describe('command', () => {
 						},
 					},
 				},
-				(parsed, runCommand) => {
+				(parsed) => {
 					expect(parsed.command).toBe('build');
-					expect(typeof runCommand).toBe('function');
+					expect(typeof parsed.runCommand).toBe('function');
 					callbackSpy();
 				},
 				['build'],
@@ -185,7 +174,7 @@ describe('command', () => {
 			// Callback was called
 			expect(callbackSpy.called).toBe(true);
 
-			// Command auto-invoked since callback didn't call runCommand
+			// Command auto-invoked after callback returns
 			expect(commandHandler.called).toBe(true);
 		});
 
@@ -200,8 +189,8 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
+				async ({ runCommand }) => {
+					await runCommand();
 				},
 				['build'],
 			);
@@ -209,24 +198,31 @@ describe('command', () => {
 			expect(commandHandler.called).toBe(true);
 		});
 
-		test('callback without command match gets undefined runCommand', async () => {
+		test('runCommand is a no-op when no command matched', async () => {
+			const buildHandler = spy();
 			const callbackSpy = spy();
 
 			await cli(
 				{
 					commands: {
-						build: () => {},
+						build: () => {
+							buildHandler();
+						},
 					},
 				},
-				(parsed, runCommand) => {
-					expect(parsed.command).toBeUndefined();
-					expect(runCommand).toBeUndefined();
+				async ({ command, runCommand }) => {
+					expect(command).toBeUndefined();
+					expect(typeof runCommand).toBe('function');
+					// runCommand is always callable; resolves to undefined when no match.
+					const result = await runCommand();
+					expect(result).toBeUndefined();
 					callbackSpy();
 				},
 				['--help=false'],
 			);
 
 			expect(callbackSpy.called).toBe(true);
+			expect(buildHandler.called).toBe(false);
 		});
 	}, { parallel: false });
 
@@ -243,8 +239,8 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
+				async ({ runCommand }) => {
+					await runCommand();
 				},
 				['test'],
 			);
@@ -269,8 +265,8 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
+				async ({ runCommand }) => {
+					await runCommand();
 				},
 				['test'],
 			);
@@ -290,36 +286,28 @@ describe('command', () => {
 
 	describe('command with flags and parameters', () => {
 		test('parent flags before command are parsed by parent', async () => {
-			const parsed = await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					commands: {
-						build: () => {},
-					},
+			const parsed = await cli({
+				flags: {
+					verbose: Boolean,
 				},
-				undefined,
-				['--verbose', 'build'],
-			);
+				commands: {
+					build: () => {},
+				},
+			}, p => p, ['--verbose', 'build']);
 
 			expect(parsed.command).toBe('build');
 			expect(parsed.flags.verbose).toBe(true);
 		});
 
 		test('flags after command are NOT parsed by parent', async () => {
-			const parsed = await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					commands: {
-						build: () => {},
-					},
+			const parsed = await cli({
+				flags: {
+					verbose: Boolean,
 				},
-				undefined,
-				['build', '--verbose'],
-			);
+				commands: {
+					build: () => {},
+				},
+			}, p => p, ['build', '--verbose']);
 
 			expect(parsed.command).toBe('build');
 			// --verbose is after the command, so it belongs to the child
@@ -341,14 +329,12 @@ describe('command', () => {
 									watch: Boolean,
 									output: String,
 								},
-							});
+							}, p => p);
 							childFlags = inner.flags;
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['--verbose', 'build', '--watch', '--output', 'dist'],
 			);
 
@@ -360,25 +346,19 @@ describe('command', () => {
 		test('mixed flags: parent before, child after command', async () => {
 			let childWatch: boolean | undefined;
 
-			const parsed = await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					commands: {
-						build: async () => {
-							const inner = await cli({
-								flags: { watch: Boolean },
-							});
-							childWatch = inner.flags.watch;
-						},
+			const parsed = await cli({
+				flags: {
+					verbose: Boolean,
+				},
+				commands: {
+					build: async () => {
+						const inner = await cli({
+							flags: { watch: Boolean },
+						}, p => p);
+						childWatch = inner.flags.watch;
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
-				['--verbose', 'build', '--watch'],
-			);
+			}, p => p, ['--verbose', 'build', '--watch']);
 
 			expect(parsed.flags.verbose).toBe(true);
 			expect(childWatch).toBe(true);
@@ -387,28 +367,22 @@ describe('command', () => {
 		test('command alias triggers boundary', async () => {
 			let childSaveDev: boolean | undefined;
 
-			const parsed = await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					commands: {
-						install: {
-							alias: 'i',
-							loader: async () => {
-								const inner = await cli({
-									flags: { saveDev: Boolean },
-								});
-								childSaveDev = inner.flags.saveDev;
-							},
+			const parsed = await cli({
+				flags: {
+					verbose: Boolean,
+				},
+				commands: {
+					install: {
+						alias: 'i',
+						loader: async () => {
+							const inner = await cli({
+								flags: { saveDev: Boolean },
+							}, p => p);
+							childSaveDev = inner.flags.saveDev;
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
-				['--verbose', 'i', '--save-dev'],
-			);
+			}, p => p, ['--verbose', 'i', '--save-dev']);
 
 			expect(parsed.command).toBe('install');
 			expect(parsed.flags.verbose).toBe(true);
@@ -416,34 +390,26 @@ describe('command', () => {
 		});
 
 		test('flag with value before command', async () => {
-			const parsed = await cli(
-				{
-					flags: {
-						output: String,
-					},
-					commands: {
-						build: () => {},
-					},
+			const parsed = await cli({
+				flags: {
+					output: String,
 				},
-				undefined,
-				['--output', 'dist', 'build', '--watch'],
-			);
+				commands: {
+					build: () => {},
+				},
+			}, p => p, ['--output', 'dist', 'build', '--watch']);
 
 			expect(parsed.command).toBe('build');
 			expect(parsed.flags.output).toBe('dist');
 		});
 
 		test('no commands defined — all flags parsed normally', async () => {
-			const parsed = await cli(
-				{
-					flags: {
-						verbose: Boolean,
-						watch: Boolean,
-					},
+			const parsed = await cli({
+				flags: {
+					verbose: Boolean,
+					watch: Boolean,
 				},
-				undefined,
-				['--verbose', '--watch'],
-			);
+			}, p => p, ['--verbose', '--watch']);
 
 			expect(parsed.command).toBeUndefined();
 			expect(parsed.flags.verbose).toBe(true);
@@ -457,23 +423,17 @@ describe('command', () => {
 				{
 					commands: {
 						build: async () => {
-							const innerParsed = await cli(
-								{
-									flags: {
-										watch: Boolean,
-									},
+							const innerParsed = await cli({
+								flags: {
+									watch: Boolean,
 								},
-								undefined,
-								['--watch'],
-							);
+							}, p => p, ['--watch']);
 							expect(innerParsed.flags.watch).toBe(true);
 							innerCallback();
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 
@@ -484,32 +444,22 @@ describe('command', () => {
 	describe('command vs flag ambiguity', () => {
 		test('command name takes priority over flag name', async () => {
 			const commandCallback = spy();
-			const cliCallback = spy();
 
-			const parsed = await cli(
-				{
-					flags: {
-						test: Boolean,
-					},
-					commands: {
-						test: () => {
-							commandCallback();
-						},
+			const parsed = await cli({
+				flags: {
+					test: Boolean,
+				},
+				commands: {
+					test: () => {
+						commandCallback();
 					},
 				},
-				(_parsedInner) => {
-					cliCallback();
-				},
-				['test'],
-			);
+			}, p => p, ['test']);
 
 			// It should be parsed as the command
 			expect(parsed.command).toBe('test');
 
-			// Callback was called
-			expect(cliCallback.called).toBe(true);
-
-			// Command auto-invoked since callback didn't call runCommand
+			// Command auto-invoked
 			expect(commandCallback.called).toBe(true);
 		});
 	}, { parallel: false });
@@ -533,9 +483,7 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 			mocked.restore();
@@ -563,9 +511,7 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 			mocked.restore();
@@ -590,9 +536,7 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 			mocked.restore();
@@ -615,14 +559,12 @@ describe('command', () => {
 								flags: {
 									watch: Boolean,
 								},
-							}, undefined, ['--no-watch']);
+							}, p => p, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 
@@ -643,15 +585,13 @@ describe('command', () => {
 									watch: Boolean,
 								},
 								booleanFlagNegation: false,
-							}, undefined, ['--no-watch']);
+							}, p => p, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 							hasNoWatchUnknown = 'no-watch' in innerParsed.unknownFlags;
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 
@@ -671,14 +611,12 @@ describe('command', () => {
 									watch: Boolean,
 								},
 								booleanFlagNegation: true,
-							}, undefined, ['--no-watch']);
+							}, p => p, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 
@@ -698,8 +636,8 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!({ message: 'hello' });
+				async ({ runCommand }) => {
+					await runCommand({ message: 'hello' });
 				},
 				['build'],
 			);
@@ -720,8 +658,8 @@ describe('command', () => {
 						}),
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!({ port: 3000 });
+				async ({ runCommand }) => {
+					await runCommand({ port: 3000 });
 				},
 				['build'],
 			);
@@ -740,9 +678,7 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['build'],
 			);
 
@@ -762,8 +698,8 @@ describe('command', () => {
 						},
 					},
 				},
-				(_parsed) => {
-					// Callback does not call runCommand
+				() => {
+					// Does not call runCommand — auto-invoke fires after the callback
 				},
 				['build'],
 			);
@@ -782,8 +718,8 @@ describe('command', () => {
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
+				async ({ runCommand }) => {
+					await runCommand();
 				},
 				['build'],
 			);
@@ -796,23 +732,17 @@ describe('command', () => {
 		test('full form command with description', async () => {
 			const callback = spy();
 
-			const parsed = await cli(
-				{
-					commands: {
-						install: {
-							description: 'Install packages',
-							alias: ['i'],
-							loader: () => {
-								callback();
-							},
+			const parsed = await cli({
+				commands: {
+					install: {
+						description: 'Install packages',
+						alias: ['i'],
+						loader: () => {
+							callback();
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
-				['i'],
-			);
+			}, p => p, ['i']);
 
 			expect(parsed.command).toBe('install');
 			expect(callback.called).toBe(true);
@@ -821,11 +751,7 @@ describe('command', () => {
 
 	describe('context', () => {
 		test('parsed argv does not have context property', async () => {
-			const parsed = await cli(
-				{},
-				undefined,
-				[],
-			);
+			const parsed = await cli({}, p => p, []);
 
 			expect('context' in parsed).toBe(false);
 		});
@@ -842,7 +768,9 @@ describe('command', () => {
 							},
 						},
 					},
-					undefined,
+					async ({ runCommand }) => {
+						await runCommand();
+					},
 					['build'],
 				),
 			).rejects.toThrow('handler error');
@@ -858,7 +786,9 @@ describe('command', () => {
 							},
 						},
 					},
-					undefined,
+					async ({ runCommand }) => {
+						await runCommand();
+					},
 					['build'],
 				),
 			).rejects.toThrow('async handler error');
@@ -874,8 +804,8 @@ describe('command', () => {
 							},
 						},
 					},
-					() => {
-						// callback doesn't call runCommand, so auto-invoke happens
+					async ({ runCommand }) => {
+						await runCommand();
 					},
 					['build'],
 				),
@@ -885,20 +815,57 @@ describe('command', () => {
 
 	describe('runCommand idempotency', () => {
 		test('returns the same promise on multiple calls', async () => {
-			const parsed = await cli(
-				{
-					commands: {
-						build: () => {},
-					},
+			const parsed = await cli({
+				commands: {
+					build: () => {},
 				},
-				undefined,
-				['build'],
-			);
+			}, p => p, ['build']);
 
-			const promise1 = parsed.runCommand!();
-			const promise2 = parsed.runCommand!();
+			const promise1 = parsed.runCommand();
+			const promise2 = parsed.runCommand();
 			expect(promise1).toBe(promise2);
 			await promise1;
+		});
+	}, { parallel: false });
+
+	describe('runCommand return value', () => {
+		test('forwards a function handler return value', async () => {
+			const parsed = await cli({
+				commands: {
+					compute: () => 42,
+				},
+			}, p => p, ['compute']);
+			expect(await parsed.runCommand()).toBe(42);
+		});
+
+		test('forwards an async handler return value', async () => {
+			const parsed = await cli({
+				commands: {
+					compute: async () => 'done',
+				},
+			}, p => p, ['compute']);
+			expect(await parsed.runCommand()).toBe('done');
+		});
+
+		test('forwards default-export return value when loader resolves to a module', async () => {
+			const moduleNamespace = {
+				default: () => ({ value: 7 }),
+			};
+			let captured: unknown;
+			await cli(
+				{
+					commands: {
+						build: {
+							loader: () => moduleNamespace,
+						},
+					},
+				},
+				async ({ runCommand }) => {
+					captured = await runCommand();
+				},
+				['build'],
+			);
+			expect(captured).toStrictEqual({ value: 7 });
 		});
 	}, { parallel: false });
 
@@ -919,23 +886,18 @@ describe('command', () => {
 											const inner = await cli({
 												name: 'get',
 												parameters: ['<key>'],
-											});
+											}, p => p);
 											result = inner._.key;
 										},
 										set: () => {},
 										list: () => {},
 									},
 								},
-								async (_parsed, runCommand) => {
-									await runCommand!();
-								},
 							);
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['config', 'get', 'registry'],
 			);
 
@@ -968,16 +930,11 @@ describe('command', () => {
 										},
 									},
 								},
-								async (_parsed, runCommand) => {
-									await runCommand!();
-								},
 							);
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['sub', 'deep', '--wathc'],
 			);
 			mocked.restore();
@@ -991,39 +948,31 @@ describe('command', () => {
 			let level2Command: string | undefined;
 			let level2Flag: boolean | undefined;
 
-			await cli(
-				{
-					name: 'root',
-					flags: { verbose: Boolean },
-					commands: {
-						remote: async () => {
-							const mid = await cli({
-								name: 'remote',
-								commands: {
-									add: async () => {
-										const inner = await cli({
-											name: 'add',
-											flags: { fetch: Boolean },
-											parameters: ['<name>', '<url>'],
-										});
-										level2Command = 'add';
-										level2Flag = inner.flags.fetch;
-									},
+			const outerParsed = await cli({
+				name: 'root',
+				flags: { verbose: Boolean },
+				commands: {
+					remote: async () => {
+						const mid = await cli({
+							name: 'remote',
+							commands: {
+								add: async () => {
+									const inner = await cli({
+										name: 'add',
+										flags: { fetch: Boolean },
+										parameters: ['<name>', '<url>'],
+									}, p => p);
+									level2Command = 'add';
+									level2Flag = inner.flags.fetch;
 								},
-							}, async (_p, run) => {
-								await run!();
-							});
-							level1Command = mid.command;
-						},
+							},
+						}, p => p);
+						level1Command = mid.command;
 					},
 				},
-				async (parsed, runCommand) => {
-					expect(parsed.flags.verbose).toBe(true);
-					await runCommand!();
-				},
-				['--verbose', 'remote', 'add', '--fetch', 'origin', 'https://example.com'],
-			);
+			}, p => p, ['--verbose', 'remote', 'add', '--fetch', 'origin', 'https://example.com']);
 
+			expect(outerParsed.flags.verbose).toBe(true);
 			expect(level1Command).toBe('add');
 			expect(level2Command).toBe('add');
 			expect(level2Flag).toBe(true);
@@ -1048,17 +997,15 @@ describe('command', () => {
 										}),
 									},
 								},
-								async (_parsed, runCommand) => {
+								async ({ runCommand }) => {
 									// Pass context from mid-level to deep
-									await runCommand!({ fromMid: true });
+									await runCommand({ fromMid: true });
 								},
 							);
 						},
 					},
 				},
-				async (_parsed, runCommand) => {
-					await runCommand!();
-				},
+				undefined,
 				['sub', 'deep'],
 			);
 
@@ -1114,19 +1061,16 @@ describe('command', () => {
 			const mocked = mockEnvFunctions();
 			const commandHandler = spy();
 
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						build: () => {
-							commandHandler();
-						},
+			const parsed = await cli({
+				name: 'my-cli',
+				commands: {
+					build: () => {
+						commandHandler();
 					},
 				},
-				undefined,
-				['build'],
-			);
+			}, p => p, ['build']);
 
+			await parsed.runCommand();
 			mocked.restore();
 
 			expect(commandHandler.called).toBe(true);
