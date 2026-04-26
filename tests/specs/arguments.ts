@@ -97,7 +97,7 @@ describe('arguments', () => {
 					}),
 				).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
-		});
+		}, { parallel: false });
 
 		describe('missing arguments', () => {
 			test('missing required parameters', async () => {
@@ -119,8 +119,8 @@ describe('arguments', () => {
 					expect(mocked.processExit.calls[0]).toStrictEqual([1]);
 				}
 			});
-		});
-	});
+		}, { parallel: false });
+	}, { parallel: false });
 
 	describe('parses arguments', () => {
 		test('simple parsing', async () => {
@@ -254,7 +254,7 @@ describe('arguments', () => {
 			expect(parsed.command).toBe('test');
 			expect(callback.called).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('EOF edge cases', () => {
 		test('EOF at beginning of parameters', async () => {
@@ -296,5 +296,5 @@ describe('arguments', () => {
 			expect('optional' in parsed._).toBe(true);
 			expect(Object.keys(parsed._)).toContain('optional');
 		});
-	});
-});
+	}, { parallel: false });
+}, { parallel: false });

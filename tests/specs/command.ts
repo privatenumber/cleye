@@ -48,7 +48,7 @@ describe('command', () => {
 				),
 			).rejects.toThrow('Duplicate command alias: "shared"');
 		});
-	});
+	}, { parallel: false });
 
 	describe('command matching', () => {
 		test('invoking command by name', async () => {
@@ -156,7 +156,7 @@ describe('command', () => {
 			expect(mocked.consoleLog.called).toBe(true);
 			expect(mocked.processExit.calls[0]).toStrictEqual([1]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('command with callback', () => {
 		test('callback receives parsed and runCommand', async () => {
@@ -228,7 +228,7 @@ describe('command', () => {
 
 			expect(callbackSpy.called).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('async command callbacks', () => {
 		test('cli Promise waits for command callback to complete', async () => {
@@ -286,7 +286,7 @@ describe('command', () => {
 			// cli should not have resolved
 			expect(cliResolved).toBe(false);
 		});
-	});
+	}, { parallel: false });
 
 	describe('command with flags and parameters', () => {
 		test('parent flags before command are parsed by parent', async () => {
@@ -479,7 +479,7 @@ describe('command', () => {
 
 			expect(innerCallback.called).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('command vs flag ambiguity', () => {
 		test('command name takes priority over flag name', async () => {
@@ -512,7 +512,7 @@ describe('command', () => {
 			// Command auto-invoked since callback didn't call runCommand
 			expect(commandCallback.called).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('strictFlags inheritance', () => {
 		test('command inherits strictFlags from parent via context', async () => {
@@ -600,7 +600,7 @@ describe('command', () => {
 			expect(mocked.consoleError.called).toBe(true);
 			expect(mocked.processExit.calls[0]).toStrictEqual([1]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('booleanFlagNegation inheritance', () => {
 		test('command inherits booleanFlagNegation from parent via context', async () => {
@@ -684,7 +684,7 @@ describe('command', () => {
 
 			expect(watchValue).toBe(false);
 		});
-	});
+	}, { parallel: false });
 
 	describe('runCommand context passing', () => {
 		test('runCommand passes arg to shorthand command handler', async () => {
@@ -748,7 +748,7 @@ describe('command', () => {
 
 			expect(ran).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('auto-invoke command', () => {
 		test('command is auto-invoked when callback does not call runCommand', async () => {
@@ -790,7 +790,7 @@ describe('command', () => {
 
 			expect(callCount).toBe(1);
 		});
-	});
+	}, { parallel: false });
 
 	describe('command description', () => {
 		test('full form command with description', async () => {
@@ -817,7 +817,7 @@ describe('command', () => {
 			expect(parsed.command).toBe('install');
 			expect(callback.called).toBe(true);
 		});
-	});
+	}, { parallel: false });
 
 	describe('context', () => {
 		test('parsed argv does not have context property', async () => {
@@ -829,7 +829,7 @@ describe('command', () => {
 
 			expect('context' in parsed).toBe(false);
 		});
-	});
+	}, { parallel: false });
 
 	describe('runCommand error handling', () => {
 		test('sync throw in command handler rejects the promise', async () => {
@@ -881,7 +881,7 @@ describe('command', () => {
 				),
 			).rejects.toThrow('auto-invoke error');
 		});
-	});
+	}, { parallel: false });
 
 	describe('runCommand idempotency', () => {
 		test('returns the same promise on multiple calls', async () => {
@@ -900,7 +900,7 @@ describe('command', () => {
 			expect(promise1).toBe(promise2);
 			await promise1;
 		});
-	});
+	}, { parallel: false });
 
 	describe('nested commands', () => {
 		test('two levels: npm config get <key>', async () => {
@@ -1064,7 +1064,7 @@ describe('command', () => {
 
 			expect(receivedContext).toStrictEqual({ fromMid: true });
 		});
-	});
+	}, { parallel: false });
 
 	describe('help on no command match', () => {
 		test('shows help and exits when no command matched and no callback', async () => {
@@ -1153,5 +1153,5 @@ describe('command', () => {
 
 			expect(mocked.processExit.called).toBe(false);
 		});
-	});
-});
+	}, { parallel: false });
+}, { parallel: false });

@@ -75,7 +75,7 @@ describe('flags', () => {
 			expect(mocked.consoleLog.called).toBe(true);
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('help', () => {
 		test('disabled', async () => {
@@ -118,7 +118,7 @@ describe('flags', () => {
 			expect(mocked.consoleLog.called).toBe(true);
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('flag overrides', () => {
 		test('overriding --help flag', async () => {
@@ -175,7 +175,7 @@ describe('flags', () => {
 				expect(parsed.flags.version as number | undefined).toBe(42);
 			}
 		});
-	});
+	}, { parallel: false });
 
 	describe('custom flag type', () => {
 		const possibleSizes = ['small', 'medium', 'large'] as const;
@@ -215,7 +215,7 @@ describe('flags', () => {
 				),
 			).rejects.toThrow('Invalid size: "xlarge"');
 		});
-	});
+	}, { parallel: false });
 
 	describe('flag parsing variants', () => {
 		test('parses array flags', async () => {
@@ -313,7 +313,7 @@ describe('flags', () => {
 				expect(defaultFunction.called).toBe(true);
 			}
 		});
-	});
+	}, { parallel: false });
 
 	describe('ignoreArgv', () => {
 		test('ignore after arguments', async () => {
@@ -346,7 +346,7 @@ describe('flags', () => {
 				unknown: [true],
 			});
 		});
-	});
+	}, { parallel: false });
 
 	describe('unknown flags default behavior', () => {
 		test('unknown flag captured', async () => {
@@ -374,7 +374,7 @@ describe('flags', () => {
 			expect(parsed.unknownFlags.unknown1).toEqual([true]);
 			expect(parsed.unknownFlags.unknown2).toEqual([true]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('strictFlags', () => {
 		test('errors on unknown flag', async () => {
@@ -530,7 +530,7 @@ describe('flags', () => {
 
 			expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
 		});
-	});
+	}, { parallel: false });
 
 	describe('acronym flag names (issue #38)', () => {
 		test('acronym flags parse from kebab-case argv', async () => {
@@ -562,7 +562,7 @@ describe('flags', () => {
 			expect(parsed.flags.orgID).toBeUndefined();
 			expect(parsed.unknownFlags).toStrictEqual({ 'org-i-d': ['acme'] });
 		});
-	});
+	}, { parallel: false });
 
 	describe('booleanFlagNegation', () => {
 		test('--no-flag sets boolean flag to false', async () => {
@@ -658,5 +658,5 @@ describe('flags', () => {
 			expect(mocked.consoleError.called).toBe(false);
 			expect(mocked.processExit.called).toBe(false);
 		});
-	});
-});
+	}, { parallel: false });
+}, { parallel: false });

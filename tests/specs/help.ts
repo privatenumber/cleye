@@ -412,7 +412,7 @@ describe('help', () => {
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 			expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
 		});
-	});
+	}, { parallel: false });
 
 	describe('two-tier help (-h vs --help)', () => {
 		test('-h produces short form (no lead description)', async () => {
@@ -548,7 +548,7 @@ describe('help', () => {
 
 			expect(receivedForm).toBe('long');
 		});
-	});
+	}, { parallel: false });
 
 	describe('invalid usage', () => {
 		test('missing required parameter', async () => {
@@ -566,7 +566,7 @@ describe('help', () => {
 			expect(mocked.processExit.calls).toStrictEqual([[1]]);
 			expect(mocked.consoleError.calls).toStrictEqual([['Error: Missing required parameter "value-a"\n']]);
 		});
-	});
+	}, { parallel: false });
 
 	test('show version', async () => {
 		const mocked = mockEnvFunctions();
