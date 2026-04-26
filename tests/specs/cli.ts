@@ -4,11 +4,11 @@ import { cli } from '#cleye';
 
 describe('cli', () => {
 	describe('error-handling', () => {
-		test('must pass in options', async () => {
-			await expect(
+		test('must pass in options', () => {
+			expect(
 				// @ts-expect-error no options
-				cli(),
-			).rejects.toThrow('Options is required');
+				() => cli(),
+			).toThrow('Options is required');
 		});
 
 		test('allows any name including spaces and empty string', async () => {

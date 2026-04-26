@@ -6,23 +6,23 @@ import { cli } from '#cleye';
 describe('arguments', () => {
 	describe('error handling', () => {
 		describe('parameters', () => {
-			test('invalid parameter format', async () => {
-				await expect(
-					cli({
+			test('invalid parameter format', () => {
+				expect(
+					() => cli({
 						parameters: ['value-a'],
 					}),
-				).rejects.toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+				).toThrow('Invalid parameter: "value-a". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
-			test('invalid parameter character', async () => {
-				await expect(
-					cli({
+			test('invalid parameter character', () => {
+				expect(
+					() => cli({
 						parameters: ['[value.a]'],
 					}),
-				).rejects.toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
+				).toThrow('Invalid parameter: "[value.a]". Invalid character found "."');
 			});
 
-			test('invalid parameter - all special characters', async () => {
+			test('invalid parameter - all special characters', () => {
 				// Pattern from cli.ts: /[|\\{}()[\]^$+*?.]/
 				const specialChars = [
 					'|',
@@ -42,60 +42,60 @@ describe('arguments', () => {
 				];
 
 				for (const char of specialChars) {
-					await expect(
-						cli({
+					expect(
+						() => cli({
 							parameters: [`<value${char}a>`],
 						}),
-					).rejects.toThrow('Invalid character found');
+					).toThrow('Invalid character found');
 				}
 			});
 
-			test('duplicate parameters', async () => {
-				await expect(
-					cli({
+			test('duplicate parameters', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a]', '[value-a]', '[value-a]'],
 					}),
-				).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
+				).toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
-			test('duplicate parameters across --', async () => {
-				await expect(
-					cli({
+			test('duplicate parameters across --', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a]', '--', '[value-a]'],
 					}),
-				).rejects.toThrow('Invalid parameter: "value-a" is used more than once');
+				).toThrow('Invalid parameter: "value-a" is used more than once');
 			});
 
-			test('multiple --', async () => {
-				await expect(
-					cli({
+			test('multiple --', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a]', '--', '[value-b]', '--', '[value-c]'],
 					}),
-				).rejects.toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
+				).toThrow('Invalid parameter: "--". Must be wrapped in <> (required parameter) or [] (optional parameter)');
 			});
 
-			test('optional parameter before required parameter', async () => {
-				await expect(
-					cli({
+			test('optional parameter before required parameter', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a]', '<value-b>'],
 					}),
-				).rejects.toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
+				).toThrow('Invalid parameter: Required parameter "<value-b>" cannot come after optional parameter "[value-a]"');
 			});
 
-			test('multiple spread not last', async () => {
-				await expect(
-					cli({
+			test('multiple spread not last', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a...]', '<value-b>'],
 					}),
-				).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+				).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 
-			test('multiple spread parameters', async () => {
-				await expect(
-					cli({
+			test('multiple spread parameters', () => {
+				expect(
+					() => cli({
 						parameters: ['[value-a...]', '<value-b...>'],
 					}),
-				).rejects.toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
+				).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 			});
 		}, { parallel: false });
 
@@ -108,11 +108,7 @@ describe('arguments', () => {
 					['--', '<value-a>'],
 				]) {
 					const mocked = mockEnvFunctions();
-					await cli(
-						{ parameters },
-						undefined,
-						[],
-					);
+					cli({ parameters }, undefined, []);
 					mocked.restore();
 
 					expect(mocked.consoleError.calls[0]).toStrictEqual(['Error: Missing required parameter "value-a"\n']);
@@ -228,12 +224,10 @@ describe('arguments', () => {
 			expect(callback.called).toBe(true);
 		});
 
-		test('command', async () => {
+		test('inner cli inside a command handler routes its own argv', async () => {
 			const callback = spy();
 
-			const parsed = await cli({
-				parameters: ['<value-a...>'],
-
+			const parsed = cli({
 				commands: {
 					test: async () => {
 						await cli(
@@ -248,8 +242,9 @@ describe('arguments', () => {
 						);
 					},
 				},
-			}, p => p, ['test', 'valueA', 'valueB']);
+			}, undefined, ['test', 'valueA', 'valueB']);
 
+			await parsed.runCommand();
 			expect(parsed.command).toBe('test');
 			expect(callback.called).toBe(true);
 		});
@@ -257,26 +252,26 @@ describe('arguments', () => {
 
 	describe('EOF edge cases', () => {
 		test('EOF at beginning of parameters', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['--', '<value>'],
-			}, p => p, ['--', 'test']);
+			}, undefined, ['--', 'test']);
 
 			expect<string>(parsed._.value).toBe('test');
 		});
 
 		test('empty EOF section', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<arg>', '--', '[optional]'],
-			}, p => p, ['value', '--']);
+			}, undefined, ['value', '--']);
 
 			expect<string>(parsed._.arg).toBe('value');
 			expect<string | undefined>(parsed._.optional).toBeUndefined();
 		});
 
 		test('EOF parameters are always set as properties', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<arg>', '--', '[optional]'],
-			}, p => p, ['value', '--']);
+			}, undefined, ['value', '--']);
 
 			// EOF parameters should always be set on the object,
 			// even when no EOF arguments are provided

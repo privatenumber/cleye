@@ -5,58 +5,58 @@ import { cli } from '#cleye';
 describe('edge cases', () => {
 	describe('camelCase conversion', () => {
 		test('already camelCase input', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<myValue>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._.myValue).toBe('test');
 		});
 
 		test('multiple consecutive separators', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<value--name>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._.valueName).toBe('test');
 		});
 
 		test('mixed separators', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<value_name-here>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._.valueNameHere).toBe('test');
 		});
 
 		test('leading separator', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<-value>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			// Leading separator causes first letter to be capitalized
 			expect<string>(parsed._.Value).toBe('test');
 		});
 
 		test('trailing separator', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<value_>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._.value).toBe('test');
 		});
 
 		test('numbers in parameter name', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<value1>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._.value1).toBe('test');
 		});
 
 		test('leading number in parameter name', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<1value>'],
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
 			expect<string>(parsed._['1value']).toBe('test');
 		});
@@ -81,26 +81,26 @@ describe('edge cases', () => {
 		// The empty parameter name causes the parser to throw but also print help
 
 		test('parameter with special characters', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<file-path>'],
-			}, p => p, ['test.txt']);
+			}, undefined, ['test.txt']);
 
 			expect<string>(parsed._.filePath).toBe('test.txt');
 		});
 
 		test('very long parameter name', async () => {
 			const longName = '<this-is-a-very-long-parameter-name-with-many-words>';
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: [longName],
-			}, p => p, ['value']);
+			}, undefined, ['value']);
 
 			expect<string>(parsed._.thisIsAVeryLongParameterNameWithManyWords).toBe('value');
 		});
 
 		test('parameter with uppercase letters', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<FileNAME>'],
-			}, p => p, ['test.txt']);
+			}, undefined, ['test.txt']);
 
 			// camelCase doesn't change case without separators
 			expect<string>(parsed._.FileNAME).toBe('test.txt');
@@ -110,9 +110,9 @@ describe('edge cases', () => {
 		// which cannot be easily tested with expect().toThrow()
 
 		test('whitespace-only parameter value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				parameters: ['<value>'],
-			}, p => p, ['   ']);
+			}, undefined, ['   ']);
 
 			expect<string>(parsed._.value).toBe('   ');
 		});
@@ -120,51 +120,51 @@ describe('edge cases', () => {
 
 	describe('flag value edge cases', () => {
 		test('flag with empty string value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					value: String,
 				},
-			}, p => p, ['--value=']);
+			}, undefined, ['--value=']);
 
 			expect<string | undefined>(parsed.flags.value).toBe('');
 		});
 
 		test('flag with whitespace value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					value: String,
 				},
-			}, p => p, ['--value', '   ']);
+			}, undefined, ['--value', '   ']);
 
 			expect<string | undefined>(parsed.flags.value).toBe('   ');
 		});
 
 		test('number flag with zero', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					value: Number,
 				},
-			}, p => p, ['--value', '0']);
+			}, undefined, ['--value', '0']);
 
 			expect<number | undefined>(parsed.flags.value).toBe(0);
 		});
 
 		test('number flag with negative', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					value: Number,
 				},
-			}, p => p, ['--value=-42']);
+			}, undefined, ['--value=-42']);
 
 			expect<number | undefined>(parsed.flags.value).toBe(-42);
 		});
 
 		test('number flag with decimal', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					value: Number,
 				},
-			}, p => p, ['--value', '3.14']);
+			}, undefined, ['--value', '3.14']);
 
 			expect<number | undefined>(parsed.flags.value).toBe(3.14);
 		});
@@ -173,43 +173,31 @@ describe('edge cases', () => {
 	describe('command name edge cases', () => {
 		test('command name with numbers', async () => {
 			await expect(async () => {
-				await cli(
-					{
-						commands: {
-							cmd1: () => {},
-						},
+				cli({
+					commands: {
+						cmd1: () => {},
 					},
-					undefined,
-					['cmd1'],
-				);
+				}, undefined, ['cmd1']);
 			}).not.toThrow();
 		});
 
 		test('command name with dash', async () => {
 			await expect(async () => {
-				await cli(
-					{
-						commands: {
-							'my-command': () => {},
-						},
+				cli({
+					commands: {
+						'my-command': () => {},
 					},
-					undefined,
-					['my-command'],
-				);
+				}, undefined, ['my-command']);
 			}).not.toThrow();
 		});
 
 		test('command name with underscore', async () => {
 			await expect(async () => {
-				await cli(
-					{
-						commands: {
-							my_command: () => {},
-						},
+				cli({
+					commands: {
+						my_command: () => {},
 					},
-					undefined,
-					['my_command'],
-				);
+				}, undefined, ['my_command']);
 			}).not.toThrow();
 		});
 	});

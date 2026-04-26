@@ -6,7 +6,7 @@ describe('integration', () => {
 	test('full CLI with flags, parameters, and command', async () => {
 		const buildCallback = spy();
 
-		const parsed = await cli({
+		const parsed = cli({
 			name: 'my-cli',
 			version: '1.0.0',
 			flags: {
@@ -20,8 +20,9 @@ describe('integration', () => {
 					},
 				},
 			},
-		}, p => p, ['--verbose', 'build']);
+		}, undefined, ['--verbose', 'build']);
 
+		await parsed.runCommand();
 		expect(parsed.command).toBe('build');
 		// --verbose is before command, so parent parses it
 		expect<boolean | undefined>(parsed.flags.verbose).toBe(true);
@@ -31,7 +32,7 @@ describe('integration', () => {
 	test('command with runCommand and auto-invoke', async () => {
 		const commandHandler = spy();
 
-		const parsed = await cli({
+		const parsed = cli({
 			name: 'my-cli',
 			flags: {
 				debug: Boolean,
@@ -41,8 +42,9 @@ describe('integration', () => {
 					commandHandler();
 				},
 			},
-		}, p => p, ['--debug', 'deploy']);
+		}, undefined, ['--debug', 'deploy']);
 
+		await parsed.runCommand();
 		expect(parsed.command).toBe('deploy');
 		expect<boolean | undefined>(parsed.flags.debug).toBe(true);
 		expect(commandHandler.called).toBe(true);
@@ -51,7 +53,7 @@ describe('integration', () => {
 	test('command via alias', async () => {
 		const handlerSpy = spy();
 
-		const parsed = await cli({
+		const parsed = cli({
 			name: 'my-cli',
 			commands: {
 				install: {
@@ -61,8 +63,9 @@ describe('integration', () => {
 					},
 				},
 			},
-		}, p => p, ['i']);
+		}, undefined, ['i']);
 
+		await parsed.runCommand();
 		expect(parsed.command).toBe('install');
 		expect(handlerSpy.called).toBe(true);
 	});
@@ -92,7 +95,7 @@ describe('integration', () => {
 	test('command with alias array', async () => {
 		const handlerSpy = spy();
 
-		const parsed = await cli({
+		const parsed = cli({
 			name: 'my-cli',
 			commands: {
 				remove: {
@@ -102,8 +105,9 @@ describe('integration', () => {
 					},
 				},
 			},
-		}, p => p, ['del']);
+		}, undefined, ['del']);
 
+		await parsed.runCommand();
 		expect(parsed.command).toBe('remove');
 		expect(handlerSpy.called).toBe(true);
 	});
@@ -133,15 +137,17 @@ describe('integration', () => {
 		} as const;
 
 		// Test shorthand function command
-		const buildResult = await cli({ ...options }, p => p, ['build', '--verbose']);
+		const buildResult = cli({ ...options }, undefined, ['build', '--verbose']);
 
+		await buildResult.runCommand();
 		expect(buildResult.command).toBe('build');
 		expect(buildSpy.called).toBe(true);
 		expect(testSpy.called).toBe(false);
 
 		// Test full object command via alias
-		const testResult = await cli({ ...options }, p => p, ['t']);
+		const testResult = cli({ ...options }, undefined, ['t']);
 
+		await testResult.runCommand();
 		expect(testResult.command).toBe('test');
 		expect(testSpy.called).toBe(true);
 	});
@@ -176,14 +182,14 @@ describe('integration', () => {
 	test('command auto-invoked without callback', async () => {
 		const commandSpy = spy();
 
-		const parsed = await cli({
+		const parsed = cli({
 			name: 'my-cli',
 			commands: {
 				lint: () => {
 					commandSpy();
 				},
 			},
-		}, p => p, ['lint']);
+		}, undefined, ['lint']);
 
 		await parsed.runCommand();
 		expect(parsed.command).toBe('lint');

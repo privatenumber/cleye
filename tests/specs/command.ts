@@ -6,10 +6,10 @@ import { cli } from '#cleye';
 
 describe('command', () => {
 	describe('error handling', () => {
-		test('duplicate command alias', async () => {
+		test('duplicate command alias', () => {
 			// Use argv that triggers alias resolution (not a direct command name match)
-			await expect(
-				cli(
+			expect(
+				() => cli(
 					{
 						commands: {
 							commandA: {
@@ -25,12 +25,12 @@ describe('command', () => {
 					undefined,
 					['dup'],
 				),
-			).rejects.toThrow('Duplicate command alias: "dup"');
+			).toThrow('Duplicate command alias: "dup"');
 		});
 
-		test('duplicate alias across array aliases', async () => {
-			await expect(
-				cli(
+		test('duplicate alias across array aliases', () => {
+			expect(
+				() => cli(
 					{
 						commands: {
 							commandA: {
@@ -46,7 +46,7 @@ describe('command', () => {
 					undefined,
 					['shared'],
 				),
-			).rejects.toThrow('Duplicate command alias: "shared"');
+			).toThrow('Duplicate command alias: "shared"');
 		});
 	}, { parallel: false });
 
@@ -54,13 +54,13 @@ describe('command', () => {
 		test('invoking command by name', async () => {
 			const callback = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					commandA: () => {
 						callback();
 					},
 				},
-			}, p => p, ['commandA']);
+			}, undefined, ['commandA']);
 
 			await parsed.runCommand();
 			expect(parsed.command).toBe('commandA');
@@ -70,7 +70,7 @@ describe('command', () => {
 		test('invoking command via alias string', async () => {
 			const callback = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					commandA: {
 						alias: 'a',
@@ -79,7 +79,7 @@ describe('command', () => {
 						},
 					},
 				},
-			}, p => p, ['a']);
+			}, undefined, ['a']);
 
 			expect(parsed.command).toBe('commandA');
 			await parsed.runCommand();
@@ -89,7 +89,7 @@ describe('command', () => {
 		test('invoking command via alias array', async () => {
 			const callback = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					commandA: {
 						alias: ['a', 'b'],
@@ -98,7 +98,7 @@ describe('command', () => {
 						},
 					},
 				},
-			}, p => p, ['b']);
+			}, undefined, ['b']);
 
 			expect(parsed.command).toBe('commandA');
 			await parsed.runCommand();
@@ -108,17 +108,13 @@ describe('command', () => {
 		test('unknown command shows help and exits', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						build: () => {},
-						test: () => {},
-					},
+			cli({
+				name: 'my-cli',
+				commands: {
+					build: () => {},
+					test: () => {},
 				},
-				undefined,
-				['unknown'],
-			);
+			}, undefined, ['unknown']);
 
 			mocked.restore();
 
@@ -129,16 +125,12 @@ describe('command', () => {
 		test('no argv shows help and exits', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						build: () => {},
-					},
+			cli({
+				name: 'my-cli',
+				commands: {
+					build: () => {},
 				},
-				undefined,
-				[],
-			);
+			}, undefined, []);
 
 			mocked.restore();
 
@@ -286,28 +278,28 @@ describe('command', () => {
 
 	describe('command with flags and parameters', () => {
 		test('parent flags before command are parsed by parent', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				commands: {
 					build: () => {},
 				},
-			}, p => p, ['--verbose', 'build']);
+			}, undefined, ['--verbose', 'build']);
 
 			expect(parsed.command).toBe('build');
 			expect(parsed.flags.verbose).toBe(true);
 		});
 
 		test('flags after command are NOT parsed by parent', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				commands: {
 					build: () => {},
 				},
-			}, p => p, ['build', '--verbose']);
+			}, undefined, ['build', '--verbose']);
 
 			expect(parsed.command).toBe('build');
 			// --verbose is after the command, so it belongs to the child
@@ -317,7 +309,7 @@ describe('command', () => {
 		test('child receives flags after command boundary', async () => {
 			let childFlags: Record<string, unknown> | undefined;
 
-			await cli(
+			const parsed = cli(
 				{
 					flags: {
 						verbose: Boolean,
@@ -337,6 +329,7 @@ describe('command', () => {
 				undefined,
 				['--verbose', 'build', '--watch', '--output', 'dist'],
 			);
+			await parsed.runCommand();
 
 			expect(childFlags).toBeDefined();
 			expect(childFlags!.watch).toBe(true);
@@ -346,7 +339,7 @@ describe('command', () => {
 		test('mixed flags: parent before, child after command', async () => {
 			let childWatch: boolean | undefined;
 
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
@@ -358,8 +351,9 @@ describe('command', () => {
 						childWatch = inner.flags.watch;
 					},
 				},
-			}, p => p, ['--verbose', 'build', '--watch']);
+			}, undefined, ['--verbose', 'build', '--watch']);
 
+			await parsed.runCommand();
 			expect(parsed.flags.verbose).toBe(true);
 			expect(childWatch).toBe(true);
 		});
@@ -367,7 +361,7 @@ describe('command', () => {
 		test('command alias triggers boundary', async () => {
 			let childSaveDev: boolean | undefined;
 
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
@@ -382,34 +376,35 @@ describe('command', () => {
 						},
 					},
 				},
-			}, p => p, ['--verbose', 'i', '--save-dev']);
+			}, undefined, ['--verbose', 'i', '--save-dev']);
 
+			await parsed.runCommand();
 			expect(parsed.command).toBe('install');
 			expect(parsed.flags.verbose).toBe(true);
 			expect(childSaveDev).toBe(true);
 		});
 
 		test('flag with value before command', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					output: String,
 				},
 				commands: {
 					build: () => {},
 				},
-			}, p => p, ['--output', 'dist', 'build', '--watch']);
+			}, undefined, ['--output', 'dist', 'build', '--watch']);
 
 			expect(parsed.command).toBe('build');
 			expect(parsed.flags.output).toBe('dist');
 		});
 
 		test('no commands defined — all flags parsed normally', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 					watch: Boolean,
 				},
-			}, p => p, ['--verbose', '--watch']);
+			}, undefined, ['--verbose', '--watch']);
 
 			expect(parsed.command).toBeUndefined();
 			expect(parsed.flags.verbose).toBe(true);
@@ -419,15 +414,15 @@ describe('command', () => {
 		test('command handler parses its own flags via inner cli()', async () => {
 			const innerCallback = spy();
 
-			await cli(
+			const parsed = cli(
 				{
 					commands: {
 						build: async () => {
-							const innerParsed = await cli({
+							const innerParsed = cli({
 								flags: {
 									watch: Boolean,
 								},
-							}, p => p, ['--watch']);
+							}, undefined, ['--watch']);
 							expect(innerParsed.flags.watch).toBe(true);
 							innerCallback();
 						},
@@ -436,6 +431,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 
 			expect(innerCallback.called).toBe(true);
 		});
@@ -445,7 +441,7 @@ describe('command', () => {
 		test('command name takes priority over flag name', async () => {
 			const commandCallback = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					test: Boolean,
 				},
@@ -454,8 +450,9 @@ describe('command', () => {
 						commandCallback();
 					},
 				},
-			}, p => p, ['test']);
+			}, undefined, ['test']);
 
+			await parsed.runCommand();
 			// It should be parsed as the command
 			expect(parsed.command).toBe('test');
 
@@ -470,12 +467,12 @@ describe('command', () => {
 
 			// Parent sets strictFlags: true. Inner cli() inherits it via AsyncLocalStorage.
 			// We pass explicit argv to inner cli to avoid the parent catching the unknown flag.
-			await cli(
+			const parsed = cli(
 				{
 					strictFlags: true,
 					commands: {
 						build: async () => {
-							await cli({
+							cli({
 								flags: {
 									watch: Boolean,
 								},
@@ -486,6 +483,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(true);
@@ -497,12 +495,12 @@ describe('command', () => {
 		test('command can override strictFlags to false', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
+			const parsed = cli(
 				{
 					strictFlags: true,
 					commands: {
 						build: async () => {
-							await cli({
+							cli({
 								flags: {
 									watch: Boolean,
 								},
@@ -514,6 +512,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(false);
@@ -523,11 +522,11 @@ describe('command', () => {
 		test('command can enable strictFlags independently', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
+			const parsed = cli(
 				{
 					commands: {
 						build: async () => {
-							await cli({
+							cli({
 								flags: {
 									watch: Boolean,
 								},
@@ -539,6 +538,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(true);
@@ -550,16 +550,16 @@ describe('command', () => {
 		test('command inherits booleanFlagNegation from parent via context', async () => {
 			let watchValue: boolean | undefined;
 
-			await cli(
+			const parsed = cli(
 				{
 					booleanFlagNegation: true,
 					commands: {
 						build: async () => {
-							const innerParsed = await cli({
+							const innerParsed = cli({
 								flags: {
 									watch: Boolean,
 								},
-							}, p => p, ['--no-watch']);
+							}, undefined, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 						},
 					},
@@ -567,6 +567,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 
 			expect(watchValue).toBe(false);
 		});
@@ -575,17 +576,17 @@ describe('command', () => {
 			let watchValue: boolean | undefined;
 			let hasNoWatchUnknown = false;
 
-			await cli(
+			const parsed = cli(
 				{
 					booleanFlagNegation: true,
 					commands: {
 						build: async () => {
-							const innerParsed = await cli({
+							const innerParsed = cli({
 								flags: {
 									watch: Boolean,
 								},
 								booleanFlagNegation: false,
-							}, p => p, ['--no-watch']);
+							}, undefined, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 							hasNoWatchUnknown = 'no-watch' in innerParsed.unknownFlags;
 						},
@@ -594,6 +595,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 
 			expect(watchValue).toBeUndefined();
 			expect(hasNoWatchUnknown).toBe(true);
@@ -602,16 +604,16 @@ describe('command', () => {
 		test('command can enable booleanFlagNegation independently', async () => {
 			let watchValue: boolean | undefined;
 
-			await cli(
+			const parsed = cli(
 				{
 					commands: {
 						build: async () => {
-							const innerParsed = await cli({
+							const innerParsed = cli({
 								flags: {
 									watch: Boolean,
 								},
 								booleanFlagNegation: true,
-							}, p => p, ['--no-watch']);
+							}, undefined, ['--no-watch']);
 							watchValue = innerParsed.flags.watch;
 						},
 					},
@@ -619,6 +621,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 
 			expect(watchValue).toBe(false);
 		});
@@ -670,7 +673,7 @@ describe('command', () => {
 		test('side-effect style works without default export', async () => {
 			let ran = false;
 
-			await cli(
+			const parsed = cli(
 				{
 					commands: {
 						build: async () => {
@@ -681,6 +684,7 @@ describe('command', () => {
 				undefined,
 				['build'],
 			);
+			await parsed.runCommand();
 
 			expect(ran).toBe(true);
 		});
@@ -732,7 +736,7 @@ describe('command', () => {
 		test('full form command with description', async () => {
 			const callback = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					install: {
 						description: 'Install packages',
@@ -742,8 +746,9 @@ describe('command', () => {
 						},
 					},
 				},
-			}, p => p, ['i']);
+			}, undefined, ['i']);
 
+			await parsed.runCommand();
 			expect(parsed.command).toBe('install');
 			expect(callback.called).toBe(true);
 		});
@@ -751,7 +756,7 @@ describe('command', () => {
 
 	describe('context', () => {
 		test('parsed argv does not have context property', async () => {
-			const parsed = await cli({}, p => p, []);
+			const parsed = cli({}, undefined, []);
 
 			expect('context' in parsed).toBe(false);
 		});
@@ -815,11 +820,11 @@ describe('command', () => {
 
 	describe('runCommand idempotency', () => {
 		test('returns the same promise on multiple calls', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					build: () => {},
 				},
-			}, p => p, ['build']);
+			}, undefined, ['build']);
 
 			const promise1 = parsed.runCommand();
 			const promise2 = parsed.runCommand();
@@ -830,20 +835,20 @@ describe('command', () => {
 
 	describe('runCommand return value', () => {
 		test('forwards a function handler return value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					compute: () => 42,
 				},
-			}, p => p, ['compute']);
+			}, undefined, ['compute']);
 			expect(await parsed.runCommand()).toBe(42);
 		});
 
 		test('forwards an async handler return value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				commands: {
 					compute: async () => 'done',
 				},
-			}, p => p, ['compute']);
+			}, undefined, ['compute']);
 			expect(await parsed.runCommand()).toBe('done');
 		});
 
@@ -873,12 +878,12 @@ describe('command', () => {
 		test('two levels: npm config get <key>', async () => {
 			let result: string | undefined;
 
-			await cli(
+			const parsed = cli(
 				{
 					name: 'npm',
 					commands: {
 						config: async () => {
-							await cli(
+							const configParsed = cli(
 								{
 									name: 'config',
 									commands: {
@@ -894,12 +899,14 @@ describe('command', () => {
 									},
 								},
 							);
+							await configParsed.runCommand();
 						},
 					},
 				},
 				undefined,
 				['config', 'get', 'registry'],
 			);
+			await parsed.runCommand();
 
 			expect(result).toBe('registry');
 		});
@@ -907,36 +914,34 @@ describe('command', () => {
 		test('nested commands inherit options through levels', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
+			const parsed = cli(
 				{
 					name: 'root',
 					strictFlags: true,
 					commands: {
 						sub: async () => {
-							await cli(
+							const subParsed = cli(
 								{
 									name: 'sub',
 									commands: {
 										deep: async () => {
 											// strictFlags inherited from root → sub → deep
-											await cli(
-												{
-													name: 'deep',
-													flags: { watch: Boolean },
-												},
-												undefined,
-												['--wathc'],
-											);
+											cli({
+												name: 'deep',
+												flags: { watch: Boolean },
+											}, undefined, ['--wathc']);
 										},
 									},
 								},
 							);
+							await subParsed.runCommand();
 						},
 					},
 				},
 				undefined,
 				['sub', 'deep', '--wathc'],
 			);
+			await parsed.runCommand();
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(true);
@@ -948,7 +953,7 @@ describe('command', () => {
 			let level2Command: string | undefined;
 			let level2Flag: boolean | undefined;
 
-			const outerParsed = await cli({
+			const outerParsed = cli({
 				name: 'root',
 				flags: { verbose: Boolean },
 				commands: {
@@ -970,8 +975,9 @@ describe('command', () => {
 						level1Command = mid.command;
 					},
 				},
-			}, p => p, ['--verbose', 'remote', 'add', '--fetch', 'origin', 'https://example.com']);
+			}, undefined, ['--verbose', 'remote', 'add', '--fetch', 'origin', 'https://example.com']);
 
+			await outerParsed.runCommand();
 			expect(outerParsed.flags.verbose).toBe(true);
 			expect(level1Command).toBe('add');
 			expect(level2Command).toBe('add');
@@ -981,7 +987,7 @@ describe('command', () => {
 		test('context passes through nested levels via function args', async () => {
 			let receivedContext: unknown;
 
-			await cli(
+			const parsed = cli(
 				{
 					name: 'root',
 					commands: {
@@ -1008,6 +1014,7 @@ describe('command', () => {
 				undefined,
 				['sub', 'deep'],
 			);
+			await parsed.runCommand();
 
 			expect(receivedContext).toStrictEqual({ fromMid: true });
 		});
@@ -1017,17 +1024,13 @@ describe('command', () => {
 		test('shows help and exits when no command matched and no callback', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						build: () => {},
-						test: () => {},
-					},
+			cli({
+				name: 'my-cli',
+				commands: {
+					build: () => {},
+					test: () => {},
 				},
-				undefined,
-				[],
-			);
+			}, undefined, []);
 
 			mocked.restore();
 
@@ -1039,17 +1042,13 @@ describe('command', () => {
 		test('shows help when flags passed but no command matched', async () => {
 			const mocked = mockEnvFunctions();
 
-			await cli(
-				{
-					name: 'my-cli',
-					flags: { verbose: Boolean },
-					commands: {
-						build: () => {},
-					},
+			cli({
+				name: 'my-cli',
+				flags: { verbose: Boolean },
+				commands: {
+					build: () => {},
 				},
-				undefined,
-				['--verbose'],
-			);
+			}, undefined, ['--verbose']);
 
 			mocked.restore();
 
@@ -1061,14 +1060,14 @@ describe('command', () => {
 			const mocked = mockEnvFunctions();
 			const commandHandler = spy();
 
-			const parsed = await cli({
+			const parsed = cli({
 				name: 'my-cli',
 				commands: {
 					build: () => {
 						commandHandler();
 					},
 				},
-			}, p => p, ['build']);
+			}, undefined, ['build']);
 
 			await parsed.runCommand();
 			mocked.restore();

@@ -126,14 +126,14 @@ describe('flags', () => {
 	describe('flag overrides', () => {
 		test('overriding --help flag', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					help: {
 						type: String,
 						description: 'A custom help flag that accepts a string',
 					},
 				},
-			}, p => p, ['--help', 'custom-value']);
+			}, undefined, ['--help', 'custom-value']);
 			mocked.restore();
 
 			// Should not print help and should not exit
@@ -149,7 +149,7 @@ describe('flags', () => {
 
 		test('overriding --version flag', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				version: '1.0.0', // Enables --version behavior
 				flags: {
 					version: {
@@ -157,7 +157,7 @@ describe('flags', () => {
 						description: 'A custom version flag that accepts a number',
 					},
 				},
-			}, p => p, ['--version', '42']);
+			}, undefined, ['--version', '42']);
 			mocked.restore();
 
 			// Should not print version and should not exit
@@ -183,19 +183,19 @@ describe('flags', () => {
 		};
 
 		test('parses valid custom type', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					size: Size,
 				},
-			}, p => p, ['--size', 'medium']);
+			}, undefined, ['--size', 'medium']);
 			if (parsed.command === undefined) {
 				expect<Sizes | undefined>(parsed.flags.size).toBe('medium');
 			}
 		});
 
-		test('throws on invalid custom type', async () => {
-			await expect(
-				cli(
+		test('throws on invalid custom type', () => {
+			expect(
+				() => cli(
 					{
 						flags: {
 							size: Size,
@@ -204,35 +204,35 @@ describe('flags', () => {
 					undefined,
 					['--size', 'xlarge'],
 				),
-			).rejects.toThrow('Invalid size: "xlarge"');
+			).toThrow('Invalid size: "xlarge"');
 		});
 	}, { parallel: false });
 
 	describe('flag parsing variants', () => {
 		test('parses array flags', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					item: [String],
 				},
-			}, p => p, ['--item', 'a', '--item', 'b']);
+			}, undefined, ['--item', 'a', '--item', 'b']);
 			if (parsed.command === undefined) {
 				expect<string[] | undefined>(parsed.flags.item).toStrictEqual(['a', 'b']);
 			}
 		});
 
 		test('parses equals-syntax flags', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					name: String,
 				},
-			}, p => p, ['--name=hiroki']);
+			}, undefined, ['--name=hiroki']);
 			if (parsed.command === undefined) {
 				expect<string | undefined>(parsed.flags.name).toBe('hiroki');
 			}
 		});
 
 		test('parses combined short aliases', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					read: {
 						type: Boolean,
@@ -247,7 +247,7 @@ describe('flags', () => {
 						alias: 'x',
 					},
 				},
-			}, p => p, ['-rx']);
+			}, undefined, ['-rx']);
 			if (parsed.command === undefined) {
 				expect<boolean | undefined>(parsed.flags.read).toBe(true);
 				expect<boolean | undefined>(parsed.flags.write).toBe(undefined);
@@ -256,14 +256,14 @@ describe('flags', () => {
 		});
 
 		test('parses short alias with value', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					number: {
 						type: Number,
 						alias: 'n',
 					},
 				},
-			}, p => p, ['-n', '42']);
+			}, undefined, ['-n', '42']);
 			if (parsed.command === undefined) {
 				expect<number | undefined>(parsed.flags.number).toBe(42);
 			}
@@ -271,14 +271,14 @@ describe('flags', () => {
 
 		test('default value function', async () => {
 			const defaultFunction = spy(() => 'hello');
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					myFlag: {
 						type: String,
 						default: defaultFunction,
 					},
 				},
-			}, p => p, []);
+			}, undefined, []);
 			if (parsed.command === undefined) {
 				expect<string>(parsed.flags.myFlag).toBe('hello');
 				expect(defaultFunction.called).toBe(true);
@@ -322,18 +322,18 @@ describe('flags', () => {
 
 	describe('unknown flags default behavior', () => {
 		test('unknown flag captured', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					known: String,
 				},
-			}, p => p, ['--unknown', '--known', 'value']);
+			}, undefined, ['--unknown', '--known', 'value']);
 
 			expect(parsed.unknownFlags.unknown).toEqual([true]);
 			expect(parsed.flags.known).toBe('value');
 		});
 
 		test('multiple unknown flags', async () => {
-			const parsed = await cli({}, p => p, ['--unknown1', '--unknown2', 'value']);
+			const parsed = cli({}, undefined, ['--unknown1', '--unknown2', 'value']);
 
 			expect(parsed.unknownFlags.unknown1).toEqual([true]);
 			expect(parsed.unknownFlags.unknown2).toEqual([true]);
@@ -343,16 +343,12 @@ describe('flags', () => {
 	describe('strictFlags', () => {
 		test('errors on unknown flag', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					strictFlags: true,
+			cli({
+				flags: {
+					verbose: Boolean,
 				},
-				undefined,
-				['--unknown'],
-			);
+				strictFlags: true,
+			}, undefined, ['--unknown']);
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(true);
@@ -381,16 +377,12 @@ describe('flags', () => {
 
 		test('no suggestion when flag is too different', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					flags: {
-						verbose: Boolean,
-					},
-					strictFlags: true,
+			cli({
+				flags: {
+					verbose: Boolean,
 				},
-				undefined,
-				['--xyz'],
-			);
+				strictFlags: true,
+			}, undefined, ['--xyz']);
 			mocked.restore();
 
 			expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
@@ -418,17 +410,13 @@ describe('flags', () => {
 
 		test('reports multiple unknown flags', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					flags: {
-						verbose: Boolean,
-						output: String,
-					},
-					strictFlags: true,
+			cli({
+				flags: {
+					verbose: Boolean,
+					output: String,
 				},
-				undefined,
-				['--verbos', '--outpu'],
-			);
+				strictFlags: true,
+			}, undefined, ['--verbos', '--outpu']);
 			mocked.restore();
 
 			expect(mocked.consoleError.callCount).toBe(2);
@@ -438,13 +426,13 @@ describe('flags', () => {
 
 		test('known flags still work', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 					output: String,
 				},
 				strictFlags: true,
-			}, p => p, ['--verbose', '--output', 'file.txt']);
+			}, undefined, ['--verbose', '--output', 'file.txt']);
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(false);
@@ -455,11 +443,11 @@ describe('flags', () => {
 
 		test('strictFlags disabled by default', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
-			}, p => p, ['--unknown']);
+			}, undefined, ['--unknown']);
 			mocked.restore();
 
 			expect(mocked.consoleError.called).toBe(false);
@@ -469,19 +457,15 @@ describe('flags', () => {
 
 		test('suggests flag aliases', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					flags: {
-						verbose: {
-							type: Boolean,
-							alias: 'v',
-						},
+			cli({
+				flags: {
+					verbose: {
+						type: Boolean,
+						alias: 'v',
 					},
-					strictFlags: true,
 				},
-				undefined,
-				['--verbos'],
-			);
+				strictFlags: true,
+			}, undefined, ['--verbos']);
 			mocked.restore();
 
 			expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
@@ -490,12 +474,12 @@ describe('flags', () => {
 
 	describe('acronym flag names (issue #38)', () => {
 		test('acronym flags parse from kebab-case argv', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					orgID: { type: String },
 					apiURL: { type: String },
 				},
-			}, p => p, ['--org-id=acme', '--api-url=https://example.com']);
+			}, undefined, ['--org-id=acme', '--api-url=https://example.com']);
 
 			expect(parsed.flags.orgID).toBe('acme');
 			expect(parsed.flags.apiURL).toBe('https://example.com');
@@ -503,9 +487,9 @@ describe('flags', () => {
 		});
 
 		test('naive kebab-case does not match acronym flags', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: { orgID: { type: String } },
-			}, p => p, ['--org-i-d=acme']);
+			}, undefined, ['--org-i-d=acme']);
 
 			expect(parsed.flags.orgID).toBeUndefined();
 			expect(parsed.unknownFlags).toStrictEqual({ 'org-i-d': ['acme'] });
@@ -514,54 +498,54 @@ describe('flags', () => {
 
 	describe('booleanFlagNegation', () => {
 		test('--no-flag sets boolean flag to false', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				booleanFlagNegation: true,
-			}, p => p, ['--no-verbose']);
+			}, undefined, ['--no-verbose']);
 
 			expect(parsed.flags.verbose).toBe(false);
 		});
 
 		test('last-wins semantics', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				booleanFlagNegation: true,
-			}, p => p, ['--verbose', '--no-verbose']);
+			}, undefined, ['--verbose', '--no-verbose']);
 
 			expect(parsed.flags.verbose).toBe(false);
 
-			const parsed2 = await cli({
+			const parsed2 = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				booleanFlagNegation: true,
-			}, p => p, ['--no-verbose', '--verbose']);
+			}, undefined, ['--no-verbose', '--verbose']);
 
 			expect(parsed2.flags.verbose).toBe(true);
 		});
 
 		test('does not apply to non-boolean flags', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					output: String,
 				},
 				booleanFlagNegation: true,
-			}, p => p, ['--no-output']);
+			}, undefined, ['--no-output']);
 
 			expect(parsed.flags.output).toBeUndefined();
 			expect(parsed.unknownFlags).toHaveProperty('no-output');
 		});
 
 		test('disabled by default', async () => {
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
-			}, p => p, ['--no-verbose']);
+			}, undefined, ['--no-verbose']);
 
 			expect(parsed.flags.verbose).toBeUndefined();
 			expect(parsed.unknownFlags).toHaveProperty('no-verbose');
@@ -569,13 +553,13 @@ describe('flags', () => {
 
 		test('works with strictFlags without erroring', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				flags: {
 					verbose: Boolean,
 				},
 				booleanFlagNegation: true,
 				strictFlags: true,
-			}, p => p, ['--no-verbose']);
+			}, undefined, ['--no-verbose']);
 			mocked.restore();
 
 			expect(parsed.flags.verbose).toBe(false);

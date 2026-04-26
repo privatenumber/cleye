@@ -62,15 +62,11 @@ describe('cleye/help/responsive', () => {
 		// @ts-expect-error noop exit during help
 		process.exit = () => {};
 		try {
-			await cli(
-				{
-					name: 'tool',
-					flags: { verbose: Boolean },
-					help: { render: defaultHelp },
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'tool',
+				flags: { verbose: Boolean },
+				help: { render: defaultHelp },
+			}, undefined, ['--help']);
 		} finally {
 			console.log = originalLog;
 			process.exit = originalExit;

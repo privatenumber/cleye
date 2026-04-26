@@ -7,11 +7,7 @@ describe('help', () => {
 	describe('show help', () => {
 		test('empty cli', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{ name: '' },
-				undefined,
-				['--help'],
-			);
+			cli({ name: '' }, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -20,13 +16,9 @@ describe('help', () => {
 
 		test('name', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'npm',
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'npm',
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -35,14 +27,10 @@ describe('help', () => {
 
 		test('empty parameters', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					parameters: [],
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: '',
+				parameters: [],
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -51,14 +39,10 @@ describe('help', () => {
 
 		test('parameters with no name', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					parameters: ['<arg-a>', '[arg-b]'],
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: '',
+				parameters: ['<arg-a>', '[arg-b]'],
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -67,14 +51,10 @@ describe('help', () => {
 
 		test('parameters with name', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					parameters: ['<arg-a>', '[arg-b]'],
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]'],
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -83,14 +63,10 @@ describe('help', () => {
 
 		test('parameters with optional --', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					parameters: ['<arg-a>', '[arg-b]', '--', '[arg-c]'],
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '[arg-c]'],
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -99,14 +75,10 @@ describe('help', () => {
 
 		test('parameters with required --', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					parameters: ['<arg-a>', '[arg-b]', '--', '<arg-c>'],
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'my-cli',
+				parameters: ['<arg-a>', '[arg-b]', '--', '<arg-c>'],
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -115,14 +87,10 @@ describe('help', () => {
 
 		test('empty commands', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					commands: {},
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: '',
+				commands: {},
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -131,16 +99,12 @@ describe('help', () => {
 
 		test('commands', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						test: () => {},
-					},
+			cli({
+				name: 'my-cli',
+				commands: {
+					test: () => {},
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -149,19 +113,15 @@ describe('help', () => {
 
 		test('commands with description', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						test: {
-							description: 'test command',
-							loader: () => {},
-						},
+			cli({
+				name: 'my-cli',
+				commands: {
+					test: {
+						description: 'test command',
+						loader: () => {},
 					},
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -170,18 +130,14 @@ describe('help', () => {
 
 		test('commands without description', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					commands: {
-						test: {
-							loader: () => {},
-						},
+			cli({
+				name: 'my-cli',
+				commands: {
+					test: {
+						loader: () => {},
 					},
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -190,14 +146,10 @@ describe('help', () => {
 
 		test('undefined flags', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					flags: undefined,
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: '',
+				flags: undefined,
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -206,14 +158,10 @@ describe('help', () => {
 
 		test('empty flags', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					flags: {},
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: '',
+				flags: {},
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -222,24 +170,20 @@ describe('help', () => {
 
 		test('flags', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					flags: {
-						flag: Boolean,
-						flagA: String,
-						flagB: {
-							type: Number,
-						},
-						flagC: {
-							type: RegExp,
-							default: /hello/,
-						},
+			cli({
+				name: '',
+				flags: {
+					flag: Boolean,
+					flagA: String,
+					flagB: {
+						type: Number,
+					},
+					flagC: {
+						type: RegExp,
+						default: /hello/,
 					},
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -248,13 +192,9 @@ describe('help', () => {
 
 		test('help disabled', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					help: false,
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				help: false,
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.called).toBe(false);
@@ -281,16 +221,12 @@ describe('help', () => {
 
 		test('empty help.examples', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					help: {
-						examples: [],
-					},
+			cli({
+				name: '',
+				help: {
+					examples: [],
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -299,16 +235,12 @@ describe('help', () => {
 
 		test('help.version with --help', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					help: {
-						version: '1.0.0',
-					},
+			cli({
+				name: '',
+				help: {
+					version: '1.0.0',
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.consoleLog.calls).toStrictEqual([['v1.0.0\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
@@ -316,11 +248,11 @@ describe('help', () => {
 
 		test('help.version with --version', async () => {
 			const mocked = mockEnvFunctions();
-			const parsed = await cli({
+			const parsed = cli({
 				help: {
 					version: '1.0.0',
 				},
-			}, p => p, ['--version']);
+			}, undefined, ['--version']);
 			mocked.restore();
 
 			expect(mocked.processExit.called).toBe(false);
@@ -331,16 +263,12 @@ describe('help', () => {
 
 		test('help.usage string', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					help: {
-						usage: 'usage string',
-					},
+			cli({
+				name: '',
+				help: {
+					usage: 'usage string',
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -349,20 +277,16 @@ describe('help', () => {
 
 		test('help.usage array', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					help: {
-						usage: [
-							'usage string a',
-							'usage string b',
-							'usage string c',
-						],
-					},
+			cli({
+				name: '',
+				help: {
+					usage: [
+						'usage string a',
+						'usage string b',
+						'usage string c',
+					],
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -371,16 +295,12 @@ describe('help', () => {
 
 		test('help.usage false disables usage section', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: {
-						usage: false,
-					},
+			cli({
+				name: 'my-cli',
+				help: {
+					usage: false,
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -393,16 +313,12 @@ describe('help', () => {
 
 		test('help.description', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: '',
-					help: {
-						description: 'test description',
-					},
+			cli({
+				name: '',
+				help: {
+					description: 'test description',
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -413,14 +329,10 @@ describe('help', () => {
 	describe('two-tier help (-h vs --help)', () => {
 		test('-h produces short form (no lead description)', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: { description: 'A helpful tool' },
-				},
-				undefined,
-				['-h'],
-			);
+			cli({
+				name: 'my-cli',
+				help: { description: 'A helpful tool' },
+			}, undefined, ['-h']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -431,14 +343,10 @@ describe('help', () => {
 
 		test('-h produces short form (no examples)', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: { examples: 'my-cli --verbose' },
-				},
-				undefined,
-				['-h'],
-			);
+			cli({
+				name: 'my-cli',
+				help: { examples: 'my-cli --verbose' },
+			}, undefined, ['-h']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -449,14 +357,10 @@ describe('help', () => {
 
 		test('--help produces long form (includes description)', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: { description: 'A helpful tool' },
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'my-cli',
+				help: { description: 'A helpful tool' },
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -466,14 +370,10 @@ describe('help', () => {
 
 		test('--help produces long form (includes examples)', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: { examples: 'my-cli --verbose' },
-				},
-				undefined,
-				['--help'],
-			);
+			cli({
+				name: 'my-cli',
+				help: { examples: 'my-cli --verbose' },
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -484,17 +384,13 @@ describe('help', () => {
 
 		test('--help wins over -h when both passed (long form)', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					help: {
-						description: 'A helpful tool',
-						examples: 'my-cli --verbose',
-					},
+			cli({
+				name: 'my-cli',
+				help: {
+					description: 'A helpful tool',
+					examples: 'my-cli --verbose',
 				},
-				undefined,
-				['-h', '--help'],
-			);
+			}, undefined, ['-h', '--help']);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -506,19 +402,15 @@ describe('help', () => {
 		test('custom help.render receives form opt', async () => {
 			const mocked = mockEnvFunctions();
 			let receivedForm: string | undefined;
-			await cli(
-				{
-					name: 'my-cli',
-					help: {
-						render(options, options_) {
-							receivedForm = options_.form;
-							return '';
-						},
+			cli({
+				name: 'my-cli',
+				help: {
+					render(options, options_) {
+						receivedForm = options_.form;
+						return '';
 					},
 				},
-				undefined,
-				['-h'],
-			);
+			}, undefined, ['-h']);
 			mocked.restore();
 
 			expect(receivedForm).toBe('short');
@@ -527,19 +419,15 @@ describe('help', () => {
 		test('custom help.render receives long form for --help', async () => {
 			const mocked = mockEnvFunctions();
 			let receivedForm: string | undefined;
-			await cli(
-				{
-					name: 'my-cli',
-					help: {
-						render(options, options_) {
-							receivedForm = options_.form;
-							return '';
-						},
+			cli({
+				name: 'my-cli',
+				help: {
+					render(options, options_) {
+						receivedForm = options_.form;
+						return '';
 					},
 				},
-				undefined,
-				['--help'],
-			);
+			}, undefined, ['--help']);
 			mocked.restore();
 
 			expect(receivedForm).toBe('long');
@@ -549,14 +437,10 @@ describe('help', () => {
 	describe('invalid usage', () => {
 		test('missing required parameter', async () => {
 			const mocked = mockEnvFunctions();
-			await cli(
-				{
-					name: 'my-cli',
-					parameters: ['<value-a>'],
-				},
-				undefined,
-				[],
-			);
+			cli({
+				name: 'my-cli',
+				parameters: ['<value-a>'],
+			}, undefined, []);
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[1]]);
@@ -566,13 +450,9 @@ describe('help', () => {
 
 	test('show version', async () => {
 		const mocked = mockEnvFunctions();
-		await cli(
-			{
-				version: '1.0.0',
-			},
-			undefined,
-			['--version'],
-		);
+		cli({
+			version: '1.0.0',
+		}, undefined, ['--version']);
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -582,7 +462,7 @@ describe('help', () => {
 	test('smoke test', async () => {
 		const mocked = mockEnvFunctions();
 		process.stdout.columns = Number.POSITIVE_INFINITY;
-		await cli({
+		cli({
 			name: 'my-cli',
 
 			version: '1.1.1',
@@ -650,22 +530,18 @@ describe('help', () => {
 
 	test('acronyms in flag names render as single words (issue #38)', async () => {
 		const mocked = mockEnvFunctions();
-		await cli(
-			{
-				flags: {
-					orgID: {
-						type: String,
-						description: 'Organization ID',
-					},
-					apiURL: {
-						type: String,
-						description: 'API endpoint',
-					},
+		cli({
+			flags: {
+				orgID: {
+					type: String,
+					description: 'Organization ID',
+				},
+				apiURL: {
+					type: String,
+					description: 'API endpoint',
 				},
 			},
-			undefined,
-			['--help'],
-		);
+		}, undefined, ['--help']);
 		mocked.restore();
 
 		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);

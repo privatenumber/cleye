@@ -3,25 +3,12 @@ import { expectTypeOf } from 'expect-type';
 import { cli, type Flags } from '#cleye';
 
 describe('types', () => {
-	test('cli() returns a Promise', async () => {
-		const result = cli({
+	test('resolved type has correct shape', async () => {
+		const parsed = cli({
 			flags: {
 				foo: String,
 			},
 		}, undefined, []);
-
-		expectTypeOf(result).toEqualTypeOf<Promise<Awaited<typeof result>>>();
-		expectTypeOf(result.then).toBeFunction();
-		expectTypeOf(result.catch).toBeFunction();
-		expectTypeOf(result.finally).toBeFunction();
-	});
-
-	test('resolved type has correct shape', async () => {
-		const parsed = await cli({
-			flags: {
-				foo: String,
-			},
-		}, p => p, []);
 
 		expectTypeOf(parsed.flags).not.toBeNever();
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
@@ -47,13 +34,13 @@ describe('types', () => {
 	});
 
 	test('flag types without defaults', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				stringFlag: String,
 				numberFlag: Number,
 				booleanFlag: Boolean,
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.stringFlag).toEqualTypeOf<string | undefined>();
 		expectTypeOf(parsed.flags.numberFlag).toEqualTypeOf<number | undefined>();
@@ -62,7 +49,7 @@ describe('types', () => {
 	});
 
 	test('flag types with defaults', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				stringFlag: {
 					type: String,
@@ -77,7 +64,7 @@ describe('types', () => {
 					default: true,
 				},
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.stringFlag).toBeString();
 		expectTypeOf(parsed.flags.numberFlag).toBeNumber();
@@ -85,31 +72,31 @@ describe('types', () => {
 	});
 
 	test('array flag types', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				stringArray: [String],
 				numberArray: {
 					type: [Number],
 				},
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.stringArray).toEqualTypeOf<string[]>();
 		expectTypeOf(parsed.flags.numberArray).toEqualTypeOf<number[]>();
 	});
 
 	test('custom type function', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				date: (value: string) => new Date(value),
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.date).toEqualTypeOf<Date | undefined>();
 	});
 
 	test('flag with alias and description', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				extraOptions: {
 					type: Boolean,
@@ -118,18 +105,18 @@ describe('types', () => {
 					description: 'Some description',
 				},
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.extraOptions).toBeBoolean();
 	});
 
 	test('version flag is added when version is set', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			version: '1.0.0',
 			flags: {
 				foo: String,
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
@@ -139,12 +126,12 @@ describe('types', () => {
 	});
 
 	test('help flag is not added when help is false', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			help: false,
 			flags: {
 				foo: String,
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
@@ -152,34 +139,34 @@ describe('types', () => {
 	});
 
 	test('required and optional parameters', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			parameters: ['<required>', '[optional]'],
-		}, p => p, ['req']);
+		}, undefined, ['req']);
 
 		expectTypeOf(parsed._.required).toBeString();
 		expectTypeOf(parsed._.optional).toEqualTypeOf<string | undefined>();
 	});
 
 	test('spread parameters', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			parameters: ['<foo>', '[bar...]'],
-		}, p => p, ['value1']);
+		}, undefined, ['value1']);
 
 		expectTypeOf(parsed._.foo).toBeString();
 		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
 	});
 
 	test('parameter name normalization to camelCase', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			parameters: ['<hello world>'],
-		}, p => p, ['a']);
+		}, undefined, ['a']);
 
 		expectTypeOf(parsed._).toHaveProperty('helloWorld');
 		expectTypeOf(parsed._.helloWorld).toBeString();
 	});
 
 	test('parameters with flags', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			parameters: ['<foo>', '[bar...]'],
 			flags: {
 				booleanFlag: Boolean,
@@ -204,7 +191,7 @@ describe('types', () => {
 					description: 'Some description',
 				},
 			},
-		}, p => p, ['value1']);
+		}, undefined, ['value1']);
 
 		expectTypeOf(parsed._.foo).toBeString();
 		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
@@ -223,18 +210,18 @@ describe('types', () => {
 	});
 
 	test('no parameters', async () => {
-		const parsed = await cli({
+		const parsed = cli({
 			flags: {
 				flag: String,
 			},
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 		expectTypeOf(parsed._).toMatchTypeOf<string[]>();
 	});
 
 	test('double dash arguments', async () => {
-		const parsed = await cli({}, p => p, ['--', 'arg1', 'arg2']);
+		const parsed = cli({}, undefined, ['--', 'arg1', 'arg2']);
 
 		expectTypeOf(parsed._['--']).toEqualTypeOf<string[]>();
 	});
@@ -275,7 +262,7 @@ describe('types', () => {
 		// resolves to `Flags | undefined` rather than being absent. The
 		// intersection should distribute over the union without collapsing.
 		const options: { flags?: Flags } = {};
-		const parsed = await cli(options, p => p, []);
+		const parsed = cli(options, undefined, []);
 		expectTypeOf(parsed.flags).not.toBeNever();
 		expectTypeOf(parsed.flags).toMatchTypeOf<{ help: boolean | undefined }>();
 	});
@@ -516,9 +503,9 @@ describe('types', () => {
 		const flags: Flags = sharedFlags;
 		expectTypeOf(flags).toMatchTypeOf<Flags>();
 
-		const parsed = await cli({
+		const parsed = cli({
 			flags: sharedFlags,
-		}, p => p, []);
+		}, undefined, []);
 
 		expectTypeOf(parsed.flags.verbose).toEqualTypeOf<boolean | undefined>();
 		expectTypeOf(parsed.flags.config).toEqualTypeOf<string | undefined>();
@@ -564,10 +551,12 @@ describe('types', () => {
 		expectTypeOf<CliParameters[0]>().not.toBeNever();
 	});
 
-	test('cli() without callback resolves to void', async () => {
-		const result = await cli({});
+	test('cli() without callback returns ParsedArgv directly', () => {
+		const result = cli({});
 
-		expectTypeOf(result).toBeVoid();
+		expectTypeOf(result).not.toBeVoid();
+		expectTypeOf(result).toHaveProperty('flags');
+		expectTypeOf(result).toHaveProperty('runCommand');
 	});
 
 	test('cli() with callback resolves to callback return value', async () => {

@@ -4,6 +4,7 @@ process.stdout.columns = Number.POSITIVE_INFINITY;
 
 describe('cleye', () => {
 	import('./specs/cli.ts');
+	import('./specs/cli-sync.ts');
 	import('./specs/flags.ts');
 	import('./specs/arguments.ts');
 	import('./specs/command.ts');

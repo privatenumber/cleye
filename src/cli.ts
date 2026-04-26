@@ -215,7 +215,7 @@ const resolveCommand = (
 	return undefined;
 };
 
-// Overload: with callback — resolves to the callback's return value
+// Overload: with callback — async, resolves to the callback's return value
 function cli<
 	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
@@ -226,7 +226,7 @@ function cli<
 	argv?: string[],
 ): Promise<CallbackReturn>;
 
-// Overload: without callback — resolves to undefined
+// Overload: without callback — sync, returns parsed argv directly
 function cli<
 	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
@@ -234,23 +234,23 @@ function cli<
 	options: StrictOptions<Options> & CliOptions<[...Parameters]>,
 	callback?: undefined,
 	argv?: string[],
-): Promise<void>;
+): ParsedArgv<Options, Parameters>;
 
 // General overload
 function cli(
 	options: CliOptions,
 	callback?: CallbackFunction<any, any>,
 	argv?: string[],
-): Promise<any>;
+): any;
 
-async function cli<
+function cli<
 	Options extends CliOptions<[...Parameters]>,
 	Parameters extends string[],
 >(
 	options: Options | (Options & CliOptions<[...Parameters]>),
 	callback?: CallbackFunction<ParsedArgv<Options, Parameters>>,
 	argvInput?: string[],
-): Promise<any> {
+): any {
 	if (!options) {
 		throw new Error('Options is required');
 	}
@@ -472,28 +472,33 @@ async function cli<
 		showVersion,
 	};
 
-	let callbackResult: unknown;
 	if (typeof callback === 'function') {
-		callbackResult = await callback(result as any);
+		// Async path: callback runs, then we auto-invoke runCommand if it
+		// wasn't already called. Returns the callback's resolved value.
+		// This is the ONLY auto-invoke site — the sync (no-callback) path
+		// below leaves runCommand for the caller to invoke manually.
+		return (async () => {
+			const callbackResult = await callback(result as any);
+			if (matchedCommand && !runCommandCalled) {
+				await runCommand();
+			}
+			return callbackResult;
+		})();
 	}
 
-	// If runCommand wasn't invoked by the callback (or there was no callback),
-	// fall back to auto-invoking the matched command. The auto-invoke's return
-	// value is discarded — callers wanting the matched handler's value must
-	// call runCommand themselves and forward the result.
-	if (matchedCommand && !runCommandCalled) {
-		await runCommand();
-	} else if (
+	// Sync path: no callback. Caller is responsible for invoking runCommand
+	// themselves (`await argv.runCommand()`). If commands are defined and
+	// none matched, show help and exit.
+	if (
 		!matchedCommand
 		&& options.commands
 		&& commandIndex.names.size > 0
-		&& typeof callback !== 'function'
 	) {
 		showHelp();
 		process.exit(1);
 	}
 
-	return callbackResult;
+	return result;
 }
 
 export { cli };

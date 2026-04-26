@@ -58,26 +58,30 @@ The key in the `commands` map is the command name. Nested `cli()` calls inside `
 
 ---
 
-### `cli()` is always async
+### `cli()` with a callback is async; without a callback it stays sync
 
-`cli()` now always returns a `Promise`. Callers that used it synchronously must add `await` (or `.then()`).
+`cli()`'s return type now depends on whether you pass a callback:
 
-**Before:**
+- **Without a callback** (the v1 pattern): `cli()` returns `ParsedArgv` synchronously. No migration needed for this case.
+- **With a callback**: `cli()` returns `Promise<CallbackReturn>` — the resolved value is whatever the callback returns. Callers must `await` it (or `.then()`).
+
+**Sync (unchanged from v1):**
 
 ```ts
 const argv = cli({ /* ... */ })
 console.log(argv.flags.verbose)
 ```
 
-**After:**
+**Async (new):**
 
 ```ts
-const argv = await cli({ /* ... */ })
+const argv = await cli({ /* ... */ }, parsed => parsed)
 console.log(argv.flags.verbose)
 ```
 
-> [!NOTE]
-> Top-level `await` works out of the box in ESM (and `cleye` is now ESM-only — see below). The `MaybePromise` type export is also removed.
+In sync mode, matched commands are **not** auto-invoked — call `await argv.runCommand()` yourself if you have commands. The async (callback) path still auto-invokes after the callback returns.
+
+The `MaybePromise` type export is also removed.
 
 ---
 
@@ -142,13 +146,11 @@ cli({
 
 ---
 
-### `cli()` resolves to the callback's return value
+### `cli()` with a callback resolves to the callback's return value
 
-`cli()` now always resolves to whatever the callback returns. Previously the return was discarded and `cli()` resolved to `ParsedArgv` regardless of the callback's return.
+When you pass a callback, `cli()` now resolves to whatever the callback returns. Previously the return was discarded and `cli()` always resolved to `ParsedArgv`.
 
-Without a callback, `cli()` resolves to `undefined`. To get `ParsedArgv` back, pass `(parsed) => parsed`.
-
-Auto-invocation of matched commands is unchanged: if the callback does not call `runCommand` itself, cleye still runs the matched command's handler after the callback returns. The auto-invoked handler's return value is discarded — callers wanting to capture it must call `runCommand()` themselves and forward the result.
+If you want `ParsedArgv` from the async path, pass `(parsed) => parsed`. If you want a derived value, return it from the callback. The callback path also auto-invokes matched commands after the callback returns if the callback didn't call `runCommand` itself; that auto-invoke's return value is discarded.
 
 **Before:**
 
@@ -181,7 +183,6 @@ const port = await cli(
     async () => loadConfig().port,
     process.argv.slice(2)
 )
-// port is whatever the callback returned (a number here)
 ```
 
 ---
