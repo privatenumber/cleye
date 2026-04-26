@@ -274,30 +274,39 @@ async function cli<
 
 	// Parse flags
 	const flags = { ...options.flags };
-	const isVersionEnabled = options.version && !('version' in flags);
 
-	if (isVersionEnabled) {
+	// Track which flags cleye auto-injected. Auto-version/auto-help logic
+	// only fires for injected flags — if the user defined `version`, `help`,
+	// or `h` themselves (as a flag name OR an alias), cleye stays out of
+	// the way.
+	const injectedFlags = new Set<'version' | 'help' | 'h'>();
+	const userFlagNames = new Set(getKnownFlagNames(flags));
+
+	if (options.version && !userFlagNames.has('version')) {
 		flags.version = {
 			type: Boolean,
 			description: 'Show version',
 		};
+		injectedFlags.add('version');
 	}
 
 	const { help } = options;
 	const isHelpEnabled = helpEnabled(help);
 
-	if (isHelpEnabled && !('h' in flags)) {
+	if (isHelpEnabled && !userFlagNames.has('h')) {
 		flags.h = {
 			type: Boolean,
 			description: 'Show short help',
 		};
+		injectedFlags.add('h');
 	}
 
-	if (isHelpEnabled && !('help' in flags)) {
+	if (isHelpEnabled && !userFlagNames.has('help')) {
 		flags.help = {
 			type: Boolean,
 			description: 'Show help',
 		};
+		injectedFlags.add('help');
 	}
 
 	const parsed = typeFlag(
@@ -325,7 +334,7 @@ async function cli<
 	};
 
 	if (
-		isVersionEnabled
+		injectedFlags.has('version')
 		&& parsed.flags.version === true
 	) {
 		showVersion();
@@ -347,13 +356,13 @@ async function cli<
 
 	const parsedFlags = parsed.flags as Record<string, unknown>;
 
-	if (isHelpEnabled && parsedFlags.help === true) {
+	if (injectedFlags.has('help') && parsedFlags.help === true) {
 		// --help wins over -h when both are present (long form is more informative)
 		showHelp(undefined, 'long');
 		return process.exit(0);
 	}
 
-	if (isHelpEnabled && parsedFlags.h === true) {
+	if (injectedFlags.has('h') && parsedFlags.h === true) {
 		showHelp(undefined, 'short');
 		return process.exit(0);
 	}

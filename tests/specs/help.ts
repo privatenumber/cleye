@@ -674,4 +674,106 @@ describe('help', () => {
 		expect(output).not.toContain('--org-i-d');
 		expect(output).not.toContain('--api-u-r-l');
 	});
+
+	describe('user-defined help/h flags', () => {
+		test('does not inject -h when an existing flag aliases h', async () => {
+			// Regression: cleye auto-injects an `h` short flag for `--help`. If a
+			// user flag already declares `alias: 'h'` (e.g. tsc-style help), the
+			// injection used to collide in type-flag with "Duplicate flags named h".
+			// `-h` parses as the user's `help` flag, and cleye does NOT auto-show
+			// help — the user owns that flag.
+			const mocked = mockEnvFunctions();
+			await cli(
+				{
+					flags: {
+						help: {
+							type: Boolean,
+							alias: 'h',
+							description: 'Print this message.',
+						},
+					},
+				},
+				(parsed) => {
+					expect(parsed.flags.help).toBe(true);
+				},
+				['-h'],
+			);
+			mocked.restore();
+			expect(mocked.processExit.called).toBe(false);
+			expect(mocked.consoleLog.called).toBe(false);
+		});
+
+		test('user-defined help: Boolean — --help does not auto-show help', async () => {
+			const mocked = mockEnvFunctions();
+			await cli(
+				{
+					flags: {
+						help: Boolean,
+					},
+				},
+				(parsed) => {
+					expect(parsed.flags.help).toBe(true);
+				},
+				['--help'],
+			);
+			mocked.restore();
+			expect(mocked.processExit.called).toBe(false);
+			expect(mocked.consoleLog.called).toBe(false);
+		});
+
+		test('user-defined h: Boolean — -h does not auto-show help', async () => {
+			const mocked = mockEnvFunctions();
+			await cli(
+				{
+					flags: {
+						h: Boolean,
+					},
+				},
+				(parsed) => {
+					expect((parsed.flags as { h?: boolean }).h).toBe(true);
+				},
+				['-h'],
+			);
+			mocked.restore();
+			expect(mocked.processExit.called).toBe(false);
+			expect(mocked.consoleLog.called).toBe(false);
+		});
+
+		test('user-defined help with non-boolean type — value passes through', async () => {
+			const mocked = mockEnvFunctions();
+			await cli(
+				{
+					flags: {
+						help: String,
+					},
+				},
+				(parsed) => {
+					expect(parsed.flags.help).toBe('verbose');
+				},
+				['--help', 'verbose'],
+			);
+			mocked.restore();
+			expect(mocked.processExit.called).toBe(false);
+			expect(mocked.consoleLog.called).toBe(false);
+		});
+
+		test('user-defined version: Boolean — --version does not auto-show version', async () => {
+			const mocked = mockEnvFunctions();
+			await cli(
+				{
+					version: '1.0.0',
+					flags: {
+						version: Boolean,
+					},
+				},
+				(parsed) => {
+					expect(parsed.flags.version).toBe(true);
+				},
+				['--version'],
+			);
+			mocked.restore();
+			expect(mocked.processExit.called).toBe(false);
+			expect(mocked.consoleLog.called).toBe(false);
+		});
+	}, { parallel: false });
 }, { parallel: false });
