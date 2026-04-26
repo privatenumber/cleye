@@ -23,6 +23,7 @@ describe('types', () => {
 			},
 		}, p => p, []);
 
+		expectTypeOf(parsed.flags).not.toBeNever();
 		expectTypeOf(parsed.flags).toEqualTypeOf<{
 			foo: string | undefined;
 			help: boolean | undefined;
@@ -254,6 +255,29 @@ describe('types', () => {
 				booleanFlagDefault: boolean;
 			}>();
 		}, []);
+	});
+
+	test('parsed.flags is usable when no flags option is provided', async () => {
+		// Defensive: `not.toBeNever()` guards against a future refactor that
+		// could collapse the resolved flags type to `never` (e.g. via an
+		// `undefined & { help: BooleanConstructor }` intersection).
+		await cli({}, (parsed) => {
+			expectTypeOf(parsed.flags).not.toBeNever();
+			expectTypeOf(parsed.flags).toEqualTypeOf<{
+				help: boolean | undefined;
+			}>();
+			expectTypeOf(parsed.flags.help).toEqualTypeOf<boolean | undefined>();
+		}, []);
+	});
+
+	test('parsed.flags survives explicit `flags?: Flags | undefined` typing', async () => {
+		// Defensive: covers the wrapper-pattern shape where Options['flags']
+		// resolves to `Flags | undefined` rather than being absent. The
+		// intersection should distribute over the union without collapsing.
+		const options: { flags?: Flags } = {};
+		const parsed = await cli(options, p => p, []);
+		expectTypeOf(parsed.flags).not.toBeNever();
+		expectTypeOf(parsed.flags).toMatchTypeOf<{ help: boolean | undefined }>();
 	});
 
 	test('runCommand is the noop signature when no commands option', async () => {

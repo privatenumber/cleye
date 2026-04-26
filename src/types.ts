@@ -4,26 +4,40 @@ import type {
 	IgnoreFunction,
 } from 'type-flag';
 
+/**
+ * Any callable. Used as the constraint for handler/loader functions in
+ * CommandEntry and the type-machinery that extracts and forwards their
+ * signatures (`EntryHandler`, `Invokable`, `RunCommandFor`).
+ */
+type AnyFunction = (...arguments_: any) => any;
+
+/**
+ * The shape of `runCommand` when no command matched — a callable noop that
+ * resolves to `undefined`. Always part of `CommandUnion` so callers can do
+ * `await argv.runCommand()` without an undefined check.
+ */
+type NoopRunCommand = () => Promise<undefined>;
+
 export type Flags = BaseFlags<{
 
 	/**
-	Description to be used in help output
-
-	@example
-	```
-	description: 'Unit of output (metric, imperial)',
-	```
-	*/
+	 * Description to be used in help output
+	 *
+	 * @example
+	 * ```
+	 * description: 'Unit of output (metric, imperial)',
+	 * ```
+	 */
 	description?: string;
 
 	/**
-	Placeholder label to be used in help output
-
-	@example Required value
-	```
-	placeholder: '<locale>'
-	```
-	*/
+	 * Placeholder label to be used in help output
+	 *
+	 * @example Required value
+	 * ```
+	 * placeholder: '<locale>'
+	 * ```
+	 */
 	placeholder?: string;
 }>;
 
@@ -36,45 +50,37 @@ export type HelpRenderer = (
 
 export type HelpOptions = {
 
-	/**
-	Version of the script displayed in `--help` output. Use to avoid enabling `--version` flag.
-	*/
+	/** Version of the script displayed in `--help` output. Use to avoid enabling `--version` flag. */
 	version?: string;
 
-	/**
-	Description of the script or command to display in `--help` output.
-	*/
+	/** Description of the script or command to display in `--help` output. */
 	description?: string;
 
-	/**
-	Usage code examples to display in `--help` output.
-	*/
+	/** Usage code examples to display in `--help` output. */
 	usage?: false | string | string[];
 
-	/**
-	Example code snippets to display in `--help` output.
-	*/
+	/** Example code snippets to display in `--help` output. */
 	examples?: string | string[];
 
 	/**
-	Function to customize the help output. Receives the full CLI options and
-	the resolved render context. Returns the rendered help string.
-	*/
+	 * Function to customize the help output. Receives the full CLI options and
+	 * the resolved render context. Returns the rendered help string.
+	 */
 	render?: HelpRenderer;
 };
 
 /**
  * A command entry in the commands map.
  *
- * - Shorthand: a function to call when the command is matched
- * - Full form: an object with metadata for help + a loader function
+ * - Shorthand: a function to call when the command is matched.
+ * - Full form: an object with metadata for help + a loader function.
  */
 export type CommandEntry =
-	| ((argument?: any) => any)
+	| AnyFunction
 	| {
 		description?: string;
 		alias?: string | string[];
-		loader: (argument?: any) => any;
+		loader: AnyFunction;
 	};
 
 export type Commands = Record<string, CommandEntry>;
@@ -83,44 +89,35 @@ export type CliOptions<
 	Parameters extends string[] = string[],
 > = {
 
-	/**
-	Name of the script displayed in `--help` output.
-	*/
+	/** Name of the script displayed in `--help` output. */
 	name?: string;
 
-	/**
-	Version of the script displayed in `--version` and `--help` outputs.
-	*/
+	/** Version of the script displayed in `--version` and `--help` outputs. */
 	version?: string;
 
 	/**
-	Parameters accepted by the script. Parameters must be in the following formats:
-
-	- Required parameter: `<parameter name>`
-	- Optional parameter: `[parameter name]`
-	- Required spread parameter: `<parameter name...>`
-	- Optional spread parameter: `[parameter name...]`
-	*/
+	 * Parameters accepted by the script. Parameters must be in the following formats:
+	 *
+	 * - Required parameter: `<parameter name>`
+	 * - Optional parameter: `[parameter name]`
+	 * - Required spread parameter: `<parameter name...>`
+	 * - Optional spread parameter: `[parameter name...]`
+	 */
 	parameters?: Parameters;
 
-	/**
-	Commands to register to the script.
-	*/
+	/** Commands to register to the script. */
 	commands?: Commands;
 
-	/**
-	Flags accepted by the script
-	*/
+	/** Flags accepted by the script. */
 	flags?: Flags;
 
 	/**
-	Options to configure the help documentation. Pass in `false` to disable handling `--help, -h`.
-	*/
+	 * Options to configure the help documentation. Pass in `false` to disable
+	 * handling `--help, -h`.
+	 */
 	help?: false | HelpOptions;
 
-	/**
-	 * Which argv elements to ignore from parsing
-	 */
+	/** Which argv elements to ignore from parsing. */
 	ignoreArgv?: IgnoreFunction;
 
 	/**
@@ -172,31 +169,24 @@ type ParameterType<Parameter extends string> = (
 				: never
 );
 
-type HasVersion<Options extends { flags?: Flags }> = (
-	Options extends { version: string }
-		? Options['flags'] & { version: BooleanConstructor }
-		: Options['flags']
-);
-
-type HasHelp<Options extends { flags?: Flags }> = (
-	Options extends { help: false }
-		? Options['flags']
-		: Options['flags'] & { help: BooleanConstructor }
-);
-
-type HasHelpOrVersion<Options extends { flags?: Flags }> = (
-	HasVersion<Options> & HasHelp<Options>
-);
-
 /**
- * Extract the handler function from a CommandEntry.
+ * Augment the user-declared flags with auto-injected `version` (when
+ * `options.version` is set) and `help` (unless `options.help` is `false`).
+ * Used to compute `ParsedArgv['flags']`.
  *
- * - Function shorthand: the entry itself.
- * - Object form: `entry.loader`.
+ * Defaults `flags` to `{}` when omitted so the intersection doesn't collapse
+ * to `never` for the no-flags case (e.g. `cli({})`).
  */
-type EntryHandler<Entry> = Entry extends (...arguments_: any) => any
+type ResolvedFlags<Options extends { flags?: Flags }> = (
+	(Options['flags'] extends Flags ? Options['flags'] : unknown)
+	& (Options extends { version: string } ? { version: BooleanConstructor } : unknown)
+	& (Options extends { help: false } ? unknown : { help: BooleanConstructor })
+);
+
+/** Extract the handler from a CommandEntry — the entry itself or `entry.loader`. */
+type EntryHandler<Entry> = Entry extends AnyFunction
 	? Entry
-	: Entry extends { loader: infer Loader extends (...arguments_: any) => any }
+	: Entry extends { loader: infer Loader extends AnyFunction }
 		? Loader
 		: never;
 
@@ -204,18 +194,17 @@ type EntryHandler<Entry> = Entry extends (...arguments_: any) => any
  * If a handler resolves to a module namespace with a callable `default`
  * export (the lazy-loader pattern: `loader: () => import('./cmd.ts')`),
  * unwrap to the default export's signature. Otherwise the handler is
- * invoked directly.
+ * invoked directly and its own signature is used.
  */
-type Invokable<Handler extends (...arguments_: any) => any> =
-	Awaited<ReturnType<Handler>> extends {
-		default: infer Default extends (...arguments_: any) => any;
-	}
+type Invokable<Handler extends AnyFunction> =
+	Awaited<ReturnType<Handler>> extends { default: infer Default extends AnyFunction }
 		? Default
 		: Handler;
 
 /**
  * The shape of `runCommand` for a specific matched command — preserves the
- * handler's argument and return-value types, wrapping the return in a Promise.
+ * resolved handler's argument and return-value types, wrapping the return
+ * in a Promise.
  */
 type RunCommandFor<Entry> =
 	Invokable<EntryHandler<Entry>> extends (...arguments_: infer Arguments) => infer Return
@@ -223,29 +212,32 @@ type RunCommandFor<Entry> =
 		: never;
 
 /**
- * Discriminated union over `command`. Each branch pairs the matched command
- * name with a `runCommand` typed for that command. The `undefined` branch is
- * the noop case (no command matched).
+ * Discriminated union over `command`. Each branch pairs a matched command
+ * name with a `runCommand` typed for that command. The `undefined` branch
+ * (no match) is always present so `parsed.runCommand` is callable
+ * regardless of which command was matched.
  */
-type CommandUnion<C> = C extends Commands
-	? (
-		| {
+type CommandUnion<C> =
+	| (C extends Commands
+		? {
 			[K in keyof C & string]: {
 				command: K;
 				runCommand: RunCommandFor<C[K]>;
-			}
+			};
 		}[keyof C & string]
-		| { command: undefined;
-			runCommand: () => Promise<undefined>; }
-	)
-	: { command: undefined;
-		runCommand: () => Promise<undefined>; };
+		: never)
+	| {
+		command: undefined;
+		runCommand: NoopRunCommand;
+	};
 
 export type ParsedArgv<
-	Options extends { flags?: Flags;
-		commands?: Commands; },
+	Options extends {
+		flags?: Flags;
+		commands?: Commands;
+	},
 	Parameters extends string[],
-> = TypeFlag<HasHelpOrVersion<Options>> & {
+> = TypeFlag<ResolvedFlags<Options>> & {
 	_: {
 		[
 		Parameter in Parameters[number]
@@ -253,20 +245,26 @@ export type ParsedArgv<
 		]: ParameterType<Parameter>;
 	};
 
-	/** Show help documentation */
+	/** Show help documentation. */
 	showHelp: (options?: HelpOptions) => void;
 
-	/** Show version */
+	/** Show version. */
 	showVersion: () => void;
 } & CommandUnion<Options['commands']>;
 
+/**
+ * The user's callback to `cli()`. Receives the parsed argv (flattened via the
+ * mapped type so editor hovers display the resolved shape) and may return
+ * any value, which becomes the resolved value of `cli()`.
+ */
 export type CallbackFunction<Parsed, Return = unknown> = (
 	parsed: { [Key in keyof Parsed]: Parsed[Key] },
 ) => Return | Promise<Return>;
 
 /**
- * Helper type to reject unknown properties in cli() options.
- * Maps any key not in CliOptions to `never`, causing a type error
- * when excess properties are passed.
+ * Helper to reject unknown properties on the `cli()` options object.
+ * Maps any key not in `CliOptions` to `never`, surfacing a type error
+ * when excess properties are passed. Callers must ensure `T` extends
+ * `CliOptions` — this type does not enforce that itself.
  */
 export type StrictOptions<T> = T & Record<Exclude<keyof T, keyof CliOptions>, never>;
