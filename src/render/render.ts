@@ -6,8 +6,7 @@ import type { Node } from './types.ts';
  *
  * @example
  * ```ts
- * import { render } from 'cleye';
- * // (atom imports come in later phases)
+ * import { render, p, section } from 'cleye/help';
  * render(p('Description'), section('Usage', ...));
  * ```
  */

@@ -13,6 +13,7 @@ import type {
 } from './types.ts';
 import { defaultHelp } from './render/default-help.ts';
 import { render } from './render/render.ts';
+import { autoFlagLongHelp, autoFlagShortHelp, autoFlagVersion } from './utils/auto-flags.ts';
 import { camelCase } from './utils/convert-case.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
@@ -241,6 +242,21 @@ const getCommandHandler = (entry: CommandEntry): ((...arguments_: unknown[]) => 
 	return entry.loader;
 };
 
+const isThenable = (value: unknown): value is PromiseLike<unknown> => (
+	!!value
+	&& (typeof value === 'object' || typeof value === 'function')
+	&& typeof (value as { then?: unknown }).then === 'function'
+);
+
+const isModuleWithDefault = (
+	value: unknown,
+): value is { default: (...arguments_: unknown[]) => unknown } => (
+	!!value
+	&& typeof value === 'object'
+	&& 'default' in value
+	&& typeof (value as { default: unknown }).default === 'function'
+);
+
 type CommandIndex = {
 	names: Set<string>;
 	aliases: Map<string, string>;
@@ -372,10 +388,7 @@ function cli<
 		const userFlagNames = new Set(indexFlags(flags).names);
 
 		if (options.version && !userFlagNames.has('version')) {
-			flags.version = {
-				type: Boolean,
-				description: 'Show version',
-			};
+			flags.version = autoFlagVersion;
 			injectedFlags.add('version');
 		}
 
@@ -383,18 +396,12 @@ function cli<
 		const isHelpEnabled = helpEnabled(help);
 
 		if (isHelpEnabled && !userFlagNames.has('h')) {
-			flags.h = {
-				type: Boolean,
-				description: 'Show short help',
-			};
+			flags.h = autoFlagShortHelp;
 			injectedFlags.add('h');
 		}
 
 		if (isHelpEnabled && !userFlagNames.has('help')) {
-			flags.help = {
-				type: Boolean,
-				description: 'Show help',
-			};
+			flags.help = autoFlagLongHelp;
 			injectedFlags.add('help');
 		}
 
@@ -549,21 +556,6 @@ function cli<
 			throwOnExit,
 			booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 		};
-
-		const isThenable = (value: unknown): value is PromiseLike<unknown> => (
-			!!value
-		&& (typeof value === 'object' || typeof value === 'function')
-		&& typeof (value as { then?: unknown }).then === 'function'
-		);
-
-		const isModuleWithDefault = (
-			value: unknown,
-		): value is { default: (...arguments_: unknown[]) => unknown } => (
-			!!value
-		&& typeof value === 'object'
-		&& 'default' in value
-		&& typeof (value as { default: unknown }).default === 'function'
-		);
 
 		const runCommand = (...handlerArguments: unknown[]): unknown => {
 		// No matched command — runCommand is a callable noop. Returns

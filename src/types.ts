@@ -3,6 +3,7 @@ import type {
 	Flags as BaseFlags,
 	IgnoreFunction,
 } from 'type-flag';
+import type { Node } from './render/types.ts';
 
 /**
  * Any callable. Used as the constraint for handler/loader functions in
@@ -45,26 +46,15 @@ export type Flags = BaseFlags<{
 export type HelpForm = 'short' | 'long';
 
 /**
- * A help-document node — anything with a `render(): string` method. Atoms
- * (`p`, `section`, `flags`, …) all return this shape. Re-exported here so
- * `HelpRenderer`'s signature is self-contained.
- */
-export type HelpNode = {
-	readonly kind: string;
-	render: () => string;
-	readonly [key: string]: unknown;
-};
-
-/**
  * Accepted return shapes for `help.render`:
- *   - `HelpNode[]` — most idiomatic; cleye joins them.
- *   - `HelpNode` — a single node.
+ *   - `Node[]` — most idiomatic; cleye joins them.
+ *   - `Node` — a single node.
  *   - `string` — pre-rendered output (escape hatch).
  */
 export type HelpRenderer = (
 	options: CliOptions,
 	options_: { form: HelpForm },
-) => HelpNode | HelpNode[] | string;
+) => Node | Node[] | string;
 
 export type HelpOptions = {
 
@@ -84,8 +74,8 @@ export type HelpOptions = {
 	 * Function to customize the help output. Receives the full CLI options
 	 * and the resolved render context. Return one of:
 	 *
-	 *   - `HelpNode[]` — atoms to compose; cleye joins them with blank lines
-	 *   - `HelpNode`   — a single atom
+	 *   - `Node[]` — atoms to compose; cleye joins them with blank lines
+	 *   - `Node`   — a single atom
 	 *   - `string`     — pre-rendered output (escape hatch)
 	 *
 	 * Composing with the default: `[...defaultHelp(opts, ctx), footer('…')]`.
