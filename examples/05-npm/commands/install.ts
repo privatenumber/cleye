@@ -1,5 +1,7 @@
 import { cli } from '#cleye';
 
+// Each subcommand calls its own `cli()` to parse the argv after the
+// command name. The parent passes those argv tokens through context.
 await cli({
 	flags: {
 		global: {
@@ -35,7 +37,4 @@ await cli({
 	},
 }, (argv) => {
 	console.log('install!', argv);
-}).catch((error) => {
-	console.error(error);
-	process.exit(1);
 });

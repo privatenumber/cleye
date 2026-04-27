@@ -1,13 +1,13 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import stringWidth from 'string-width';
+import { cli } from '#cleye';
 import {
 	defaultHelp,
 	cmds,
 	flagsInline,
 	type Flag,
 } from '../../src/help/responsive.ts';
-import { cli } from '#cleye';
 
 process.stdout.columns = 80;
 

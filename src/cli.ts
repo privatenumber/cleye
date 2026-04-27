@@ -639,6 +639,13 @@ function cli<
 
 		return result;
 	} catch (error) {
+		// Callback mode always returns a Promise — convert sync throws to
+		// rejections so callers can chain `.catch()`. Without this, exits
+		// like --help / strictCommands that fire before the async callback's
+		// IIFE would escape as synchronous throws and bypass the chain.
+		if (typeof callback === 'function' && error instanceof CleyeExit && throwOnExit) {
+			return Promise.reject(error);
+		}
 		return handleExit(error);
 	}
 }

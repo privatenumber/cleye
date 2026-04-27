@@ -1,7 +1,7 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 import { cli } from '#cleye';
+import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 
 describe('help', () => {
 	describe('show help', () => {

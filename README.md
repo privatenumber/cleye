@@ -109,13 +109,7 @@ Good evening John Doe!
 ```
 
 ### Examples
-Want to dive right into some code? Check out some of these examples:
-
-- [**greet.js**](/examples/greet/index.ts): Working example from above
-- [**npm install**](/examples/npm/index.ts): Reimplementation of [`npm install`](https://docs.npmjs.com/cli/install/)'s CLI
-- [**tsc**](/examples/tsc/index.ts): Reimplementation of TypeScript [`tsc`](https://www.typescriptlang.org/docs/handbook/compiler-options.html)'s CLI
-- [**snap-tweet**](/examples/snap-tweet/index.ts): Reimplementation of [`snap-tweet`](https://github.com/privatenumber/snap-tweet)'s CLI
-- [**pkg-size**](/examples/pkg-size/index.ts): Reimplementation of [`pkg-size`](https://github.com/pkg-size/pkg-size)'s CLI
+Browse [`examples/`](/examples) for a numbered, progressive set — start with [`01-greet`](/examples/01-greet/index.ts) and follow the order; each step adds one concept. See [`examples/README.md`](/examples/README.md) for the roadmap.
 
 ## Flags
 Flags (aka Options) are key-value pairs passed into the script in the format `--flag-name <value>`.
@@ -541,6 +535,9 @@ await cli({
 })
 ```
 
+> [!TIP]
+> **Put each command in its own file.** Use the `loader: () => import('./commands/<name>.ts')` pattern even for trivial handlers. It keeps the parent CLI declarative and lazy-loads each subcommand's code only when invoked — flag parsing for `cli --help` doesn't pay the cost of loading every command's dependencies. This is the canonical pattern; see [`examples/04-npm`](/examples/04-npm) for a multi-command setup.
+
 ### Explicit `runCommand`
 
 By default, the matched command runs automatically after the callback. To take full control — run code before and after, [pass data](#passing-data-to-commands), or catch errors — call `runCommand` explicitly. When you do, auto-invocation is skipped:
@@ -554,7 +551,7 @@ await cli({
     const config = await loadConfig()
 
     try {
-        await runCommand({ config })
+        await runCommand(config)
         console.log('Deploy succeeded')
     } catch (error) {
         console.error('Deploy failed:', error.message)
@@ -567,10 +564,9 @@ await cli({
 
 ### Command files
 
-#### Side-effect style
-For dynamic imports.
+#### Side-effect style — the default for dynamic imports
 
-The file runs `cli()` at the top level. When dynamically imported, ESM evaluates the module which runs the command:
+When the parent uses `loader: () => import('./commands/install.ts')` and isn't passing data down, the simplest pattern is to call `cli()` at the top of the command file. The dynamic import evaluates the module, which runs the command:
 
 ```ts
 // commands/install.ts
@@ -584,32 +580,30 @@ await cli({
 })
 ```
 
-The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`. Each command file also works standalone — run it directly with `node commands/install.ts` and set `name` explicitly if needed.
+The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`.
 
-#### Exported function style
-For static imports.
+> [!TIP]
+> **Side-effect command files double as standalone scripts.** Because the file runs `cli()` at the top level, you can invoke it directly during development:
+>
+> ```sh
+> node ./commands/install.ts lodash --save-dev
+> ```
+>
+> No need to re-route through the parent CLI just to test one command. Set the command file's `name` option if you want a friendly `--help` header when running standalone.
+
+#### Default-export style — when passing data via `runCommand`
+
+When the parent calls `runCommand(data)` to pass data down (or you're using static imports), export a function instead. The function receives the data and is invoked by `runCommand`:
 
 ```ts
 // commands/install.ts
 import { cli } from 'cleye'
 
-export default () => cli({
+export default (config: Config) => cli({
     parameters: ['<package>'],
     flags: { saveDev: Boolean }
 }, (argv) => {
-    console.log(argv._.package, argv.flags.saveDev)
-})
-```
-
-Use with static imports in the parent:
-
-```ts
-import installHandler from './commands/install.ts'
-
-await cli({
-    commands: {
-        install: installHandler
-    }
+    console.log(config, argv._.package, argv.flags.saveDev)
 })
 ```
 
@@ -625,7 +619,7 @@ await cli({
     }
 }, async ({ runCommand }) => {
     const config = await loadConfig()
-    await runCommand({ config })
+    await runCommand(config)
 })
 ```
 
@@ -633,9 +627,7 @@ await cli({
 // commands/deploy.ts (child)
 import { cli } from 'cleye'
 
-type Context = { config: Config }
-
-export default ({ config }: Context) => cli({
+export default (config: Config) => cli({
     parameters: ['<target>']
 }, (argv) => {
     console.log(`Deploying ${argv._.target}`, config)
@@ -677,7 +669,7 @@ For lazy loaders (`loader: () => import('./cmd.ts')`), the type unwraps to the m
 
 ```ts
 // commands/deploy.ts
-export default (config: { region: string }) => cli({ /* ... */ })
+export default (region: string) => cli({ /* ... */ })
 
 // cli.ts
 await cli({
@@ -686,8 +678,8 @@ await cli({
     }
 }, async (parsed) => {
     if (parsed.command === 'deploy') {
-        await parsed.runCommand({ region: 'us-east-1' })
-        //                       ^? typed from deploy.ts's default export
+        await parsed.runCommand('us-east-1')
+        //                      ^? typed from deploy.ts's default export
     }
 })
 ```

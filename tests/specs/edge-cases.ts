@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
-import { camelCase } from '../../src/utils/convert-case.ts';
 import { cli } from '#cleye';
+import { camelCase } from '../../src/utils/convert-case.ts';
 
 describe('edge cases', () => {
 	describe('camelCase conversion', () => {

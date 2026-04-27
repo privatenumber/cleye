@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
+import { cli } from '#cleye';
 import {
 	oneOf,
 	commaList,
@@ -8,7 +9,6 @@ import {
 	range,
 	url,
 } from '../../src/formats.ts';
-import { cli } from '#cleye';
 
 describe('formats', () => {
 	describe('oneOf', () => {

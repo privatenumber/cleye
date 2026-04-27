@@ -87,7 +87,7 @@
 		"expect-type": "^1.2.2",
 		"fastest-levenshtein": "^1.0.16",
 		"kolorist": "^1.8.0",
-		"lintroll": "^1.24.2",
+		"lintroll": "^1.30.2",
 		"manten": "^2.0.0",
 		"nanospy": "^1.0.0",
 		"pkgroll": "^2.20.1",

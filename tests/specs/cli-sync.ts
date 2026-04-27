@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
 import { spy } from 'nanospy';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 import { cli } from '#cleye';
+import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 
 describe('cli sync mode', () => {
 	describe('return shape', () => {

@@ -8,4 +8,12 @@ export default defineConfig([
 			'@typescript-eslint/no-explicit-any': 'off',
 		},
 	},
+	{
+		// Examples teach the canonical pattern; inline `export default () => {}`
+		// reads better than naming a const just to satisfy the rule.
+		files: ['examples/**'],
+		rules: {
+			'unicorn/no-anonymous-default-export': 'off',
+		},
+	},
 ]);
