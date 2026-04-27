@@ -1,6 +1,6 @@
-# Migration guide — cleye v2
+# Migration guide — cleye v3
 
-This guide covers what changes between `cleye@1.x` (the `master` release line) and the upcoming v2 (`beta`).
+This guide covers what changes between `cleye@2.x` (the current `master` release line) and the upcoming v3 (`beta`).
 
 - [Breaking changes](#breaking-changes) — code or config you must update to upgrade
 - [New features & behavior changes](#new-features--behavior-changes) — improvements that may need attention
@@ -62,10 +62,10 @@ The key in the `commands` map is the command name. Nested `cli()` calls inside `
 
 `cli()`'s return type now depends on whether you pass a callback:
 
-- **Without a callback** (the v1 pattern): `cli()` returns `ParsedArgv` synchronously. No migration needed for this case.
+- **Without a callback**: `cli()` returns `ParsedArgv` synchronously. No migration needed for this case.
 - **With a callback**: `cli()` returns `Promise<CallbackReturn>` — the resolved value is whatever the callback returns. Callers must `await` it (or `.then()`).
 
-**Sync (unchanged from v1):**
+**Sync:**
 
 ```ts
 const argv = cli({ /* ... */ })
@@ -187,6 +187,28 @@ const port = await cli(
 
 ---
 
+### `parameters` and `commands` are mutually exclusive
+
+You can no longer pass both `parameters` and `commands` at the same level. The leading positional cannot meaningfully be both a parameter value and a command name without violating fail-fast (a typo in a command name would silently become a parameter value).
+
+This is enforced at the type level (TS error if both are passed) and at runtime (synchronous throw).
+
+**To accept arbitrary command names** — e.g., a script runner — keep `commands` defined and inspect `parsed.command === undefined` plus `parsed._[0]` in your callback:
+
+```ts
+cli({
+    commands: {
+        build: () => { /* known */ }
+    }
+}, (parsed) => {
+    if (parsed.command === undefined && parsed._[0]) {
+        // wildcard: parsed._[0] is the unknown name, parsed._.slice(1) are its args
+    }
+})
+```
+
+---
+
 ### Node.js 22.22.2+ required
 
 `engines.node` is now `>=22.22.2`. Node 18 and Node 20 are no longer supported.
@@ -269,3 +291,78 @@ cli({
     }
 })
 ```
+
+---
+
+### `runCommand` is typed per matched command and mirrors sync/async
+
+The `runCommand` returned to your callback is now typed by the discriminated `parsed.command`. Within a `parsed.command === 'build'` branch, `runCommand`'s parameter and return types match `build`'s handler — including arity, argument types, and Promise-or-sync return shape.
+
+```ts
+cli({
+    commands: {
+        connect: (host: string, port: number) => `${host}:${port}` as const,
+        // Async loader:
+        serve: { loader: () => import('./serve.ts') }
+    }
+}, async (parsed) => {
+    if (parsed.command === 'connect') {
+        // Sync handler → sync return. TypeScript enforces (host: string, port: number).
+        const url = parsed.runCommand('localhost', 3000)
+    }
+    if (parsed.command === 'serve') {
+        // Async loader → Promise return.
+        await parsed.runCommand()
+    }
+})
+```
+
+`runCommand` is idempotent — repeated calls return the same value. When no command matched, it's a callable noop returning `undefined` (sync), so `await argv.runCommand()` works regardless.
+
+---
+
+### `strictCommands` — error on unknown commands
+
+Mirrors `strictFlags`. When `strictCommands: true`, an unrecognized command name errors and exits instead of falling through to the help-on-no-match path. Closest matches within 2 edits are suggested, including aliases (with the canonical name surfaced):
+
+```sh
+$ my-cli biuld
+Error: Unknown command: "biuld". (Did you mean "build"?)
+```
+
+Inherited by nested `cli()` calls via context, like `strictFlags` and `booleanFlagNegation`.
+
+---
+
+### Alias-aware strict-mode suggestions
+
+When the closest match for an unknown flag or command is an alias, the suggestion now surfaces the canonical name too:
+
+```sh
+$ my-cli adde
+Error: Unknown command: "adde". (Did you mean "add" (alias for "install")?)
+```
+
+On a distance tie, the canonical wins. Single-character flag aliases are unaffected because the suggestion threshold filters short tokens.
+
+---
+
+### `throwOnExit` + `CleyeExit` for embedding
+
+By default cleye still calls `process.exit` on `--help`, `--version`, validation failures, and `strictFlags` / `strictCommands` errors. To embed cleye in a host process and recover control, set `throwOnExit: true` and catch the exported `CleyeExit`:
+
+```ts
+import { cli, CleyeExit } from 'cleye'
+
+try {
+    await cli({ throwOnExit: true /* ... */ })
+} catch (error) {
+    if (error instanceof CleyeExit) {
+        // error.code: 0 for --help / --version, 1 for validation failures
+        // error.reason: 'help' | 'version' | 'missing-required-parameter' |
+        //               'unknown-flag' | 'unknown-command' | 'no-command-match'
+    }
+}
+```
+
+`throwOnExit` is inherited by nested `cli()` calls — set it once at the top.
