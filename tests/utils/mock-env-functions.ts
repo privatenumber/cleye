@@ -8,14 +8,17 @@ export const mockEnvFunctions = () => {
 	// @ts-expect-error noop
 	const processExit = spyOn(process, 'exit', noop);
 
+	const restore = () => {
+		consoleLog.restore();
+		consoleError.restore();
+		processExit.restore();
+	};
+
 	return {
 		consoleLog,
 		consoleError,
 		processExit,
-		restore: () => {
-			consoleLog.restore();
-			consoleError.restore();
-			processExit.restore();
-		},
+		restore,
+		[Symbol.dispose]: restore,
 	};
 };

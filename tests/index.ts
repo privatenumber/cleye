@@ -18,4 +18,5 @@ describe('cleye', () => {
 	import('./specs/default-help.ts');
 	import('./specs/help-responsive.ts');
 	import('./specs/exit.ts');
+	import('./specs/script-name.ts');
 });
