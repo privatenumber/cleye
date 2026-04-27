@@ -340,6 +340,26 @@ Error: Unknown flag: --baz. (Did you mean --bar?)
 
 When enabled, the CLI will exit with an error if any unknown flags are passed. If a similar flag name exists (within 2 edits), it will suggest the closest match.
 
+### Strict commands
+To reject unknown command names with an error, enable `strictCommands`:
+
+```ts
+await cli({
+    commands: {
+        build: () => import('./commands/build.ts'),
+        test: () => import('./commands/test.ts')
+    },
+    strictCommands: true
+})
+```
+
+```sh
+$ my-script biuld
+Error: Unknown command: "biuld". (Did you mean "build"?)
+```
+
+When enabled, the CLI exits with an error if the leading positional doesn't match a registered command name or alias. Closest matches within 2 edits are suggested. Without `strictCommands`, an unknown command falls through to the default help-on-no-match behavior.
+
 ## Arguments
 Arguments are values passed into the script that are not associated with any flags/options.
 
@@ -448,10 +468,25 @@ $ my-cli --verbose install lodash --save-dev
 #        parent flag              child flags
 ```
 
-If no callback is provided, step 2 is skipped and the command runs immediately. If no command matches, help is shown.
+If no callback is provided, step 2 is skipped and the command runs immediately. If no command matches, help is shown (or an error if [`strictCommands`](#strict-commands) is enabled).
 
-> [!NOTE]
-> If a CLI has both commands and parameters, command names take priority. An argument matching a command name will trigger the command instead of being parsed as a parameter value. In practice, this is rarely an issue — parent commands typically only have flags, not parameters.
+> [!IMPORTANT]
+> `parameters` and `commands` are mutually exclusive at the same level. The leading positional token can be a command name OR a parameter value, never both — there's no way to disambiguate without violating fail-fast (a typo in a command name would silently become a parameter value). cleye enforces this at the type level and throws at runtime if both are passed.
+>
+> **To accept arbitrary command names** (a script runner, a router, anything dynamic), keep `commands` defined and check for unknown commands in your callback:
+>
+> ```ts
+> cli({
+>     commands: {
+>         build: () => { /* known */ }
+>     }
+> }, (parsed) => {
+>     if (parsed.command === undefined && parsed._[0]) {
+>         // wildcard dispatch — `parsed._[0]` is the unknown command name,
+>         // `parsed._.slice(1)` are its remaining args
+>     }
+> })
+> ```
 
 ### Defining commands
 
@@ -676,7 +711,7 @@ Getting "registry"
 
 ### Option inheritance
 
-`strictFlags` and `booleanFlagNegation` automatically inherit from parent to child through all nesting levels. A child can override any inherited option:
+`strictFlags`, `strictCommands`, and `booleanFlagNegation` automatically inherit from parent to child through all nesting levels. A child can override any inherited option:
 
 ```ts
 // Parent enables strictFlags for all commands
@@ -968,6 +1003,7 @@ type ParsedArgv = {
 | `help` | `false \| HelpOptions` | Help configuration or `false` to disable `--help`. See [help options](#help-1). |
 | `ignoreArgv` | `IgnoreArgvCallback` | Callback to skip certain argv tokens from parsing. |
 | `strictFlags` | `boolean` | Error on unknown flags with typo suggestions. Inherited by commands. |
+| `strictCommands` | `boolean` | Error on unknown commands with typo suggestions. Inherited by commands. |
 | `booleanFlagNegation` | `boolean` | Enable `--no-<flag>` for boolean flags. Inherited by commands. |
 
 ##### flags

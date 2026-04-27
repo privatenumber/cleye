@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { typeFlag } from 'type-flag';
-import { closest, distance } from 'fastest-levenshtein';
+import { distance } from 'fastest-levenshtein';
 import type {
 	CallbackFunction,
 	CliOptions,
@@ -116,36 +116,81 @@ function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOption
 	return help !== false;
 }
 
-const getKnownFlagNames = (flags: Record<string, unknown>): string[] => {
+type NameIndex = {
+	names: string[];
+	aliases: Map<string, string>;
+};
+
+const indexFlags = (flags: Record<string, unknown>): NameIndex => {
 	const names: string[] = [];
+	const aliases = new Map<string, string>();
 	for (const [name, config] of Object.entries(flags)) {
 		names.push(name);
 		if (config && typeof config === 'object' && 'alias' in config) {
 			const { alias } = config as { alias?: string | string[] };
-			if (typeof alias === 'string' && alias) {
-				names.push(alias);
-			} else if (Array.isArray(alias)) {
-				names.push(...alias.filter(Boolean));
+			const list = typeof alias === 'string' && alias
+				? [alias]
+				: (Array.isArray(alias) ? alias.filter(Boolean) : []);
+			for (const aliasName of list) {
+				names.push(aliasName);
+				aliases.set(aliasName, name);
 			}
 		}
 	}
-	return names;
+	return {
+		names,
+		aliases,
+	};
 };
 
-const findClosestFlag = (
+/**
+ * Closest-match search aware of canonical-vs-alias status. On a distance tie,
+ * prefers the canonical name; when the winner is an alias, surfaces the
+ * canonical via `aliasFor` so callers can build "Did you mean X (alias for Y)?"
+ * messages. When `aliases` is empty, behaves as a plain closest-match search.
+ */
+const findClosest = (
 	unknown: string,
-	knownFlags: string[],
-): string | undefined => {
-	if (unknown.length < 3 || knownFlags.length === 0) {
+	names: Iterable<string>,
+	aliases: Map<string, string>,
+): { name: string;
+	aliasFor?: string; } | undefined => {
+	if (unknown.length < 3) {
 		return undefined;
 	}
-	const match = closest(unknown, knownFlags);
-	return distance(unknown, match) <= 2 ? match : undefined;
+	let best: { name: string;
+		distance: number;
+		isAlias: boolean; } | undefined;
+	for (const name of names) {
+		const candidateDistance = distance(unknown, name);
+		if (candidateDistance > 2) {
+			continue;
+		}
+		const isAlias = aliases.has(name);
+		if (
+			!best
+			|| candidateDistance < best.distance
+			|| (candidateDistance === best.distance && best.isAlias && !isAlias)
+		) {
+			best = {
+				name,
+				distance: candidateDistance,
+				isAlias,
+			};
+		}
+	}
+	if (!best) {
+		return undefined;
+	}
+	return {
+		name: best.name,
+		aliasFor: best.isAlias ? aliases.get(best.name) : undefined,
+	};
 };
 
 const handleUnknownFlags = (
 	unknownFlags: Record<string, unknown>,
-	knownFlagNames: string[],
+	flagIndex: NameIndex,
 ): void => {
 	const unknownFlagNames = Object.keys(unknownFlags);
 	if (unknownFlagNames.length === 0) {
@@ -153,8 +198,13 @@ const handleUnknownFlags = (
 	}
 
 	for (const flag of unknownFlagNames) {
-		const closestMatch = findClosestFlag(flag, knownFlagNames);
-		const suggestion = closestMatch ? ` (Did you mean --${closestMatch}?)` : '';
+		const match = findClosest(flag, flagIndex.names, flagIndex.aliases);
+		let suggestion = '';
+		if (match) {
+			suggestion = match.aliasFor
+				? ` (Did you mean -${match.name} (alias for --${match.aliasFor})?)`
+				: ` (Did you mean --${match.name}?)`;
+		}
 		console.error(`Error: Unknown flag: --${flag}.${suggestion}`);
 	}
 
@@ -255,6 +305,13 @@ function cli<
 		throw new Error('Options is required');
 	}
 
+	if (
+		(options.parameters?.length ?? 0) > 0
+		&& options.commands && Object.keys(options.commands).length > 0
+	) {
+		throw new Error('cleye: `parameters` and `commands` are mutually exclusive at the same level. To accept arbitrary command names, omit `parameters` and inspect `parsed.command === undefined` with `parsed._[0]` in your callback.');
+	}
+
 	// Check AsyncLocalStorage for parent context
 	const parentContext = getCliContext();
 	const rawArgv = argvInput ?? parentContext?.argv ?? process.argv.slice(2);
@@ -280,7 +337,7 @@ function cli<
 	// or `h` themselves (as a flag name OR an alias), cleye stays out of
 	// the way.
 	const injectedFlags = new Set<'version' | 'help' | 'h'>();
-	const userFlagNames = new Set(getKnownFlagNames(flags));
+	const userFlagNames = new Set(indexFlags(flags).names);
 
 	if (options.version && !userFlagNames.has('version')) {
 		flags.version = {
@@ -370,7 +427,7 @@ function cli<
 	// Strict flags
 	const strictFlags = options.strictFlags ?? parentOptions?.strictFlags;
 	if (strictFlags) {
-		handleUnknownFlags(parsed.unknownFlags, getKnownFlagNames(flags));
+		handleUnknownFlags(parsed.unknownFlags, indexFlags(flags));
 	}
 
 	// Map parameters
@@ -419,6 +476,27 @@ function cli<
 		matchedCommand = resolveCommand(argv[0], options.commands!, commandIndex.aliases);
 	}
 
+	const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
+	if (
+		strictCommands
+		&& !matchedCommand
+		&& options.commands
+		&& commandIndex.names.size > 0
+	) {
+		const potentialCommand = (parsed._ as string[])[0];
+		if (potentialCommand) {
+			const match = findClosest(potentialCommand, commandIndex.names, commandIndex.aliases);
+			let suggestion = '';
+			if (match) {
+				suggestion = match.aliasFor
+					? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
+					: ` (Did you mean "${match.name}"?)`;
+			}
+			console.error(`Error: Unknown command: "${potentialCommand}".${suggestion}`);
+			return process.exit(1);
+		}
+	}
+
 	// runCommand is idempotent — repeated calls return the same value
 	// (Promise or sync, mirroring the handler's shape).
 	let runCommandResult: unknown;
@@ -426,6 +504,7 @@ function cli<
 
 	const resolvedOptions: CliOptions = {
 		strictFlags,
+		strictCommands,
 		booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 	};
 

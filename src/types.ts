@@ -86,28 +86,43 @@ export type CommandEntry =
 
 export type Commands = Record<string, CommandEntry>;
 
+/**
+ * `parameters` and `commands` are mutually exclusive at the same level: the
+ * leading positional token cannot meaningfully be both a parameter value and
+ * a command name. Pick one. Wildcard dispatch (catching arbitrary command
+ * names) is done by leaving `commands` defined and inspecting
+ * `parsed.command === undefined` plus `parsed._[0]` in the callback.
+ */
+type ParametersOrCommands<Parameters extends string[]> =
+	| {
+
+		/**
+		 * Parameters accepted by the script. Parameters must be in the following formats:
+		 *
+		 * - Required parameter: `<parameter name>`
+		 * - Optional parameter: `[parameter name]`
+		 * - Required spread parameter: `<parameter name...>`
+		 * - Optional spread parameter: `[parameter name...]`
+		 */
+		parameters?: Parameters;
+		commands?: never;
+	}
+	| {
+		parameters?: never;
+
+		/** Commands to register to the script. */
+		commands?: Commands;
+	};
+
 export type CliOptions<
 	Parameters extends string[] = string[],
-> = {
+> = ParametersOrCommands<Parameters> & {
 
 	/** Name of the script displayed in `--help` output. */
 	name?: string;
 
 	/** Version of the script displayed in `--version` and `--help` outputs. */
 	version?: string;
-
-	/**
-	 * Parameters accepted by the script. Parameters must be in the following formats:
-	 *
-	 * - Required parameter: `<parameter name>`
-	 * - Optional parameter: `[parameter name]`
-	 * - Required spread parameter: `<parameter name...>`
-	 * - Optional spread parameter: `[parameter name...]`
-	 */
-	parameters?: Parameters;
-
-	/** Commands to register to the script. */
-	commands?: Commands;
 
 	/** Flags accepted by the script. */
 	flags?: Flags;
@@ -126,6 +141,13 @@ export type CliOptions<
 	 * Suggests the closest matching flag name when possible.
 	 */
 	strictFlags?: boolean;
+
+	/**
+	 * When enabled, prints an error and exits if an unknown command is passed.
+	 * Suggests the closest matching command name when possible. Inherited by
+	 * nested cli() calls via context.
+	 */
+	strictCommands?: boolean;
 
 	/**
 	 * Enable `--no-<flag>` negation for boolean flags.

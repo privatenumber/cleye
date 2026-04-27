@@ -470,6 +470,25 @@ describe('flags', () => {
 
 			expect(mocked.consoleError.calls[0][0]).toContain('--verbose');
 		});
+
+		test('alias suggestion surfaces the canonical name', async () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				flags: {
+					verbose: {
+						type: Boolean,
+						alias: 'v',
+					},
+				},
+				strictFlags: true,
+				// `--avx` is at distance 2 from alias `v`; far from `verbose`.
+			}, undefined, ['--avx']);
+			mocked.restore();
+
+			expect(mocked.consoleError.calls[0][0]).toBe(
+				'Error: Unknown flag: --avx. (Did you mean -v (alias for --verbose)?)',
+			);
+		});
 	}, { parallel: false });
 
 	describe('acronym flag names (issue #38)', () => {

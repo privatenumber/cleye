@@ -474,8 +474,6 @@ describe('help', () => {
 				},
 			},
 
-			parameters: ['<urls...>'],
-
 			flags: {
 				outputDir: {
 					type: String,
@@ -525,7 +523,7 @@ describe('help', () => {
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
-		expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...] <urls...>\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mmy-command\u001B[39m  my command description\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-d\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--dark-mode\u001B[39m\u001B[22m          Show tweet in dark mode\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m                       Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m               Show help\n      \u001B[1m\u001B[36m--locale\u001B[39m\u001B[22m \u001B[36m<locale>\u001B[39m    Locale (default: "en")\n  \u001B[1m\u001B[36m-o\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--output-dir\u001B[39m\u001B[22m \u001B[36m<path>\u001B[39m  Tweet screenshot output directory\n  \u001B[1m\u001B[36m-t\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--show-tweet\u001B[39m\u001B[22m         Show tweet thread\n      \u001B[1m\u001B[36m--version\u001B[39m\u001B[22m            Show version\n  \u001B[1m\u001B[36m-w\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--width\u001B[39m\u001B[22m \u001B[36m<width>\u001B[39m      Width of tweet (default: 550)\n\n\u001B[1m\u001B[32mExamples:\u001B[39m\u001B[22m\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode']]);
+		expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...]\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mmy-command\u001B[39m  my command description\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-d\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--dark-mode\u001B[39m\u001B[22m          Show tweet in dark mode\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m                       Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m               Show help\n      \u001B[1m\u001B[36m--locale\u001B[39m\u001B[22m \u001B[36m<locale>\u001B[39m    Locale (default: "en")\n  \u001B[1m\u001B[36m-o\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--output-dir\u001B[39m\u001B[22m \u001B[36m<path>\u001B[39m  Tweet screenshot output directory\n  \u001B[1m\u001B[36m-t\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--show-tweet\u001B[39m\u001B[22m         Show tweet thread\n      \u001B[1m\u001B[36m--version\u001B[39m\u001B[22m            Show version\n  \u001B[1m\u001B[36m-w\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--width\u001B[39m\u001B[22m \u001B[36m<width>\u001B[39m      Width of tweet (default: 550)\n\n\u001B[1m\u001B[32mExamples:\u001B[39m\u001B[22m\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode']]);
 	});
 
 	test('acronyms in flag names render as single words (issue #38)', async () => {
