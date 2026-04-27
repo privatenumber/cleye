@@ -2,6 +2,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { cli } from '#cleye';
 import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
+import { withColumns } from '../utils/with-columns.ts';
 
 describe('help', () => {
 	describe('show help', () => {
@@ -524,7 +525,7 @@ describe('help', () => {
 
 	test('smoke test', async () => {
 		const mocked = mockEnvFunctions();
-		process.stdout.columns = Number.POSITIVE_INFINITY;
+		const restoreColumns = withColumns(Number.POSITIVE_INFINITY);
 		cli({
 			name: 'my-cli',
 
@@ -582,7 +583,7 @@ describe('help', () => {
 				],
 			},
 		}, undefined, ['--help']);
-		process.stdout.columns = Number.POSITIVE_INFINITY;
+		restoreColumns();
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
@@ -614,11 +615,9 @@ describe('help', () => {
 
 	describe('user-defined help/h flags', () => {
 		test('does not inject -h when an existing flag aliases h', async () => {
-			// Regression: cleye auto-injects an `h` short flag for `--help`. If a
-			// user flag already declares `alias: 'h'` (e.g. tsc-style help), the
-			// injection used to collide in type-flag with "Duplicate flags named h".
-			// `-h` parses as the user's `help` flag, and cleye does NOT auto-show
-			// help — the user owns that flag.
+			// When a user flag declares `alias: 'h'`, cleye must not also inject
+			// its own `-h` short — the user owns that flag, and `-h` parses as
+			// theirs (no auto help-shown).
 			const mocked = mockEnvFunctions();
 			await cli(
 				{

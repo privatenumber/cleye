@@ -77,9 +77,6 @@ describe('edge cases', () => {
 	});
 
 	describe('parameter validation edge cases', () => {
-		// Skipping: test('parameter with only brackets' - causes test suite to fail
-		// The empty parameter name causes the parser to throw but also print help
-
 		test('parameter with special characters', async () => {
 			const parsed = cli({
 				parameters: ['<file-path>'],
@@ -105,9 +102,6 @@ describe('edge cases', () => {
 			// camelCase doesn't change case without separators
 			expect<string>(parsed._.FileNAME).toBe('test.txt');
 		});
-
-		// Skipped: empty string parameter value triggers validation error and help output
-		// which cannot be easily tested with expect().toThrow()
 
 		test('whitespace-only parameter value', async () => {
 			const parsed = cli({

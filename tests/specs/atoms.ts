@@ -14,6 +14,7 @@ import {
 	type Flag,
 } from '../../src/render/atoms.ts';
 import { cmds as responsiveCmds } from '../../src/help/responsive.ts';
+import { withColumns } from '../utils/with-columns.ts';
 
 process.stdout.columns = 80;
 
@@ -26,14 +27,17 @@ describe('atoms', () => {
 		});
 
 		test('text longer than width wraps', () => {
-			process.stdout.columns = 20;
-			const text = 'one two three four five six seven eight';
-			const result = p(text).render();
-			process.stdout.columns = 80;
-			const lines = result.split('\n');
-			expect(lines.length).toBeGreaterThan(1);
-			for (const line of lines) {
-				expect(line.length).toBeLessThanOrEqual(20);
+			const restore = withColumns(20);
+			try {
+				const text = 'one two three four five six seven eight';
+				const result = p(text).render();
+				const lines = result.split('\n');
+				expect(lines.length).toBeGreaterThan(1);
+				for (const line of lines) {
+					expect(line.length).toBeLessThanOrEqual(20);
+				}
+			} finally {
+				restore();
 			}
 		});
 
@@ -193,9 +197,6 @@ describe('atoms', () => {
 		});
 
 		test('description columns align across short+long and long-only', () => {
-			// Regression test: flagCellLength previously undercounted the
-			// short-flag prefix ("-x, ") by 1, misaligning descriptions when
-			// long-only flags appeared alongside short+long flags.
 			const result = flagsInline(testFlags).render();
 			const lines = result.split('\n');
 			const descriptionColumn = (line: string, description: string) => {
@@ -245,18 +246,25 @@ describe('atoms', () => {
 		];
 
 		test('width 80 uses inline layout', () => {
-			process.stdout.columns = 80;
-			const inlineResult = flagsInline(testFlags).render();
-			const smartResult = flags(testFlags).render();
-			expect(smartResult).toBe(inlineResult);
+			const restore = withColumns(80);
+			try {
+				const inlineResult = flagsInline(testFlags).render();
+				const smartResult = flags(testFlags).render();
+				expect(smartResult).toBe(inlineResult);
+			} finally {
+				restore();
+			}
 		});
 
 		test('width 40 uses hanging layout', () => {
-			process.stdout.columns = 40;
-			const hangingResult = flagsHanging(testFlags).render();
-			const smartResult = flags(testFlags).render();
-			process.stdout.columns = 80;
-			expect(smartResult).toBe(hangingResult);
+			const restore = withColumns(40);
+			try {
+				const hangingResult = flagsHanging(testFlags).render();
+				const smartResult = flags(testFlags).render();
+				expect(smartResult).toBe(hangingResult);
+			} finally {
+				restore();
+			}
 		});
 
 		test('stores kind and flags as own properties', () => {

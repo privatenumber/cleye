@@ -8,6 +8,7 @@ import {
 	flagsInline,
 	type Flag,
 } from '../../src/help/responsive.ts';
+import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 
 process.stdout.columns = 80;
 
@@ -52,27 +53,17 @@ describe('cleye/help/responsive', () => {
 		expect(col0).toBe(col1);
 	});
 
-	test('defaultHelp can be plugged into cli() via help.render', async () => {
-		const logged: string[] = [];
-		const originalLog = console.log;
-		console.log = (text: string) => {
-			logged.push(text);
-		};
-		const originalExit = process.exit;
-		// @ts-expect-error noop exit during help
-		process.exit = () => {};
-		try {
-			cli({
-				name: 'tool',
-				flags: { verbose: Boolean },
-				help: { render: defaultHelp },
-			}, undefined, ['--help']);
-		} finally {
-			console.log = originalLog;
-			process.exit = originalExit;
-		}
-		expect(logged.length).toBe(1);
-		expect(logged[0]).toContain('tool');
-		expect(logged[0]).toContain('--verbose');
+	test('defaultHelp can be plugged into cli() via help.render', () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'tool',
+			flags: { verbose: Boolean },
+			help: { render: defaultHelp },
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.consoleLog.calls.length).toBe(1);
+		expect(mocked.consoleLog.calls[0][0]).toContain('tool');
+		expect(mocked.consoleLog.calls[0][0]).toContain('--verbose');
 	});
 });
