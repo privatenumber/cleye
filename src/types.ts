@@ -156,7 +156,27 @@ export type CliOptions<
 	 * Only applies to flags defined as `Boolean`.
 	 */
 	booleanFlagNegation?: boolean;
+
+	/**
+	 * When enabled, cleye throws `CleyeExit` instead of calling `process.exit`
+	 * on `--help`, `--version`, validation failures, and `strictFlags` /
+	 * `strictCommands` errors. Catch the throw to keep cleye safe to embed in
+	 * a host process. Inherited by nested cli() calls via context.
+	 */
+	throwOnExit?: boolean;
 };
+
+/**
+ * Why cleye is terminating. Carried by the thrown `CleyeExit` so callers can
+ * distinguish info requests (`'help'`, `'version'`) from validation failures.
+ */
+export type ExitReason =
+	| 'help'
+	| 'version'
+	| 'missing-required-parameter'
+	| 'unknown-flag'
+	| 'unknown-command'
+	| 'no-command-match';
 
 type AlphabetLowercase = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z';
 type Numeric = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';

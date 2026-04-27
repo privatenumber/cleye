@@ -360,6 +360,33 @@ Error: Unknown command: "biuld". (Did you mean "build"?)
 
 When enabled, the CLI exits with an error if the leading positional doesn't match a registered command name or alias. Closest matches within 2 edits are suggested. Without `strictCommands`, an unknown command falls through to the default help-on-no-match behavior.
 
+### Embedding cleye in a host process (`throwOnExit`)
+By default, cleye calls `process.exit` on `--help`, `--version`, missing required parameters, `strictFlags`, `strictCommands`, and the sync no-command-match path. If you're embedding cleye inside a larger program (a wrapper script, a long-running service, a test harness) and don't want it to terminate the host process, set `throwOnExit: true` and catch `CleyeExit`:
+
+```ts
+import { cli, CleyeExit } from 'cleye'
+
+try {
+    await cli({
+        throwOnExit: true,
+        commands: { build: () => import('./commands/build.ts') }
+    })
+} catch (error) {
+    if (error instanceof CleyeExit) {
+        // error.code: 0 for --help / --version, 1 for validation failures
+        // error.reason: 'help' | 'version' | 'missing-required-parameter' |
+        //               'unknown-flag' | 'unknown-command' | 'no-command-match'
+        if (error.code !== 0) {
+            console.error('cli failed:', error.reason)
+        }
+        return
+    }
+    throw error
+}
+```
+
+cleye throws `CleyeExit` from the actual exit point (e.g. the line that resolves the unknown command), so stack traces point directly at the source. Inheritance is automatic via try/catch propagation — nesting works without any special wiring.
+
 ## Arguments
 Arguments are values passed into the script that are not associated with any flags/options.
 
@@ -711,7 +738,7 @@ Getting "registry"
 
 ### Option inheritance
 
-`strictFlags`, `strictCommands`, and `booleanFlagNegation` automatically inherit from parent to child through all nesting levels. A child can override any inherited option:
+`strictFlags`, `strictCommands`, `booleanFlagNegation`, and `throwOnExit` automatically inherit from parent to child through all nesting levels. A child can override any inherited option:
 
 ```ts
 // Parent enables strictFlags for all commands
@@ -1005,6 +1032,7 @@ type ParsedArgv = {
 | `strictFlags` | `boolean` | Error on unknown flags with typo suggestions. Inherited by commands. |
 | `strictCommands` | `boolean` | Error on unknown commands with typo suggestions. Inherited by commands. |
 | `booleanFlagNegation` | `boolean` | Enable `--no-<flag>` for boolean flags. Inherited by commands. |
+| `throwOnExit` | `boolean` | Throw `CleyeExit` instead of calling `process.exit`. For embedding cleye in a host process. Inherited by commands. |
 
 ##### flags
 

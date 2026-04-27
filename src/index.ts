@@ -1,9 +1,10 @@
-export { cli } from './cli.ts';
+export { cli, CleyeExit } from './cli.ts';
 export type {
 	Flags,
 	CliOptions,
 	CommandEntry,
 	Commands,
+	ExitReason,
 	ParsedArgv,
 	HelpOptions,
 	HelpRenderer,
