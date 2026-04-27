@@ -12,6 +12,7 @@ import type {
 	StrictOptions,
 } from './types.ts';
 import { defaultHelp } from './render/default-help.ts';
+import { render } from './render/render.ts';
 import { camelCase } from './utils/convert-case.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
@@ -439,7 +440,16 @@ function cli<
 				...(helpOptions ? { help: helpOptions } : {}),
 			};
 			const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
-			console.log(renderFunction(effectiveOptions, { form }));
+			const result = renderFunction(effectiveOptions, { form });
+			let output: string;
+			if (typeof result === 'string') {
+				output = result;
+			} else if (Array.isArray(result)) {
+				output = render(...result);
+			} else {
+				output = render(result);
+			}
+			console.log(output);
 		};
 
 		const parsedFlags = parsed.flags as Record<string, unknown>;

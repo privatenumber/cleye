@@ -1,6 +1,5 @@
 import { flagNameToKebab } from 'type-flag';
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
-import { render } from './render.ts';
 import {
 	type Atoms, type Flag, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
@@ -89,7 +88,7 @@ export const createDefaultHelp = (
 ) => (
 	options: CliOptions,
 	options_: { form?: HelpForm } = {},
-): string => {
+): Node[] => {
 	const {
 		p, usage, section, cmds, flags: flagsAtom,
 	} = atoms;
@@ -237,7 +236,7 @@ export const createDefaultHelp = (
 		}
 	}
 
-	return render(...nodes);
+	return nodes;
 };
 
 export const defaultHelp = createDefaultHelp({

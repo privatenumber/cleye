@@ -21,7 +21,7 @@ import { blue } from 'ansis';
 import { cli } from '#cleye';
 import { oneOf } from '#cleye/formats';
 import {
-	render, usage, section, flags, footer, p, type Flag,
+	usage, section, flags, footer, p, type Flag,
 } from '#cleye/help/responsive';
 
 // `oneOf([...])` from `cleye/formats` validates the value at parse time and
@@ -252,16 +252,16 @@ await cli({
 	},
 
 	help: {
-		render() {
-			return render(
-				p('tsc: The TypeScript Compiler - Version 0.0.0'),
-				usage('tsc', '[options] [file...]'),
-				section('COMMON COMMANDS', footer(commonCommandsText)),
-				section('COMMAND LINE FLAGS', flags(commandLineFlagList)),
-				section('COMMON COMPILER OPTIONS', flags(compilerOptionFlagList)),
-				footer('You can learn about all of the compiler options at https://aka.ms/tsconfig-reference'),
-			);
-		},
+		// `help.render` accepts an array of atoms — cleye joins them with
+		// blank lines. No need to call `render()` ourselves.
+		render: () => [
+			p('tsc: The TypeScript Compiler - Version 0.0.0'),
+			usage('tsc', '[options] [file...]'),
+			section('COMMON COMMANDS', footer(commonCommandsText)),
+			section('COMMAND LINE FLAGS', flags(commandLineFlagList)),
+			section('COMMON COMPILER OPTIONS', flags(compilerOptionFlagList)),
+			footer('You can learn about all of the compiler options at https://aka.ms/tsconfig-reference'),
+		],
 	},
 }, () => {
 	console.log('would run tsc...');

@@ -432,6 +432,69 @@ describe('help', () => {
 
 			expect(receivedForm).toBe('long');
 		});
+
+		test('help.render returning a string is printed verbatim', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				help: {
+					render: () => 'hand-rolled output',
+				},
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			expect(mocked.consoleLog.calls[0]?.[0]).toBe('hand-rolled output');
+		});
+
+		test('help.render returning a single atom renders that atom', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				help: {
+					// `p('text')` builds a single paragraph atom — cleye should
+					// call its `.render()` and print the result.
+					render: () => ({
+						kind: 'raw',
+						render: () => 'one node',
+					}),
+				},
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			expect(mocked.consoleLog.calls[0]?.[0]).toBe('one node');
+		});
+
+		test('help.render returning an atom array joins with a blank line', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				help: {
+					render: () => [
+						{
+							kind: 'raw',
+							render: () => 'first',
+						},
+						{
+							kind: 'raw',
+							render: () => 'second',
+						},
+					],
+				},
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			expect(mocked.consoleLog.calls[0]?.[0]).toBe('first\n\nsecond');
+		});
+
+		test('help.render returning an invalid shape throws (fail-fast on misuse)', () => {
+			// TypeScript prevents this at compile time; the runtime behavior is
+			// to fail loudly rather than silently print empty output. Pin it.
+			const mocked = mockEnvFunctions();
+			expect(() => cli({
+				help: {
+					// @ts-expect-error — intentionally wrong return type
+					render: () => null,
+				},
+			}, undefined, ['--help'])).toThrow(TypeError);
+			mocked.restore();
+		});
 	}, { parallel: false });
 
 	describe('invalid usage', () => {
