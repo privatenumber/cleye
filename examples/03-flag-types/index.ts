@@ -40,10 +40,10 @@ await cli({
 			description: 'What the cow says',
 			default: 'moo',
 		},
-		// `oneOf(...)` narrows the type to the literal union `'classic' | 'fancy'`.
+		// `oneOf([...])` narrows the type to the literal union `'classic' | 'fancy'`.
 		// Invalid values throw at parse time with the list of valid options.
 		style: {
-			type: oneOf('classic', 'fancy'),
+			type: oneOf(['classic', 'fancy']),
 			alias: 's',
 			description: 'Output style',
 			default: 'classic',

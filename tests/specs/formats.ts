@@ -13,18 +13,18 @@ import {
 describe('formats', () => {
 	describe('oneOf', () => {
 		test('returns valid value', () => {
-			const parser = oneOf('json', 'yaml', 'csv');
+			const parser = oneOf(['json', 'yaml', 'csv']);
 			expect(parser('json')).toBe('json');
 			expect(parser('yaml')).toBe('yaml');
 		});
 
 		test('throws on invalid value', () => {
-			const parser = oneOf('json', 'yaml', 'csv');
+			const parser = oneOf(['json', 'yaml', 'csv']);
 			expect(() => parser('xml')).toThrow('Expected one of: json, yaml, csv');
 		});
 
 		test('infers union type', () => {
-			const parser = oneOf('json', 'yaml', 'csv');
+			const parser = oneOf(['json', 'yaml', 'csv']);
 			expectTypeOf(parser('json')).toEqualTypeOf<'json' | 'yaml' | 'csv'>();
 		});
 	});
@@ -136,7 +136,7 @@ describe('formats', () => {
 	test('cli() integrates with cleye/formats helpers', async () => {
 		const parsed = cli({
 			flags: {
-				format: { type: oneOf('json', 'yaml') },
+				format: { type: oneOf(['json', 'yaml']) },
 				tags: { type: commaList(String) },
 			},
 		}, undefined, ['--format=json', '--tags=a,b,c']);

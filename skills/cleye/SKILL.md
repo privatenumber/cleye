@@ -232,7 +232,7 @@ import {
 } from 'cleye/formats'
 ```
 
-- `oneOf('a', 'b', 'c')` — infers `'a' | 'b' | 'c'`; throws if the value is not in the list.
+- `oneOf(['a', 'b', 'c'])` — infers `'a' | 'b' | 'c'`; throws if the value is not in the list. Pass an array (literal or `as const`-typed).
 - `commaList(itemType)` — splits `"a,b,c"` → `T[]`; trims whitespace; composes with other helpers (e.g. `commaList(integer())`).
 - `integer()` — base-10 integer; throws on floats/non-numeric.
 - `float()` — finite float; throws on `Infinity`/non-numeric.

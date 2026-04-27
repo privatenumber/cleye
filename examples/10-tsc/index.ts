@@ -24,9 +24,10 @@ import {
 	render, usage, section, flags, footer, p, type Flag,
 } from '#cleye/help/responsive';
 
-// `oneOf(...)` from `cleye/formats` validates the value at parse time and
+// `oneOf([...])` from `cleye/formats` validates the value at parse time and
 // narrows the type to the literal union — same as 03-flag-types, just with
-// real-world value lists.
+// real-world value lists. Passing the `as const` array directly works because
+// `oneOf` uses a `const T` generic to preserve literal inference.
 const targetValues = ['es3', 'es5', 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'esnext'] as const;
 const moduleValues = ['none', 'commonjs', 'amd', 'system', 'umd', 'es6', 'es2015', 'es2020', 'esnext'] as const;
 const jsxValues = ['preserve', 'react-native', 'react', 'react-jsx', 'react-jsxdev'] as const;
@@ -70,14 +71,14 @@ const commandLineFlags = {
 
 const commonCompilerOptions = {
 	target: {
-		type: oneOf(...targetValues),
+		type: oneOf(targetValues),
 		alias: 't',
 		description: `Set the JavaScript language version for emitted JavaScript and include compatible library declarations.\none of: ${targetValues.join(', ')}`,
 		default: 'es3',
 	},
 
 	module: {
-		type: oneOf(...moduleValues),
+		type: oneOf(moduleValues),
 		alias: 'm',
 		description: `Specify what module code is generated.\none of: ${moduleValues.join(', ')}`,
 	},
@@ -88,7 +89,7 @@ const commonCompilerOptions = {
 	},
 
 	jsx: {
-		type: oneOf(...jsxValues),
+		type: oneOf(jsxValues),
 		description: `Specify what JSX code is generated.\none of: ${jsxValues.join(', ')}`,
 	},
 

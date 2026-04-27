@@ -1,8 +1,10 @@
-export const oneOf = <T extends string>(...values: T[]) => (input: string): T => {
-	if (!(values as string[]).includes(input)) {
+export const oneOf = <const T extends readonly string[]>(
+	values: T,
+) => (input: string): T[number] => {
+	if (!values.includes(input)) {
 		throw new Error(`Expected one of: ${values.join(', ')} (got: ${JSON.stringify(input)})`);
 	}
-	return input as T;
+	return input as T[number];
 };
 
 export const commaList = <T>(itemType: (value: string) => T) => (input: string): T[] => {

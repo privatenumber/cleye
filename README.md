@@ -259,7 +259,7 @@ import {
 
 cli({
     flags: {
-        format: { type: oneOf('json', 'yaml', 'csv') }, // => 'json' | 'yaml' | 'csv'
+        format: { type: oneOf(['json', 'yaml', 'csv']) }, // => 'json' | 'yaml' | 'csv'
         tags: { type: commaList(String) }, // => string[]
         port: { type: range(1024, 65_535) }, // => number, validated in range
         count: { type: integer() }, // => number (integer only)
@@ -271,7 +271,7 @@ cli({
 
 | Helper | Return type | Description |
 |--------|-------------|-------------|
-| `oneOf(...values)` | Union of the given string literals | Throws if the value is not in the list. |
+| `oneOf(values)` | Union of the given string literals | Throws if the value is not in the list. Accepts an array (e.g. `oneOf(['a', 'b'])` or `oneOf(myConstArray)`). |
 | `commaList(itemType)` | `T[]` | Splits on `,`, trims whitespace, maps each item through `itemType`. |
 | `integer()` | `number` | Parses a base-10 integer. Throws on floats or non-numeric input. |
 | `float()` | `number` | Parses a finite float. Throws on non-finite or non-numeric input. |
