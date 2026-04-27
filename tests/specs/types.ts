@@ -21,7 +21,7 @@ describe('types', () => {
 
 		// No `commands` option → command is always undefined; runCommand is the noop signature.
 		expectTypeOf(parsed.command).toEqualTypeOf<undefined>();
-		type NoopRunCommand = () => Promise<undefined>;
+		type NoopRunCommand = () => undefined;
 		expectTypeOf(parsed.runCommand).toEqualTypeOf<NoopRunCommand>();
 		// runCommand is always defined — `undefined` must not be in its type.
 		expectTypeOf(parsed.runCommand).not.toBeUndefined();
@@ -273,7 +273,7 @@ describe('types', () => {
 				foo: String,
 			},
 		}, (parsed) => {
-			type NoopRunCommand = () => Promise<undefined>;
+			type NoopRunCommand = () => undefined;
 			expectTypeOf(parsed.runCommand).toEqualTypeOf<NoopRunCommand>();
 			expectTypeOf(parsed.runCommand).not.toBeUndefined();
 		}, []);
@@ -308,7 +308,7 @@ describe('types', () => {
 
 			if (parsed.command === undefined) {
 				// Noop branch.
-				expectTypeOf(parsed.runCommand).toEqualTypeOf<() => Promise<undefined>>();
+				expectTypeOf(parsed.runCommand).toEqualTypeOf<() => undefined>();
 			}
 		}, ['build']);
 	});
@@ -455,6 +455,29 @@ describe('types', () => {
 				expectTypeOf(parsed.runCommand).parameters.toEqualTypeOf<[pkg: string]>();
 			}
 		}, ['i', 'lodash']);
+	});
+
+	test('runCommand inherits multi-parameter signatures', async () => {
+		const serveModule = {
+			default: (port: number, host: string, secure: boolean) => `${host}:${port}/${secure}` as const,
+		};
+		await cli({
+			commands: {
+				connect: (host: string, port: number) => `${host}:${port}` as const,
+				serve: { loader: async () => serveModule },
+			},
+		}, async (parsed) => {
+			if (parsed.command === 'connect') {
+				expectTypeOf(parsed.runCommand).parameters.toEqualTypeOf<[host: string, port: number]>();
+				expectTypeOf(await parsed.runCommand('localhost', 3000)).toEqualTypeOf<`${string}:${number}`>();
+			}
+			if (parsed.command === 'serve') {
+				expectTypeOf(parsed.runCommand).parameters
+					.toEqualTypeOf<[port: number, host: string, secure: boolean]>();
+				expectTypeOf(await parsed.runCommand(3000, 'localhost', true))
+					.toEqualTypeOf<`${string}:${number}/${boolean}`>();
+			}
+		}, ['connect', 'localhost', '3000']);
 	});
 
 	test('runCommand rejects wrong arg types at compile time', async () => {

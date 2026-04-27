@@ -161,7 +161,7 @@ const handleUnknownFlags = (
 	process.exit(1);
 };
 
-const getCommandHandler = (entry: CommandEntry): ((argument?: unknown) => unknown) => {
+const getCommandHandler = (entry: CommandEntry): ((...arguments_: unknown[]) => unknown) => {
 	if (typeof entry === 'function') {
 		return entry;
 	}
@@ -200,7 +200,7 @@ const resolveCommand = (
 	commands: Record<string, CommandEntry>,
 	aliases: Map<string, string>,
 ): { name: string;
-	handler: (argument?: unknown) => unknown; } | undefined => {
+	handler: (...arguments_: unknown[]) => unknown; } | undefined => {
 	const resolvedName = potentialCommand in commands
 		? potentialCommand
 		: aliases.get(potentialCommand);
@@ -412,15 +412,16 @@ function cli<
 
 	let matchedCommand: {
 		name: string;
-		handler: (argument?: unknown) => unknown;
+		handler: (...arguments_: unknown[]) => unknown;
 	} | undefined;
 
 	if (hitCommand && argv.length > 0) {
 		matchedCommand = resolveCommand(argv[0], options.commands!, commandIndex.aliases);
 	}
 
-	// runCommand is idempotent — repeated calls return the same Promise
-	let runCommandPromise: Promise<unknown> | undefined;
+	// runCommand is idempotent — repeated calls return the same value
+	// (Promise or sync, mirroring the handler's shape).
+	let runCommandResult: unknown;
 	let runCommandCalled = false;
 
 	const resolvedOptions: CliOptions = {
@@ -428,40 +429,63 @@ function cli<
 		booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
 	};
 
-	const runCommand = (handlerArgument?: unknown): Promise<unknown> => {
-		// No matched command — runCommand is a callable noop so callers can
-		// always do `await argv.runCommand()` without an undefined check.
-		if (!matchedCommand) {
-			return Promise.resolve(undefined);
-		}
-		if (!runCommandCalled) {
-			runCommandCalled = true;
-			const commandArgv = argv.slice(1);
-			const context: CliContext = {
-				name: matchedCommand.name,
-				argv: commandArgv,
-				parentOptions: resolvedOptions,
-			};
-			runCommandPromise = (async () => {
-				const result = await runWithCliContext(
-					context,
-					() => matchedCommand.handler(handlerArgument),
-				);
+	const isThenable = (value: unknown): value is PromiseLike<unknown> => (
+		!!value
+		&& (typeof value === 'object' || typeof value === 'function')
+		&& typeof (value as { then?: unknown }).then === 'function'
+	);
 
-				// `loader: () => import('./cmd.ts')` resolves to a module namespace;
-				// invoke its default export and return its value.
-				if (
-					result
-					&& typeof result === 'object'
-					&& 'default' in result
-					&& typeof result.default === 'function'
-				) {
-					return await result.default(handlerArgument);
-				}
-				return result;
-			})();
+	const isModuleWithDefault = (
+		value: unknown,
+	): value is { default: (...arguments_: unknown[]) => unknown } => (
+		!!value
+		&& typeof value === 'object'
+		&& 'default' in value
+		&& typeof (value as { default: unknown }).default === 'function'
+	);
+
+	const runCommand = (...handlerArguments: unknown[]): unknown => {
+		// No matched command — runCommand is a callable noop. Returns
+		// `undefined` synchronously; `await undefined` is a no-op so callers
+		// can still write `await argv.runCommand()` if they want symmetry.
+		if (!matchedCommand) {
+			return undefined;
 		}
-		return runCommandPromise!;
+		if (runCommandCalled) {
+			return runCommandResult;
+		}
+		runCommandCalled = true;
+		const commandArgv = argv.slice(1);
+		const context: CliContext = {
+			name: matchedCommand.name,
+			argv: commandArgv,
+			parentOptions: resolvedOptions,
+		};
+
+		// Wrap the entire chain — handler invocation AND any default-unwrap —
+		// in `runWithCliContext` so module-default callees see the context
+		// via `getCliContext()`. AsyncLocalStorage propagates through `.then`
+		// callbacks attached inside the run.
+		runCommandResult = runWithCliContext(context, () => {
+			const handlerReturn = matchedCommand.handler(...handlerArguments);
+
+			// Async handler / loader pattern — chain through Promise.
+			// Module-namespace `{ default: fn }` returns are unwrapped.
+			if (isThenable(handlerReturn)) {
+				return handlerReturn.then(awaited => (
+					isModuleWithDefault(awaited)
+						? awaited.default(...handlerArguments)
+						: awaited
+				));
+			}
+
+			// Sync handler. Unwrap a module-with-default if returned.
+			return isModuleWithDefault(handlerReturn)
+				? handlerReturn.default(...handlerArguments)
+				: handlerReturn;
+		});
+
+		return runCommandResult;
 	};
 
 	const result = {

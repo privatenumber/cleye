@@ -501,7 +501,7 @@ await cli({
 })
 ```
 
-`runCommand` is idempotent — calling it multiple times returns the same Promise. See [Passing data to commands](#passing-data-to-commands) for how the child receives the argument.
+`runCommand` is idempotent — calling it multiple times returns the same value. Its return type mirrors the matched handler: synchronous handlers return their value directly, async handlers (and the `loader: () => import(...)` pattern) return a Promise. See [Passing data to commands](#passing-data-to-commands) for how the child receives the argument.
 
 ### Command files
 
@@ -630,7 +630,7 @@ await cli({
 })
 ```
 
-When no command matched, `parsed.runCommand` is a no-op typed as `() => Promise<undefined>`.
+When no command matched, `parsed.runCommand` is a sync no-op typed as `() => undefined`.
 
 ### Nested commands
 
@@ -941,11 +941,12 @@ type ParsedArgv = {
     // Matched command name, or undefined
     command: string | undefined
 
-    // Trigger the matched command. Always defined — when no command matched,
-    // it is a callable noop that resolves to `undefined`.
-    // Idempotent — repeated calls return the same Promise.
-    // Pass an argument to forward to the command's exported function.
-    runCommand: (argument?: unknown) => Promise<unknown>
+    // Trigger the matched command. Always defined — sync no-op (returns
+    // `undefined`) when no command matched. When a command matched, the
+    // signature and return mirror the handler's shape: arguments and sync
+    // value for sync handlers, Promise for async handlers and lazy
+    // loaders. Idempotent — repeated calls return the same value.
+    runCommand: (...arguments_: unknown[]) => unknown
 
     // Method to print version
     showVersion: () => void

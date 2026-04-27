@@ -13,10 +13,11 @@ type AnyFunction = (...arguments_: any) => any;
 
 /**
  * The shape of `runCommand` when no command matched — a callable noop that
- * resolves to `undefined`. Always part of `CommandUnion` so callers can do
- * `await argv.runCommand()` without an undefined check.
+ * returns `undefined` synchronously. `await undefined` is a no-op, so callers
+ * can still write `await argv.runCommand()` if they want symmetry across
+ * the discriminated union's branches.
  */
-type NoopRunCommand = () => Promise<undefined>;
+type NoopRunCommand = () => undefined;
 
 export type Flags = BaseFlags<{
 
@@ -191,24 +192,27 @@ type EntryHandler<Entry> = Entry extends AnyFunction
 		: never;
 
 /**
- * If a handler resolves to a module namespace with a callable `default`
- * export (the lazy-loader pattern: `loader: () => import('./cmd.ts')`),
- * unwrap to the default export's signature. Otherwise the handler is
- * invoked directly and its own signature is used.
- */
-type Invokable<Handler extends AnyFunction> =
-	Awaited<ReturnType<Handler>> extends { default: infer Default extends AnyFunction }
-		? Default
-		: Handler;
-
-/**
- * The shape of `runCommand` for a specific matched command — preserves the
- * resolved handler's argument and return-value types, wrapping the return
- * in a Promise.
+ * The shape of `runCommand` for a specific matched command. Mirrors the
+ * resolved handler's sync/async character:
+ *
+ * - Sync handler (`cmd: () => 42`) → `runCommand` returns `42` directly.
+ * - Async handler (`cmd: async () => 42`) → `runCommand` returns `Promise<42>`.
+ * - Loader pattern returning a module namespace (`loader: () => import(...)`)
+ *   → always async because `import()` is async; the default export's return
+ *   value is unwrapped through the awaited Promise.
+ *
+ * Synchronous handlers that return a `{ default: fn }` shape get the same
+ * default-unwrap treatment without an extra Promise wrap.
  */
 type RunCommandFor<Entry> =
-	Invokable<EntryHandler<Entry>> extends (...arguments_: infer Arguments) => infer Return
-		? (...arguments_: Arguments) => Promise<Awaited<Return>>
+	EntryHandler<Entry> extends (...arguments_: infer Arguments) => infer Return
+		? Return extends Promise<infer Resolved>
+			? Resolved extends { default: infer Default extends AnyFunction }
+				? (...arguments_: Parameters<Default>) => Promise<Awaited<ReturnType<Default>>>
+				: (...arguments_: Arguments) => Promise<Resolved>
+			: Return extends { default: infer Default extends AnyFunction }
+				? (...arguments_: Parameters<Default>) => ReturnType<Default>
+				: (...arguments_: Arguments) => Return
 		: never;
 
 /**
