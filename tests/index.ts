@@ -3,20 +3,12 @@ import { describe } from 'manten';
 process.stdout.columns = Number.POSITIVE_INFINITY;
 
 describe('cleye', () => {
-	import('./specs/cli.ts');
-	import('./specs/cli-sync.ts');
-	import('./specs/flags.ts');
-	import('./specs/arguments.ts');
-	import('./specs/command.ts');
-	import('./specs/help.ts');
-	import('./specs/types.ts');
+	import('./specs/cli-api/index.ts');
+	import('./specs/flags/index.ts');
+	import('./specs/parameters/index.ts');
+	import('./specs/commands/index.ts');
+	import('./specs/help/index.ts');
+	import('./specs/exit/index.ts');
 	import('./specs/integration.ts');
-	import('./specs/edge-cases.ts');
 	import('./specs/formats.ts');
-	import('./specs/render.ts');
-	import('./specs/atoms.ts');
-	import('./specs/default-help.ts');
-	import('./specs/help-responsive.ts');
-	import('./specs/exit.ts');
-	import('./specs/script-name.ts');
 });

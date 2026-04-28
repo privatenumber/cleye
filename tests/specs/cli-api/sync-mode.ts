@@ -2,7 +2,7 @@ import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
 import { spy } from 'nanospy';
 import { cli } from '#cleye';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('cli sync mode', () => {
 	describe('return shape', () => {
@@ -176,7 +176,7 @@ describe('cli sync mode', () => {
 			const argv = cli({
 				commands: {
 					transform: {
-						loader: () => import('../fixtures/dynamic-command.ts'),
+						loader: () => import('../../fixtures/dynamic-command.ts'),
 					},
 				},
 			}, undefined, ['transform']);

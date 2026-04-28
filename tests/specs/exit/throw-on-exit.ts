@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
 import { cli, CleyeExit } from '#cleye';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('throwOnExit / non-intrusive mode', () => {
 	test('default behavior calls process.exit', () => {

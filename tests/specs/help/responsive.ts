@@ -7,8 +7,8 @@ import {
 	cmds,
 	flagsInline,
 	type Flag,
-} from '../../src/help/responsive.ts';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
+} from '../../../src/help/responsive.ts';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 process.stdout.columns = 80;
 
@@ -66,4 +66,4 @@ describe('cleye/help/responsive', () => {
 		expect(mocked.consoleLog.calls[0][0]).toContain('tool');
 		expect(mocked.consoleLog.calls[0][0]).toContain('--verbose');
 	});
-});
+}, { parallel: false });

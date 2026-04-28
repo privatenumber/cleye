@@ -2,23 +2,8 @@ import { setImmediate } from 'node:timers/promises';
 import { describe, test, expect } from 'manten';
 import { cli } from '#cleye';
 
-describe('cli', () => {
-	describe('error-handling', () => {
-		test('must pass in options', () => {
-			expect(
-				// @ts-expect-error no options
-				() => cli(),
-			).toThrow('Options is required');
-		});
-
-		test('allows any name including spaces and empty string', () => {
-			expect(() => cli({ name: '' })).not.toThrow();
-			expect(() => cli({ name: 'a b' })).not.toThrow();
-			expect(() => cli({ name: 'a.b_' })).not.toThrow();
-		});
-	});
-
-	test('async callbacks', async () => {
+describe('cli() callback', () => {
+	test('async callbacks resolve before cli() returns', async () => {
 		let asyncCompleted = false;
 		await cli({}, async () => {
 			await setImmediate();
@@ -27,8 +12,8 @@ describe('cli', () => {
 		expect(asyncCompleted).toBe(true);
 	});
 
-	describe('callback error handling', () => {
-		test('callback throws synchronous error', async () => {
+	describe('error handling', () => {
+		test('callback throws synchronous error → cli() rejects', async () => {
 			await expect(
 				cli({}, () => {
 					throw new Error('Callback error');
@@ -36,7 +21,7 @@ describe('cli', () => {
 			).rejects.toThrow('Callback error');
 		});
 
-		test('callback returns rejected Promise', async () => {
+		test('callback returns rejected Promise → cli() rejects', async () => {
 			await expect(
 				cli({}, async () => {
 					throw new Error('Async error');
@@ -45,8 +30,8 @@ describe('cli', () => {
 		});
 	});
 
-	describe('Promise edge cases', () => {
-		test('result properties accessible after await', async () => {
+	describe('Promise semantics', () => {
+		test('parsed properties are accessible after awaiting', async () => {
 			const result = await cli({
 				parameters: ['<value>'],
 			}, async (parsed) => {
@@ -57,7 +42,7 @@ describe('cli', () => {
 			expect<string>(result._.value).toBe('test');
 		});
 
-		test('cli Promise waits for callback to complete', async () => {
+		test('cli() Promise waits for callback to complete', async () => {
 			let callbackCompleted = false;
 
 			const resultPromise = cli({}, async () => {
@@ -65,23 +50,20 @@ describe('cli', () => {
 				callbackCompleted = true;
 			});
 
-			// Callback shouldn't have completed yet
+			// Not yet — promise is still pending while callback awaits.
 			expect(callbackCompleted).toBe(false);
 
-			// After awaiting cli, callback should be complete
 			await resultPromise;
 			expect(callbackCompleted).toBe(true);
 		});
 
-		test('cli Promise never resolves if callback never resolves', async () => {
+		test('cli() never resolves if callback never resolves', async () => {
 			let cliResolved = false;
 
 			const resultPromise = cli({}, async () => {
-				// Never resolve - hang forever
 				await new Promise(() => {});
 			});
 
-			// Race the cli promise against a timeout
 			await Promise.race([
 				resultPromise.then(() => {
 					cliResolved = true;
@@ -89,8 +71,7 @@ describe('cli', () => {
 				setImmediate(50),
 			]);
 
-			// cli should not have resolved
 			expect(cliResolved).toBe(false);
 		});
 	});
-});
+}, { parallel: false });

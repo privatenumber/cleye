@@ -1,7 +1,7 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
-import { defaultHelp } from '../../src/render/default-help.ts';
-import { render } from '../../src/render/render.ts';
+import { defaultHelp } from '../../../src/render/default-help.ts';
+import { render } from '../../../src/render/render.ts';
 
 // `defaultHelp` returns Node[]; tests assert on the rendered string.
 const renderDefault = (...args: Parameters<typeof defaultHelp>) => render(...defaultHelp(...args));
@@ -405,4 +405,4 @@ describe('defaultHelp', () => {
 			expect(output).toContain('Examples:');
 		});
 	});
-});
+}, { parallel: false });

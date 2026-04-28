@@ -1,0 +1,175 @@
+import { stripVTControlCharacters } from 'node:util';
+import { describe, test, expect } from 'manten';
+import { cli } from '#cleye';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
+
+describe('two-tier help (-h vs --help)', () => {
+	test('-h produces short form (no lead description)', async () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'my-cli',
+			help: { description: 'A helpful tool' },
+		}, undefined, ['-h']);
+		mocked.restore();
+
+		expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).toContain('Usage:');
+		expect(output).not.toContain('A helpful tool');
+	});
+
+	test('-h produces short form (no examples)', async () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'my-cli',
+			help: { examples: 'my-cli --verbose' },
+		}, undefined, ['-h']);
+		mocked.restore();
+
+		expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).not.toContain('Examples:');
+		expect(output).not.toContain('my-cli --verbose');
+	});
+
+	test('--help produces long form (includes description)', async () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'my-cli',
+			help: { description: 'A helpful tool' },
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).toContain('A helpful tool');
+	});
+
+	test('--help produces long form (includes examples)', async () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'my-cli',
+			help: { examples: 'my-cli --verbose' },
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).toContain('Examples:');
+		expect(output).toContain('my-cli --verbose');
+	});
+
+	test('--help wins over -h when both passed (long form)', async () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			name: 'my-cli',
+			help: {
+				description: 'A helpful tool',
+				examples: 'my-cli --verbose',
+			},
+		}, undefined, ['-h', '--help']);
+		mocked.restore();
+
+		expect(mocked.processExit.calls).toStrictEqual([[0]]);
+		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		expect(output).toContain('A helpful tool');
+		expect(output).toContain('Examples:');
+	});
+
+	test('custom help.render receives form opt', async () => {
+		const mocked = mockEnvFunctions();
+		let receivedForm: string | undefined;
+		cli({
+			name: 'my-cli',
+			help: {
+				render(options, options_) {
+					receivedForm = options_.form;
+					return '';
+				},
+			},
+		}, undefined, ['-h']);
+		mocked.restore();
+
+		expect(receivedForm).toBe('short');
+	});
+
+	test('custom help.render receives long form for --help', async () => {
+		const mocked = mockEnvFunctions();
+		let receivedForm: string | undefined;
+		cli({
+			name: 'my-cli',
+			help: {
+				render(options, options_) {
+					receivedForm = options_.form;
+					return '';
+				},
+			},
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(receivedForm).toBe('long');
+	});
+
+	test('help.render returning a string is printed verbatim', () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			help: {
+				render: () => 'hand-rolled output',
+			},
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.consoleLog.calls[0]?.[0]).toBe('hand-rolled output');
+	});
+
+	test('help.render returning a single atom renders that atom', () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			help: {
+				// `p('text')` builds a single paragraph atom — cleye should
+				// call its `.render()` and print the result.
+				render: () => ({
+					kind: 'raw',
+					render: () => 'one node',
+				}),
+			},
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.consoleLog.calls[0]?.[0]).toBe('one node');
+	});
+
+	test('help.render returning an atom array joins with a blank line', () => {
+		const mocked = mockEnvFunctions();
+		cli({
+			help: {
+				render: () => [
+					{
+						kind: 'raw',
+						render: () => 'first',
+					},
+					{
+						kind: 'raw',
+						render: () => 'second',
+					},
+				],
+			},
+		}, undefined, ['--help']);
+		mocked.restore();
+
+		expect(mocked.consoleLog.calls[0]?.[0]).toBe('first\n\nsecond');
+	});
+
+	test('help.render returning an invalid shape throws (fail-fast on misuse)', () => {
+		// TypeScript prevents this at compile time; the runtime behavior is
+		// to fail loudly rather than silently print empty output. Pin it.
+		const mocked = mockEnvFunctions();
+		expect(() => cli({
+			help: {
+				// @ts-expect-error — intentionally wrong return type
+				render: () => null,
+			},
+		}, undefined, ['--help'])).toThrow(TypeError);
+		mocked.restore();
+	});
+}, { parallel: false });

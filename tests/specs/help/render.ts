@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
-import { render } from '../../src/render/render.ts';
-import type { Node } from '../../src/render/types.ts';
+import { render } from '../../../src/render/render.ts';
+import type { Node } from '../../../src/render/types.ts';
 
 describe('render()', () => {
 	test('empty invocation returns empty string', () => {
@@ -39,4 +39,4 @@ describe('render()', () => {
 		const result = render(node);
 		expect(result).toBe('x');
 	});
-});
+}, { parallel: false });

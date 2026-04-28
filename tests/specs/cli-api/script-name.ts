@@ -1,19 +1,8 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { cli } from '#cleye';
-import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
-
-const mockArgv = (mockedArgv: string[]) => {
-	const original = process.argv;
-	process.argv = mockedArgv;
-	const restore = () => {
-		process.argv = original;
-	};
-	return {
-		restore,
-		[Symbol.dispose]: restore,
-	};
-};
+import { mockArgv } from '../../utils/mock-argv.ts';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('script name inference', () => {
 	test('falls back to basename of process.argv[1] when name is omitted', () => {

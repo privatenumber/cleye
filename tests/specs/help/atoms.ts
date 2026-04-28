@@ -12,9 +12,9 @@ import {
 	flagsInline,
 	flagsHanging,
 	type Flag,
-} from '../../src/render/atoms.ts';
-import { cmds as responsiveCmds } from '../../src/help/responsive.ts';
-import { withColumns } from '../utils/with-columns.ts';
+} from '../../../src/render/atoms.ts';
+import { cmds as responsiveCmds } from '../../../src/help/responsive.ts';
+import { withColumns } from '../../utils/with-columns.ts';
 
 process.stdout.columns = 80;
 
@@ -317,4 +317,4 @@ describe('atoms', () => {
 			expect(footerNode.text).toBe('see docs');
 		});
 	});
-});
+}, { parallel: false });
