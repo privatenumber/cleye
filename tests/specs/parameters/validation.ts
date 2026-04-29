@@ -115,14 +115,6 @@ describe('parameter validation', () => {
 	}, { parallel: false });
 
 	describe('parameter name edge cases', () => {
-		test('parameter with kebab-case name → camelCased on argv._', () => {
-			const parsed = cli({
-				parameters: ['<file-path>'],
-			}, undefined, ['test.txt']);
-
-			expect<string>(parsed._.filePath).toBe('test.txt');
-		});
-
 		test('very long parameter name', () => {
 			const parsed = cli({
 				parameters: ['<this-is-a-very-long-parameter-name-with-many-words>'],

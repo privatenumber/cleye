@@ -21,15 +21,6 @@ describe('parameters types', () => {
 		expectTypeOf(parsed._.bar).toEqualTypeOf<string[]>();
 	});
 
-	test('parameter name normalization to camelCase', async () => {
-		const parsed = cli({
-			parameters: ['<hello world>'],
-		}, undefined, ['a']);
-
-		expectTypeOf(parsed._).toHaveProperty('helloWorld');
-		expectTypeOf(parsed._.helloWorld).toBeString();
-	});
-
 	test('parameters with flags', async () => {
 		const parsed = cli({
 			parameters: ['<foo>', '[bar...]'],
