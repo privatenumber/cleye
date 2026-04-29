@@ -44,6 +44,7 @@ const specialCharactersPattern = /[|\\{}()[\]^$+*?.]/;
 
 type ParsedParameter = {
 	name: string;
+	camelCaseName: string;
 	required: boolean;
 	spread: boolean;
 };
@@ -96,12 +97,27 @@ function parseParameters(parameters: string[]) {
 
 		parsedParameters.push({
 			name,
+			camelCaseName: camelCase(name),
 			required,
 			spread,
 		});
 	}
 
 	return parsedParameters;
+}
+
+function checkDuplicateParameters(parameters: ParsedParameter[]): void {
+	const seen = new Map<string, string>();
+	for (const { name, camelCaseName } of parameters) {
+		const existing = seen.get(camelCaseName);
+		if (existing !== undefined) {
+			if (existing === name) {
+				throw new Error(`Invalid parameter: ${stringify(name)} is used more than once`);
+			}
+			throw new Error(`Invalid parameter: ${stringify(name)} collides with ${stringify(existing)} (both map to ${stringify(camelCaseName)})`);
+		}
+		seen.set(camelCaseName, name);
+	}
 }
 
 function mapParametersToArguments(
@@ -111,11 +127,9 @@ function mapParametersToArguments(
 	showHelp: () => void,
 ) {
 	for (let i = 0; i < parameters.length; i += 1) {
-		const { name, required, spread } = parameters[i];
-		const camelCaseName = camelCase(name);
-		if (camelCaseName in mapping) {
-			throw new Error(`Invalid parameter: ${stringify(name)} is used more than once.`);
-		}
+		const {
+			name, camelCaseName, required, spread,
+		} = parameters[i];
 
 		const value = spread ? cliArguments.slice(i) : cliArguments[i];
 
@@ -481,30 +495,25 @@ function cli<
 			let parameters = options.parameters as string[];
 			let cliArguments = parsed._ as string[];
 			const hasEof = parameters.indexOf('--');
-			const eofParameters = parameters.slice(hasEof + 1);
+			const hasEofSplit = hasEof !== -1 && hasEof < parameters.length - 1;
 			const mapping: Record<string, string | string[]> = Object.create(null);
 
 			let eofArguments: string[] = [];
-			if (hasEof > -1 && eofParameters.length > 0) {
+			let eofParameters: string[] = [];
+			if (hasEofSplit) {
+				eofParameters = parameters.slice(hasEof + 1);
 				parameters = parameters.slice(0, hasEof);
 				eofArguments = parsed._['--'];
 				cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
 			}
 
-			mapParametersToArguments(
-				mapping,
-				parseParameters(parameters),
-				cliArguments,
-				showHelp,
-			);
+			const preEofParsed = parseParameters(parameters);
+			const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
+			checkDuplicateParameters([...preEofParsed, ...eofParsed]);
 
-			if (hasEof > -1 && eofParameters.length > 0) {
-				mapParametersToArguments(
-					mapping,
-					parseParameters(eofParameters),
-					eofArguments,
-					showHelp,
-				);
+			mapParametersToArguments(mapping, preEofParsed, cliArguments, showHelp);
+			if (hasEofSplit) {
+				mapParametersToArguments(mapping, eofParsed, eofArguments, showHelp);
 			}
 
 			Object.assign(

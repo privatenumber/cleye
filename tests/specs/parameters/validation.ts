@@ -95,6 +95,22 @@ describe('parameter validation', () => {
 				}),
 			).toThrow('Invalid parameter: Spread parameter "[value-a...]" must be last');
 		});
+
+		test('duplicate required parameters caught at parse time (no argv supplied)', () => {
+			// Previously this surfaced as "Missing required parameter" because
+			// the missing-required check fired before the duplicate check.
+			expect(
+				() => cli({ parameters: ['<a>', '<a>'] }),
+			).toThrow('Invalid parameter: "a" is used more than once');
+		});
+
+		test('camelCase-collision error names both source parameters', () => {
+			// "<file-name>" and "<fileName>" both camelCase to `fileName`.
+			// The error must surface both source names, not just one.
+			expect(
+				() => cli({ parameters: ['<file-name>', '<fileName>'] }),
+			).toThrow(/Invalid parameter: ["']?fileName["']? collides with ["']?file-name["']?/);
+		});
 	}, { parallel: false });
 
 	describe('missing arguments', () => {
