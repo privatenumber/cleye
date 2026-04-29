@@ -125,7 +125,7 @@ function mapParametersToArguments(
 
 		if (
 			required
-			&& (!value || (spread && value.length === 0))
+			&& (value === undefined || (spread && value.length === 0))
 		) {
 			console.error(`Error: Missing required parameter ${stringify(name)}\n`);
 			showHelp();

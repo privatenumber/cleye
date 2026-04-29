@@ -138,5 +138,17 @@ describe('parameter validation', () => {
 
 			expect<string>(parsed._.value).toBe('   ');
 		});
+
+		test('empty-string positional satisfies a required parameter', () => {
+			// Empty string is a valid argv value; it must not be treated as
+			// "missing required". Reproduces a bug where `!value` rejected ''.
+			const mocked = mockEnvFunctions();
+			const parsed = cli({ parameters: ['<value>'] }, undefined, ['']);
+			mocked.restore();
+
+			expect(mocked.consoleError.called).toBe(false);
+			expect(mocked.processExit.called).toBe(false);
+			expect<string>(parsed._.value).toBe('');
+		});
 	});
 }, { parallel: false });

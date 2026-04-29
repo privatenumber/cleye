@@ -47,7 +47,7 @@ export const range = (min: number, max: number) => (input: string): number => {
 export const url = () => (input: string): URL => {
 	try {
 		return new URL(input);
-	} catch {
-		throw new Error(`Expected a valid URL (got: ${JSON.stringify(input)})`);
+	} catch (error) {
+		throw new Error(`Expected a valid URL (got: ${JSON.stringify(input)})`, { cause: error });
 	}
 };

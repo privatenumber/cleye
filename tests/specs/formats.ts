@@ -132,6 +132,17 @@ describe('formats', () => {
 			expect(() => url()('not-a-url')).toThrow('Expected a valid URL');
 		});
 
+		test('preserves the original error as cause', () => {
+			let caught: unknown;
+			try {
+				url()('not-a-url');
+			} catch (error) {
+				caught = error;
+			}
+			expect(caught).toBeInstanceOf(Error);
+			expect((caught as Error).cause).toBeInstanceOf(Error);
+		});
+
 		test('infers URL type', () => {
 			expectTypeOf(url()('https://example.com')).toEqualTypeOf<URL>();
 		});
