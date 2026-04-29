@@ -262,6 +262,65 @@ describe('defaultHelp', () => {
 			expect(output).toContain('--dry-run');
 			expect(output).not.toContain('--dryRun');
 		});
+
+		test('array flag type unwraps element type for arg label', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					tag: { type: [String] },
+					port: { type: [Number] },
+				},
+			}));
+			const tagLine = output.split('\n').find(line => line.includes('--tag')) ?? '';
+			const portLine = output.split('\n').find(line => line.includes('--port')) ?? '';
+			expect(tagLine).toContain('<string>');
+			expect(portLine).toContain('<number>');
+		});
+
+		test('function default is invoked and shown in help', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					token: {
+						type: String,
+						description: 'API token',
+						default: () => 'computed-default',
+					},
+				},
+			}));
+			expect(output).toContain('(default: "computed-default")');
+		});
+
+		test('single-character flag name renders as short-only flag', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					x: {
+						type: String,
+						description: 'short-only string',
+					},
+					y: {
+						type: Boolean,
+						description: 'short-only boolean',
+					},
+				},
+			}));
+			const xLine = output.split('\n').find(line => line.includes('-x')) ?? '';
+			const yLine = output.split('\n').find(line => line.includes('-y')) ?? '';
+			expect(xLine).toContain('-x');
+			expect(xLine).toContain('<string>');
+			expect(xLine).not.toContain('--x');
+			expect(yLine).toContain('-y');
+			expect(yLine).not.toContain('--y');
+		});
+
+		test('single-character flag without description renders cleanly', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					q: { type: Boolean },
+				},
+			}));
+			const qLine = output.split('\n').find(line => line.includes('-q')) ?? '';
+			expect(qLine).toContain('-q');
+			expect(qLine).not.toContain('--q');
+		});
 	});
 
 	describe('commands section', () => {

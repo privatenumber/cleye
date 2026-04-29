@@ -300,8 +300,6 @@ const resolveCommand = (
 			handler: getCommandHandler(commands[resolvedName]),
 		};
 	}
-
-	return undefined;
 };
 
 // Overload: with callback — async, resolves to the callback's return value

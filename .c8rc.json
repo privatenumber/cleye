@@ -1,0 +1,14 @@
+{
+	"include": [
+		"src/**"
+	],
+	"reporter": [
+		"text-summary",
+		"text"
+	],
+	"check-coverage": true,
+	"statements": 100,
+	"branches": 95,
+	"functions": 100,
+	"lines": 100
+}

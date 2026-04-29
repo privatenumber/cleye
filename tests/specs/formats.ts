@@ -112,6 +112,10 @@ describe('formats', () => {
 			expect(() => range(1, 10)('11')).toThrow('Expected a number between 1 and 10');
 		});
 
+		test('throws on non-numeric input', () => {
+			expect(() => range(1, 10)('abc')).toThrow('Expected a number');
+		});
+
 		test('infers number type', () => {
 			expectTypeOf(range(0, 100)('50')).toEqualTypeOf<number>();
 		});
