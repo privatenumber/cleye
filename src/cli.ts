@@ -17,6 +17,7 @@ import { isThenable, isModuleWithDefault } from './utils/promise-helpers.ts';
 import { findClosest } from './utils/find-closest.ts';
 import { parseParameters, checkDuplicateParameters, type ParsedParameter } from './utils/parse-parameters.ts';
 import { AUTO_FLAG, END_OF_FLAGS } from './utils/constants.ts';
+import { buildNameIndex, type NameIndex } from './utils/build-name-index.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
 const { stringify } = JSON;
@@ -76,32 +77,15 @@ function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOption
 	return help !== false;
 }
 
-type NameIndex = {
-	names: string[];
-	aliases: Map<string, string>;
-};
-
-const indexFlags = (flags: Record<string, unknown>): NameIndex => {
-	const names: string[] = [];
-	const aliases = new Map<string, string>();
-	for (const [name, config] of Object.entries(flags)) {
-		names.push(name);
+const indexFlags = (flags: Record<string, unknown>): NameIndex => buildNameIndex(
+	flags,
+	(config) => {
 		if (config && typeof config === 'object' && 'alias' in config) {
-			const { alias } = config as { alias?: string | string[] };
-			const list = typeof alias === 'string' && alias
-				? [alias]
-				: (Array.isArray(alias) ? alias.filter(Boolean) : []);
-			for (const aliasName of list) {
-				names.push(aliasName);
-				aliases.set(aliasName, name);
-			}
+			return (config as { alias?: string | string[] }).alias;
 		}
-	}
-	return {
-		names,
-		aliases,
-	};
-};
+		return undefined;
+	},
+);
 
 const handleUnknownFlags = (
 	unknownFlags: Record<string, unknown>,
@@ -133,32 +117,13 @@ const getCommandHandler = (entry: CommandEntry): ((...arguments_: unknown[]) => 
 	return entry.loader;
 };
 
-type CommandIndex = {
-	names: Set<string>;
-	aliases: Map<string, string>;
-};
-
-const buildCommandIndex = (commands: Record<string, CommandEntry>): CommandIndex => {
-	const names = new Set<string>();
-	const aliases = new Map<string, string>();
-	for (const [name, entry] of Object.entries(commands)) {
-		names.add(name);
-		if (typeof entry === 'object' && entry.alias) {
-			const entryAliases = Array.isArray(entry.alias) ? entry.alias : [entry.alias];
-			for (const alias of entryAliases) {
-				if (aliases.has(alias)) {
-					throw new Error(`Duplicate command alias: ${stringify(alias)}`);
-				}
-				names.add(alias);
-				aliases.set(alias, name);
-			}
-		}
-	}
-	return {
-		names,
-		aliases,
-	};
-};
+const buildCommandIndex = (commands: Record<string, CommandEntry>): NameIndex => buildNameIndex(
+	commands,
+	entry => (typeof entry === 'object' ? entry.alias : undefined),
+	(alias) => {
+		throw new Error(`Duplicate command alias: ${stringify(alias)}`);
+	},
+);
 
 const resolveCommand = (
 	potentialCommand: string,
@@ -241,7 +206,7 @@ function cli<
 	try {
 		const effectiveName = options.name ?? parentContext?.name ?? path.basename(process.argv[1] ?? '');
 
-		const commandIndex: CommandIndex = options.commands
+		const commandIndex: NameIndex = options.commands
 			? buildCommandIndex(options.commands)
 			: {
 				names: new Set(),

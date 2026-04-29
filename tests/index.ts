@@ -15,4 +15,5 @@ describe('cleye', () => {
 	import('./specs/find-closest.ts');
 	import('./specs/parse-parameters.ts');
 	import('./specs/promise-helpers.ts');
+	import('./specs/build-name-index.ts');
 });
