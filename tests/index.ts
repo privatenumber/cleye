@@ -12,4 +12,7 @@ describe('cleye', () => {
 	import('./specs/integration.ts');
 	import('./specs/formats.ts');
 	import('./specs/camel-case.ts');
+	import('./specs/find-closest.ts');
+	import('./specs/parse-parameters.ts');
+	import('./specs/promise-helpers.ts');
 });

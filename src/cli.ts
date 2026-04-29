@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { typeFlag } from 'type-flag';
-import { distance } from 'fastest-levenshtein';
 import type {
 	CallbackFunction,
 	CliOptions,
@@ -14,7 +13,10 @@ import type {
 import { defaultHelp } from './render/default-help.ts';
 import { render } from './render/render.ts';
 import { autoFlagLongHelp, autoFlagShortHelp, autoFlagVersion } from './utils/auto-flags.ts';
-import { camelCase } from './utils/convert-case.ts';
+import { isThenable, isModuleWithDefault } from './utils/promise-helpers.ts';
+import { findClosest } from './utils/find-closest.ts';
+import { parseParameters, checkDuplicateParameters, type ParsedParameter } from './utils/parse-parameters.ts';
+import { AUTO_FLAG, END_OF_FLAGS } from './utils/constants.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
 const { stringify } = JSON;
@@ -37,86 +39,6 @@ export class CleyeExit extends Error {
 		super(`cleye exited with code ${code} (${reason})`);
 		this.code = code;
 		this.reason = reason;
-	}
-}
-
-const specialCharactersPattern = /[|\\{}()[\]^$+*?.]/;
-
-type ParsedParameter = {
-	name: string;
-	camelCaseName: string;
-	required: boolean;
-	spread: boolean;
-};
-
-function parseParameters(parameters: string[]) {
-	const parsedParameters: ParsedParameter[] = [];
-
-	let hasOptional: string | undefined;
-	let hasSpread: string | undefined;
-
-	for (const parameter of parameters) {
-		if (hasSpread) {
-			throw new Error(`Invalid parameter: Spread parameter ${stringify(hasSpread)} must be last`);
-		}
-
-		const firstCharacter = parameter[0];
-		const lastCharacter = parameter.at(-1);
-
-		let required: boolean | undefined;
-		if (firstCharacter === '<' && lastCharacter === '>') {
-			required = true;
-
-			if (hasOptional) {
-				throw new Error(`Invalid parameter: Required parameter ${stringify(parameter)} cannot come after optional parameter ${stringify(hasOptional)}`);
-			}
-		}
-
-		if (firstCharacter === '[' && lastCharacter === ']') {
-			required = false;
-			hasOptional = parameter;
-		}
-
-		if (required === undefined) {
-			throw new Error(`Invalid parameter: ${stringify(parameter)}. Must be wrapped in <> (required parameter) or [] (optional parameter)`);
-		}
-
-		let name = parameter.slice(1, -1);
-
-		const spread = name.slice(-3) === '...';
-
-		if (spread) {
-			hasSpread = parameter;
-			name = name.slice(0, -3);
-		}
-
-		const invalidCharacter = name.match(specialCharactersPattern);
-		if (invalidCharacter) {
-			throw new Error(`Invalid parameter: ${stringify(parameter)}. Invalid character found ${stringify(invalidCharacter[0])}`);
-		}
-
-		parsedParameters.push({
-			name,
-			camelCaseName: camelCase(name),
-			required,
-			spread,
-		});
-	}
-
-	return parsedParameters;
-}
-
-function checkDuplicateParameters(parameters: ParsedParameter[]): void {
-	const seen = new Map<string, string>();
-	for (const { name, camelCaseName } of parameters) {
-		const existing = seen.get(camelCaseName);
-		if (existing !== undefined) {
-			if (existing === name) {
-				throw new Error(`Invalid parameter: ${stringify(name)} is used more than once`);
-			}
-			throw new Error(`Invalid parameter: ${stringify(name)} collides with ${stringify(existing)} (both map to ${stringify(camelCaseName)})`);
-		}
-		seen.set(camelCaseName, name);
 	}
 }
 
@@ -181,51 +103,6 @@ const indexFlags = (flags: Record<string, unknown>): NameIndex => {
 	};
 };
 
-/**
- * Closest-match search aware of canonical-vs-alias status. On a distance tie,
- * prefers the canonical name; when the winner is an alias, surfaces the
- * canonical via `aliasFor` so callers can build "Did you mean X (alias for Y)?"
- * messages. When `aliases` is empty, behaves as a plain closest-match search.
- */
-const findClosest = (
-	unknown: string,
-	names: Iterable<string>,
-	aliases: Map<string, string>,
-): { name: string;
-	aliasFor?: string; } | undefined => {
-	if (unknown.length < 3) {
-		return undefined;
-	}
-	let best: { name: string;
-		distance: number;
-		isAlias: boolean; } | undefined;
-	for (const name of names) {
-		const candidateDistance = distance(unknown, name);
-		if (candidateDistance > 2) {
-			continue;
-		}
-		const isAlias = aliases.has(name);
-		if (
-			!best
-			|| candidateDistance < best.distance
-			|| (candidateDistance === best.distance && best.isAlias && !isAlias)
-		) {
-			best = {
-				name,
-				distance: candidateDistance,
-				isAlias,
-			};
-		}
-	}
-	if (!best) {
-		return undefined;
-	}
-	return {
-		name: best.name,
-		aliasFor: best.isAlias ? aliases.get(best.name) : undefined,
-	};
-};
-
 const handleUnknownFlags = (
 	unknownFlags: Record<string, unknown>,
 	flagIndex: NameIndex,
@@ -255,21 +132,6 @@ const getCommandHandler = (entry: CommandEntry): ((...arguments_: unknown[]) => 
 	}
 	return entry.loader;
 };
-
-const isThenable = (value: unknown): value is PromiseLike<unknown> => (
-	!!value
-	&& (typeof value === 'object' || typeof value === 'function')
-	&& typeof (value as { then?: unknown }).then === 'function'
-);
-
-const isModuleWithDefault = (
-	value: unknown,
-): value is { default: (...arguments_: unknown[]) => unknown } => (
-	!!value
-	&& typeof value === 'object'
-	&& 'default' in value
-	&& typeof (value as { default: unknown }).default === 'function'
-);
 
 type CommandIndex = {
 	names: Set<string>;
@@ -396,25 +258,25 @@ function cli<
 		// only fires for injected flags — if the user defined `version`, `help`,
 		// or `h` themselves (as a flag name OR an alias), cleye stays out of
 		// the way.
-		const injectedFlags = new Set<'version' | 'help' | 'h'>();
+		const injectedFlags = new Set<typeof AUTO_FLAG[keyof typeof AUTO_FLAG]>();
 		const userFlagNames = new Set(indexFlags(flags).names);
 
-		if (options.version && !userFlagNames.has('version')) {
-			flags.version = autoFlagVersion;
-			injectedFlags.add('version');
+		if (options.version && !userFlagNames.has(AUTO_FLAG.version)) {
+			flags[AUTO_FLAG.version] = autoFlagVersion;
+			injectedFlags.add(AUTO_FLAG.version);
 		}
 
 		const { help } = options;
 		const isHelpEnabled = helpEnabled(help);
 
-		if (isHelpEnabled && !userFlagNames.has('h')) {
-			flags.h = autoFlagShortHelp;
-			injectedFlags.add('h');
+		if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.helpShort)) {
+			flags[AUTO_FLAG.helpShort] = autoFlagShortHelp;
+			injectedFlags.add(AUTO_FLAG.helpShort);
 		}
 
-		if (isHelpEnabled && !userFlagNames.has('help')) {
-			flags.help = autoFlagLongHelp;
-			injectedFlags.add('help');
+		if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.help)) {
+			flags[AUTO_FLAG.help] = autoFlagLongHelp;
+			injectedFlags.add(AUTO_FLAG.help);
 		}
 
 		const parsed = typeFlag(
@@ -442,7 +304,7 @@ function cli<
 		};
 
 		if (
-			injectedFlags.has('version')
+			injectedFlags.has(AUTO_FLAG.version)
 		&& parsed.flags.version === true
 		) {
 			showVersion();
@@ -473,13 +335,13 @@ function cli<
 
 		const parsedFlags = parsed.flags as Record<string, unknown>;
 
-		if (injectedFlags.has('help') && parsedFlags.help === true) {
+		if (injectedFlags.has(AUTO_FLAG.help) && parsedFlags.help === true) {
 		// --help wins over -h when both are present (long form is more informative)
 			showHelp(undefined, 'long');
 			throw new CleyeExit(0, 'help');
 		}
 
-		if (injectedFlags.has('h') && parsedFlags.h === true) {
+		if (injectedFlags.has(AUTO_FLAG.helpShort) && parsedFlags.h === true) {
 			showHelp(undefined, 'short');
 			throw new CleyeExit(0, 'help');
 		}
@@ -494,7 +356,7 @@ function cli<
 		if (options.parameters) {
 			let parameters = options.parameters as string[];
 			let cliArguments = parsed._ as string[];
-			const hasEof = parameters.indexOf('--');
+			const hasEof = parameters.indexOf(END_OF_FLAGS);
 			const hasEofSplit = hasEof !== -1 && hasEof < parameters.length - 1;
 			const mapping: Record<string, string | string[]> = Object.create(null);
 
@@ -503,7 +365,7 @@ function cli<
 			if (hasEofSplit) {
 				eofParameters = parameters.slice(hasEof + 1);
 				parameters = parameters.slice(0, hasEof);
-				eofArguments = parsed._['--'];
+				eofArguments = parsed._[END_OF_FLAGS];
 				cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
 			}
 
