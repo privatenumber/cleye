@@ -1,4 +1,49 @@
-import { distance } from 'fastest-levenshtein';
+/**
+ * Levenshtein distance, capped at `maxDistance`. Returns `Infinity` for any
+ * pair whose edit distance exceeds `maxDistance` — callers can use a single
+ * `result > maxDistance` check without worrying whether they got an
+ * early-exit sentinel or a true count.
+ *
+ * Two short-circuits avoid wasted work:
+ *   1. If the length difference alone already exceeds `maxDistance`, no edit
+ *      sequence can bridge them — bail before allocating the matrix.
+ *   2. If every cell in a row exceeds `maxDistance`, no extension can shrink
+ *      it below — bail with `Infinity`. (A surviving low-cost diagonal can
+ *      still let the full matrix run; the post-loop check below catches that.)
+ */
+export const getDistance = (a: string, b: string, maxDistance: number): number => {
+	if (a === b) {
+		return 0;
+	}
+	if (Math.abs(a.length - b.length) > maxDistance) {
+		return Infinity;
+	}
+	const aLength = a.length;
+	const bLength = b.length;
+	let previous = Array.from({ length: bLength + 1 }, (_, index) => index);
+	let current = Array.from<number>({ length: bLength + 1 });
+	for (let i = 1; i <= aLength; i += 1) {
+		current[0] = i;
+		let rowMin = i;
+		for (let j = 1; j <= bLength; j += 1) {
+			const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+			current[j] = Math.min(
+				current[j - 1] + 1,
+				previous[j] + 1,
+				previous[j - 1] + cost,
+			);
+			if (current[j] < rowMin) {
+				rowMin = current[j];
+			}
+		}
+		if (rowMin > maxDistance) {
+			return Infinity;
+		}
+		[previous, current] = [current, previous];
+	}
+	const result = previous[bLength];
+	return result > maxDistance ? Infinity : result;
+};
 
 /**
  * Closest-match search aware of canonical-vs-alias status. On a distance tie,
@@ -22,7 +67,7 @@ export const findClosest = (
 		distance: number;
 		isAlias: boolean; } | undefined;
 	for (const name of names) {
-		const candidateDistance = distance(unknown, name);
+		const candidateDistance = getDistance(unknown, name, 2);
 		if (candidateDistance > 2) {
 			continue;
 		}
