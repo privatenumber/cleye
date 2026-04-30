@@ -1,98 +1,26 @@
-import { flagNameToKebab } from 'type-flag';
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
 import { autoFlagLongHelp, autoFlagShortHelp, autoFlagVersion } from '../utils/auto-flags.ts';
 import {
-	type Atoms, type Flag, type Node,
+	type Components, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
 	cmds as defaultCmds, flags as defaultFlags,
-} from './atoms.ts';
-
-const inferFlagArgument = (typeValue: unknown): string | undefined => {
-	if (typeValue === Boolean) {
-		return undefined;
-	}
-	if (Array.isArray(typeValue)) {
-		return inferFlagArgument(typeValue[0]);
-	}
-	if (typeValue === String) {
-		return 'string';
-	}
-	if (typeValue === Number) {
-		return 'number';
-	}
-	return 'value';
-};
-
-const flagsToAtomList = (rawFlags: Flags): Flag[] => {
-	const names = Object.keys(rawFlags).sort((a, b) => (a < b ? -1 : (a > b ? 1 : 0)));
-	return names.map((name) => {
-		const config = rawFlags[name];
-		const cfg = (
-			config !== null
-			&& typeof config === 'object'
-			&& !Array.isArray(config)
-			&& typeof config !== 'function'
-		)
-			? config as Record<string, unknown>
-			: { type: config };
-
-		const type = cfg.type ?? config;
-
-		let argument: string | undefined;
-		if ('placeholder' in cfg && typeof cfg.placeholder === 'string') {
-			argument = cfg.placeholder.replaceAll(/^<|>$/g, '');
-		} else {
-			argument = inferFlagArgument(type);
-		}
-
-		let description = typeof cfg.description === 'string' ? cfg.description : '';
-		if ('default' in cfg) {
-			let defaultValue = cfg.default;
-			if (typeof defaultValue === 'function') {
-				defaultValue = (defaultValue as () => unknown)();
-			}
-			if (defaultValue !== undefined) {
-				description += ` (default: ${JSON.stringify(defaultValue)})`;
-			}
-		}
-
-		const aliasRaw = cfg.alias;
-		const aliasShort = typeof aliasRaw === 'string' && aliasRaw
-			? aliasRaw
-			: (Array.isArray(aliasRaw) && typeof aliasRaw[0] === 'string' ? aliasRaw[0] : undefined);
-
-		// Single-char flag names are short flags (-x), not long flags (--x)
-		if (name.length === 1) {
-			return {
-				short: name,
-				arg: argument,
-				description: description || undefined,
-			} satisfies Flag;
-		}
-
-		return {
-			long: `--${flagNameToKebab(name)}`,
-			short: aliasShort,
-			arg: argument,
-			description: description || undefined,
-		} satisfies Flag;
-	});
-};
+} from './components.ts';
+import { flagsToComponentList } from './flag-to-component.ts';
 
 /**
- * Build a `defaultHelp` function bound to a specific atom set. Called once
- * by `cleye/help` (with the default `.length`-based atoms) and once by
- * `cleye/help/responsive` (with `stringWidth`-based atoms).
+ * Build a `defaultHelp` function bound to a specific component set. Called
+ * once by `cleye/help` (with the default `.length`-based components) and
+ * once by `cleye/help/responsive` (with `stringWidth`-based components).
  */
 export const createDefaultHelp = (
-	atoms: Pick<Atoms, 'p' | 'usage' | 'section' | 'cmds' | 'flags'>,
+	components: Pick<Components, 'p' | 'usage' | 'section' | 'cmds' | 'flags'>,
 ) => (
 	options: CliOptions,
 	options_: { form?: HelpForm } = {},
 ): Node[] => {
 	const {
-		p, usage, section, cmds, flags: flagsAtom,
-	} = atoms;
+		p, usage, section, cmds, flags: flagsComponent,
+	} = components;
 	const form = options_.form ?? 'long';
 	const isShort = form === 'short';
 	const help = typeof options.help === 'object' ? options.help : undefined;
@@ -209,15 +137,15 @@ export const createDefaultHelp = (
 	// Short form: strip default-value annotations from descriptions so each
 	// flag fits on one line. We build a pruned copy of the flag list.
 	const flagList = isShort
-		? flagsToAtomList(allFlags).map(flag => ({
+		? flagsToComponentList(allFlags).map(flag => ({
 			...flag,
-			// Drop the "(default: ...)" suffix appended during flagsToAtomList
+			// Drop the "(default: ...)" suffix appended during flagsToComponentList
 			description: flag.description?.replace(/ \(default: .*\)$/, '') || flag.description,
 		}))
-		: flagsToAtomList(allFlags);
+		: flagsToComponentList(allFlags);
 
 	if (flagList.length > 0) {
-		nodes.push(section('Flags', flagsAtom(flagList)));
+		nodes.push(section('Flags', flagsComponent(flagList)));
 	}
 
 	// ── Examples (long form only) ─────────────────────────────────────────

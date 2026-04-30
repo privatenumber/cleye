@@ -25,4 +25,4 @@ Examples are numbered by reading order. Each one introduces **one new concept** 
 
 ## Custom help layouts
 
-- [`10-tsc`](./10-tsc/index.ts) — building a complex help page from scratch with the `cleye/help` atom API. Reach for this when declarative help (`04-help`) isn't shaped right. Reimplements the TypeScript compiler's intricate help.
+- [`10-tsc`](./10-tsc/index.ts) — building a complex help page from scratch with the `cleye/help` component API. Reach for this when declarative help (`04-help`) isn't shaped right. Reimplements the TypeScript compiler's intricate help.

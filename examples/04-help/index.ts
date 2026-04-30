@@ -3,7 +3,7 @@
  *
  * cleye auto-injects `--help` (and `-h` for a shorter form) plus `--version`
  * when you set `options.version`. Everything you declare on `options.help`
- * (description, usage, examples) renders into that auto-help. No atoms,
+ * (description, usage, examples) renders into that auto-help. No components,
  * no custom rendering — just metadata.
  *
  * Vehicle: a tiny `cheat`-style — a CLI whose value really IS its help page.

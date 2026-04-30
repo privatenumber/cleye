@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'manten';
 import { render } from '../../../src/render/render.ts';
-import type { Node } from '../../../src/render/types.ts';
+import type { Node } from '../../../src/render/components.ts';
 
 describe('render()', () => {
 	test('empty invocation returns empty string', () => {

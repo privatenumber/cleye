@@ -12,13 +12,13 @@ import {
 	flagsInline,
 	flagsHanging,
 	type Flag,
-} from '../../../src/render/atoms.ts';
+} from '../../../src/render/components.ts';
 import { cmds as responsiveCmds } from '../../../src/help/responsive.ts';
 import { withColumns } from '../../utils/with-columns.ts';
 
 process.stdout.columns = 80;
 
-describe('atoms', () => {
+describe('components', () => {
 	describe('p', () => {
 		test('short text returns as-is', () => {
 			const node = p('short');

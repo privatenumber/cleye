@@ -1,14 +1,14 @@
 /**
- * Building a complex help page from scratch — the `cleye/help` atom API.
+ * Building a complex help page from scratch — the `cleye/help` component API.
  *
  * The declarative `help: { description, examples }` from 04-help is enough
  * for most CLIs. When it isn't — when you need grouped flags, custom
  * sections, ANSI-styled headings, or example-led layouts — switch to the
- * atom API: compose `usage()`, `section()`, `p()`, `flags()`, etc. into a
- * help document yourself, then return the rendered string from `help.render`.
+ * component API: compose `usage()`, `section()`, `p()`, `flags()`, etc. into
+ * a help document yourself, then return the rendered string from `help.render`.
  *
  * tsc is the case study because its real `--help` is intricate enough to
- * make the atoms earn their keep: usage → common commands paragraph →
+ * make the components earn their keep: usage → common commands paragraph →
  * grouped flag sections, each with ANSI-styled long names.
  *
  * Reference: https://github.com/microsoft/TypeScript
@@ -252,8 +252,8 @@ await cli({
 	},
 
 	help: {
-		// `help.render` accepts an array of atoms — cleye joins them with
-		// blank lines. No need to call `render()` ourselves.
+		// `help.render` accepts an array of components — cleye joins them
+		// with blank lines. No need to call `render()` ourselves.
 		render: () => [
 			p('tsc: The TypeScript Compiler - Version 0.0.0'),
 			usage('tsc', '[options] [file...]'),

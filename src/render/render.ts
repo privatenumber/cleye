@@ -1,4 +1,4 @@
-import type { Node } from './types.ts';
+import type { Node } from './components.ts';
 
 /**
  * Compose nodes into a rendered string. Calls each node's render method

@@ -3,7 +3,6 @@ import { typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
 	CliOptions,
-	ExitReason,
 	HelpForm,
 	ParsedArgv,
 	HelpOptions,
@@ -11,34 +10,23 @@ import type {
 } from './types.ts';
 import { defaultHelp } from './render/default-help.ts';
 import { render } from './render/render.ts';
-import { autoFlagLongHelp, autoFlagShortHelp, autoFlagVersion } from './utils/auto-flags.ts';
+import {
+	AUTO_FLAG,
+	autoFlagLongHelp,
+	autoFlagShortHelp,
+	autoFlagVersion,
+} from './utils/auto-flags.ts';
+import { CleyeExit } from './utils/cleye-exit.ts';
 import { isThenable, isModuleWithDefault } from './utils/promise-helpers.ts';
 import { findClosest } from './utils/find-closest.ts';
-import { parseParameters, checkDuplicateParameters, type ParsedParameter } from './utils/parse-parameters.ts';
-import { AUTO_FLAG, END_OF_FLAGS } from './utils/constants.ts';
-import { buildNameIndex, type NameIndex } from './utils/build-name-index.ts';
+import {
+	END_OF_FLAGS,
+	parseParameters,
+	checkDuplicateParameters,
+	type ParsedParameter,
+} from './utils/parse-parameters.ts';
+import { buildNameIndex, getFlagAlias, type NameIndex } from './utils/build-name-index.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
-
-/**
- * Thrown by `cli()` at every internal exit point — `--help`, `--version`,
- * missing required parameters, `strictFlags`, `strictCommands`, and the sync
- * no-command-match path. By default cli() catches this and calls
- * `process.exit(code)`; setting `throwOnExit: true` lets it propagate so
- * library users can catch and decide how the host process responds.
- */
-export class CleyeExit extends Error {
-	name = 'CleyeExit' as const;
-
-	code: number;
-
-	reason: ExitReason;
-
-	constructor(code: number, reason: ExitReason) {
-		super(`cleye exited with code ${code} (${reason})`);
-		this.code = code;
-		this.reason = reason;
-	}
-}
 
 const mapParametersToArguments = (
 	mapping: Record<string, string | string[]>,
@@ -111,13 +99,6 @@ const applyParameters = (
 };
 
 type InjectedFlag = typeof AUTO_FLAG[keyof typeof AUTO_FLAG];
-
-const getFlagAlias = (config: unknown): string | string[] | undefined => {
-	if (config && typeof config === 'object' && 'alias' in config) {
-		return (config as { alias?: string | string[] }).alias;
-	}
-	return undefined;
-};
 
 /**
  * Auto-inject `--version`, `--help`, and `-h` into the user's flag set —

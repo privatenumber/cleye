@@ -873,11 +873,11 @@ _Cleye_ uses all information provided to generate rich help documentation. The m
 
 ### Help customization
 
-_Cleye_'s default help output is built by composing atoms — small rendering units exported from `cleye/help`. To customize the output, pass a `help.render` function that returns an array of atoms (cleye joins them with blank lines). A single atom or a pre-rendered string also work.
+_Cleye_'s default help output is built by composing components — small rendering units exported from `cleye/help`. To customize the output, pass a `help.render` function that returns an array of components (cleye joins them with blank lines). A single component or a pre-rendered string also work.
 
 #### Tweak the default
 
-The most common need is to append content or prepend a header. `defaultHelp` returns an array of atoms — spread it and add your own:
+The most common need is to append content or prepend a header. `defaultHelp` returns an array of components — spread it and add your own:
 
 ```ts
 import { cli } from 'cleye'
@@ -897,7 +897,7 @@ await cli({
 
 #### Fully custom layout
 
-Build the output entirely from atoms imported from `cleye/help`:
+Build the output entirely from components imported from `cleye/help`:
 
 ```ts
 import { cli } from 'cleye'
@@ -946,9 +946,9 @@ await cli({
 })
 ```
 
-#### Available atoms (`cleye/help`)
+#### Available components (`cleye/help`)
 
-| Atom | Signature | Description |
+| Component | Signature | Description |
 | - | - | - |
 | `p` | `p(text)` | Paragraph; wraps to terminal width |
 | `usage` | `usage(name, pattern)` | Styled `Usage: name pattern` line |
@@ -958,8 +958,8 @@ await cli({
 | `flagsInline` | `flagsInline(list)` | Flag table, inline layout |
 | `flagsHanging` | `flagsHanging(list)` | Flag table, hanging layout |
 | `footer` | `footer(text)` | Literal trailing text |
-| `render` | `render(...nodes)` | Joins nodes into a string. cleye does this for you when `help.render` returns atoms; export is for testing or manual rendering. |
-| `defaultHelp` | `defaultHelp(options, { form? })` | Returns the default help document as an atom array — spread it to extend |
+| `render` | `render(...nodes)` | Joins nodes into a string. cleye does this for you when `help.render` returns components; export is for testing or manual rendering. |
+| `defaultHelp` | `defaultHelp(options, { form? })` | Returns the default help document as a component array — spread it to extend |
 
 ## API
 

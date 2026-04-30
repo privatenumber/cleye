@@ -1,14 +1,14 @@
 import stringWidth from 'string-width';
-import { createAtoms } from '../render/atoms.ts';
+import { createComponents } from '../render/components.ts';
 import { createDefaultHelp } from '../render/default-help.ts';
 
-const atoms = createAtoms({ measureString: stringWidth });
+const components = createComponents({ measureString: stringWidth });
 
 export const {
 	p, usage, footer, section, cmds, flagsInline, flagsHanging, flags,
-} = atoms;
+} = components;
 
-export const defaultHelp = createDefaultHelp(atoms);
+export const defaultHelp = createDefaultHelp(components);
 
 export { render } from '../render/render.ts';
-export type { Flag, Node } from '../render/atoms.ts';
+export type { Flag, Node } from '../render/components.ts';

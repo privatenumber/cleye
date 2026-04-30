@@ -21,6 +21,19 @@ export type NameIndex = {
 	aliases: Map<string, string>;
 };
 
+/**
+ * Standard alias-extractor for flag config entries: returns the `alias` field
+ * if the entry is an object that declares one, else `undefined`. Used as the
+ * `getAlias` argument to `buildNameIndex` for both auto-flag injection and
+ * strict-mode unknown-flag suggestion.
+ */
+export const getFlagAlias = (config: unknown): string | string[] | undefined => {
+	if (config && typeof config === 'object' && 'alias' in config) {
+		return (config as { alias?: string | string[] }).alias;
+	}
+	return undefined;
+};
+
 export const buildNameIndex = <Entry>(
 	entries: Record<string, Entry>,
 	getAlias: (entry: Entry) => string | string[] | undefined,

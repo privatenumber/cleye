@@ -1,5 +1,11 @@
 import { camelCase } from './convert-case.ts';
 
+/**
+ * The end-of-flags sentinel in `options.parameters`. Tokens after `--` map
+ * onto `parsed._['--']` instead of the main positional list.
+ */
+export const END_OF_FLAGS = '--';
+
 const specialCharactersPattern = /[|\\{}()[\]^$+*?.]/;
 
 export type ParsedParameter = {

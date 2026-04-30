@@ -1,7 +1,18 @@
 import { bold, cyan, green } from 'ansis';
-import type { Node } from './types.ts';
 
-export type { Node };
+/**
+ * A help-document node. Inspectable as data (debuggable via console.log)
+ * AND callable for rendering (open-ended dispatch via .render method).
+ *
+ * `kind` is informational only — used for debugging and optional filtering.
+ * Dispatch is via `.render()`, not a switch on `kind`, so users can add
+ * their own components by returning any object matching this shape.
+ */
+export type Node = {
+	readonly kind: string;
+	render: () => string;
+	readonly [key: string]: unknown;
+};
 
 /**
  * MVP shape for a command-line flag. Later phases may extend with
@@ -24,7 +35,7 @@ const getWidth = (): number => process.stdout.columns ?? 80;
  */
 const INLINE_THRESHOLD = 60;
 
-export type CreateAtomsOptions = {
+export type CreateComponentsOptions = {
 
 	/**
 	 * Function used to compute the visible width of a string.
@@ -38,9 +49,9 @@ export type CreateAtomsOptions = {
 };
 
 /**
- * Build an atom set parameterized by a string-measure function.
+ * Build a component set parameterized by a string-measure function.
  */
-export const createAtoms = ({ measureString }: CreateAtomsOptions) => {
+export const createComponents = ({ measureString }: CreateComponentsOptions) => {
 	const wrap = (text: string, width: number, contIndent: string): string => {
 		const words = text.split(' ');
 		const lines: string[] = [];
@@ -194,10 +205,10 @@ export const createAtoms = ({ measureString }: CreateAtomsOptions) => {
 	};
 };
 
-export type Atoms = ReturnType<typeof createAtoms>;
+export type Components = ReturnType<typeof createComponents>;
 
-const defaultAtoms = createAtoms({ measureString: text => text.length });
+const defaultComponents = createComponents({ measureString: text => text.length });
 
 export const {
 	p, usage, footer, section, cmds, flagsInline, flagsHanging, flags,
-} = defaultAtoms;
+} = defaultComponents;

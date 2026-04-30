@@ -87,7 +87,7 @@ The `MaybePromise` type export is also removed.
 
 ### Help-rendering API rewritten
 
-This is the largest change. The old `Renderers`-class pipeline is replaced by a composable atom API.
+This is the largest change. The old `Renderers`-class pipeline is replaced by a composable component API.
 
 **Removed exports:**
 
@@ -99,7 +99,7 @@ This is the largest change. The old `Renderers`-class pipeline is replaced by a 
 
 **Added:**
 
-- `cleye/help` subpath — `render`, `defaultHelp`, and atoms: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`
+- `cleye/help` subpath — `render`, `defaultHelp`, and components: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`
 - `cleye/formats` subpath — `oneOf`, `commaList`, `integer`, `float`, `range`, `url`
 
 **`help.render` callback signature changed:**
