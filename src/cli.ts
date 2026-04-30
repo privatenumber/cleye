@@ -3,7 +3,6 @@ import { typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
 	CliOptions,
-	CommandEntry,
 	ExitReason,
 	HelpForm,
 	ParsedArgv,
@@ -19,8 +18,6 @@ import { parseParameters, checkDuplicateParameters, type ParsedParameter } from 
 import { AUTO_FLAG, END_OF_FLAGS } from './utils/constants.ts';
 import { buildNameIndex, type NameIndex } from './utils/build-name-index.ts';
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
-
-const { stringify } = JSON;
 
 /**
  * Thrown by `cli()` at every internal exit point — `--help`, `--version`,
@@ -43,12 +40,12 @@ export class CleyeExit extends Error {
 	}
 }
 
-function mapParametersToArguments(
+const mapParametersToArguments = (
 	mapping: Record<string, string | string[]>,
 	parameters: ParsedParameter[],
 	cliArguments: string[],
 	showHelp: () => void,
-) {
+): void => {
 	for (let i = 0; i < parameters.length; i += 1) {
 		const {
 			name, camelCaseName, required, spread,
@@ -64,83 +61,203 @@ function mapParametersToArguments(
 			required
 			&& (value === undefined || (spread && value.length === 0))
 		) {
-			console.error(`Error: Missing required parameter ${stringify(name)}\n`);
+			console.error(`Error: Missing required parameter "${name}"\n`);
 			showHelp();
 			throw new CleyeExit(1, 'missing-required-parameter');
 		}
 
 		mapping[camelCaseName] = value;
 	}
-}
+};
 
-function helpEnabled(help: false | undefined | HelpOptions): help is (HelpOptions | undefined) {
-	return help !== false;
-}
+type ApplyParametersTarget = { _: string[] & { '--': string[] } & Record<string, unknown> };
 
-const indexFlags = (flags: Record<string, unknown>): NameIndex => buildNameIndex(
-	flags,
-	(config) => {
-		if (config && typeof config === 'object' && 'alias' in config) {
-			return (config as { alias?: string | string[] }).alias;
-		}
-		return undefined;
-	},
-);
-
-const handleUnknownFlags = (
-	unknownFlags: Record<string, unknown>,
-	flagIndex: NameIndex,
+/**
+ * Bind positional argv tokens onto `parsed._` using the user's parameter
+ * declarations, including the `--` end-of-flags split when present. Validates
+ * (parse-time) that no two declared parameter names collide on camelCase, then
+ * (map-time) that required parameters got values.
+ */
+const applyParameters = (
+	rawParameters: string[],
+	parsed: ApplyParametersTarget,
+	showHelp: () => void,
 ): void => {
-	const unknownFlagNames = Object.keys(unknownFlags);
-	if (unknownFlagNames.length === 0) {
-		return;
+	const hasEof = rawParameters.indexOf(END_OF_FLAGS);
+	const hasEofSplit = hasEof !== -1 && hasEof < rawParameters.length - 1;
+
+	let parameters = rawParameters;
+	let cliArguments: string[] = parsed._;
+	let eofArguments: string[] = [];
+	let eofParameters: string[] = [];
+	if (hasEofSplit) {
+		eofParameters = parameters.slice(hasEof + 1);
+		parameters = parameters.slice(0, hasEof);
+		eofArguments = parsed._[END_OF_FLAGS];
+		cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
 	}
 
-	for (const flag of unknownFlagNames) {
-		const match = findClosest(flag, flagIndex.names, flagIndex.aliases);
-		let suggestion = '';
-		if (match) {
-			suggestion = match.aliasFor
-				? ` (Did you mean -${match.name} (alias for --${match.aliasFor})?)`
-				: ` (Did you mean --${match.name}?)`;
+	const preEofParsed = parseParameters(parameters);
+	const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
+	checkDuplicateParameters(hasEofSplit ? [...preEofParsed, ...eofParsed] : preEofParsed);
+
+	const mapping: Record<string, string | string[]> = Object.create(null);
+	mapParametersToArguments(mapping, preEofParsed, cliArguments, showHelp);
+	if (hasEofSplit) {
+		mapParametersToArguments(mapping, eofParsed, eofArguments, showHelp);
+	}
+
+	Object.assign(parsed._, mapping);
+};
+
+type InjectedFlag = typeof AUTO_FLAG[keyof typeof AUTO_FLAG];
+
+const getFlagAlias = (config: unknown): string | string[] | undefined => {
+	if (config && typeof config === 'object' && 'alias' in config) {
+		return (config as { alias?: string | string[] }).alias;
+	}
+	return undefined;
+};
+
+/**
+ * Auto-inject `--version`, `--help`, and `-h` into the user's flag set —
+ * but only if the user hasn't claimed those names themselves. Mutates
+ * `flags` in place; returns the set of names cleye actually injected so
+ * callers can distinguish "user passed --help" from "cleye observed --help".
+ */
+const injectAutoFlags = (
+	flags: Record<string, unknown>,
+	options: CliOptions,
+): Set<InjectedFlag> => {
+	const injectedFlags = new Set<InjectedFlag>();
+	const userFlagNames = buildNameIndex(flags, getFlagAlias).names;
+
+	if (options.version && !userFlagNames.has(AUTO_FLAG.version)) {
+		flags[AUTO_FLAG.version] = autoFlagVersion;
+		injectedFlags.add(AUTO_FLAG.version);
+	}
+
+	const isHelpEnabled = options.help !== false;
+	if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.helpShort)) {
+		flags[AUTO_FLAG.helpShort] = autoFlagShortHelp;
+		injectedFlags.add(AUTO_FLAG.helpShort);
+	}
+	if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.help)) {
+		flags[AUTO_FLAG.help] = autoFlagLongHelp;
+		injectedFlags.add(AUTO_FLAG.help);
+	}
+
+	return injectedFlags;
+};
+
+// Shared sentinel so commandless cli() invocations don't allocate a fresh
+// empty Set + Map every call. Treat as read-only — the rest of the code only
+// reads `commandIndex.names` (size + has).
+const EMPTY_NAME_INDEX: NameIndex = {
+	names: new Set(),
+	aliases: new Map(),
+};
+
+type Handler = (...arguments_: unknown[]) => unknown;
+
+type MatchedCommand = {
+	name: string;
+	handler: Handler;
+};
+
+/**
+ * Build the `runCommand` closure exposed on `parsed` plus a `hasBeenCalled`
+ * probe used by the callback path to skip auto-invoke when the user already
+ * invoked it themselves (preserves fire-and-forget semantics for unhandled
+ * rejections in user code).
+ *
+ * Repeated calls to `run` return the cached result (idempotent); the
+ * second-and-later `handlerArguments` are silently ignored. When no command
+ * matched, returns a no-op that yields `undefined` synchronously so
+ * `await parsed.runCommand()` is harmless.
+ *
+ * The handler invocation runs inside an AsyncLocalStorage context so nested
+ * `cli()` calls in the handler see the parent's argv and inherit options.
+ * Handlers returning a `{ default: fn }` shape (the dynamic-import / loader
+ * pattern) get auto-unwrapped, both sync and async.
+ */
+const createRunCommand = (
+	matchedCommand: MatchedCommand | undefined,
+	argv: string[],
+	resolvedOptions: CliOptions,
+): {
+	runCommand: Handler;
+	runCommandHasBeenCalled: () => boolean;
+} => {
+	let runCommandResult: unknown;
+	let runCommandCalled = false;
+
+	const runCommand: Handler = (...handlerArguments) => {
+		if (!matchedCommand) {
+			return undefined;
 		}
-		console.error(`Error: Unknown flag: --${flag}.${suggestion}`);
-	}
-
-	throw new CleyeExit(1, 'unknown-flag');
-};
-
-const getCommandHandler = (entry: CommandEntry): ((...arguments_: unknown[]) => unknown) => {
-	if (typeof entry === 'function') {
-		return entry;
-	}
-	return entry.loader;
-};
-
-const buildCommandIndex = (commands: Record<string, CommandEntry>): NameIndex => buildNameIndex(
-	commands,
-	entry => (typeof entry === 'object' ? entry.alias : undefined),
-	(alias) => {
-		throw new Error(`Duplicate command alias: ${stringify(alias)}`);
-	},
-);
-
-const resolveCommand = (
-	potentialCommand: string,
-	commands: Record<string, CommandEntry>,
-	aliases: Map<string, string>,
-): { name: string;
-	handler: (...arguments_: unknown[]) => unknown; } | undefined => {
-	const resolvedName = potentialCommand in commands
-		? potentialCommand
-		: aliases.get(potentialCommand);
-
-	if (resolvedName) {
-		return {
-			name: resolvedName,
-			handler: getCommandHandler(commands[resolvedName]),
+		if (runCommandCalled) {
+			return runCommandResult;
+		}
+		runCommandCalled = true;
+		const context: CliContext = {
+			name: matchedCommand.name,
+			argv: argv.slice(1),
+			parentOptions: resolvedOptions,
 		};
+
+		runCommandResult = runWithCliContext(context, () => {
+			const handlerReturn = matchedCommand.handler(...handlerArguments);
+			if (isThenable(handlerReturn)) {
+				return handlerReturn.then(awaited => (
+					isModuleWithDefault(awaited)
+						? awaited.default(...handlerArguments)
+						: awaited
+				));
+			}
+			return isModuleWithDefault(handlerReturn)
+				? handlerReturn.default(...handlerArguments)
+				: handlerReturn;
+		});
+
+		return runCommandResult;
+	};
+
+	return {
+		runCommand,
+		runCommandHasBeenCalled: () => runCommandCalled,
+	};
+};
+
+/**
+ * Build the `showHelp` closure exposed on `parsed`. Resolves the user's
+ * custom renderer (if any) or falls back to `defaultHelp`, and joins the
+ * resulting `Node[]` (or accepts a pre-rendered `string`).
+ */
+const createShowHelp = (
+	options: CliOptions,
+	effectiveName: string,
+	flags: Record<string, unknown>,
+	help: false | HelpOptions | undefined,
+) => (helpOptions?: HelpOptions, form: HelpForm = 'long'): void => {
+	const effectiveHelp = helpOptions ?? help;
+	const effectiveOptions = {
+		...options,
+		name: effectiveName,
+		flags,
+		...(helpOptions ? { help: helpOptions } : {}),
+	} as CliOptions;
+	const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
+	const result = renderFunction(effectiveOptions, { form });
+	let output: string;
+	if (typeof result === 'string') {
+		output = result;
+	} else if (Array.isArray(result)) {
+		output = render(...result);
+	} else {
+		output = render(result);
 	}
+	console.log(output);
 };
 
 // Overload: with callback — async, resolves to the callback's return value
@@ -195,6 +312,7 @@ function cli<
 	const rawArgv = argvInput ?? parentContext?.argv ?? process.argv.slice(2);
 	const parentOptions = parentContext?.parentOptions;
 	const throwOnExit = options.throwOnExit ?? parentOptions?.throwOnExit ?? false;
+	const booleanFlagNegation = options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation;
 
 	const handleExit = (error: unknown): never => {
 		if (error instanceof CleyeExit && !throwOnExit) {
@@ -207,11 +325,14 @@ function cli<
 		const effectiveName = options.name ?? parentContext?.name ?? path.basename(process.argv[1] ?? '');
 
 		const commandIndex: NameIndex = options.commands
-			? buildCommandIndex(options.commands)
-			: {
-				names: new Set(),
-				aliases: new Map(),
-			};
+			? buildNameIndex(
+				options.commands,
+				entry => (typeof entry === 'object' ? entry.alias : undefined),
+				(alias) => {
+					throw new Error(`Duplicate command alias: "${alias}"`);
+				},
+			)
+			: EMPTY_NAME_INDEX;
 
 		const argv = rawArgv;
 		let hitCommand = false;
@@ -219,221 +340,134 @@ function cli<
 		// Parse flags
 		const flags = { ...options.flags };
 
-		// Track which flags cleye auto-injected. Auto-version/auto-help logic
-		// only fires for injected flags — if the user defined `version`, `help`,
-		// or `h` themselves (as a flag name OR an alias), cleye stays out of
-		// the way.
-		const injectedFlags = new Set<typeof AUTO_FLAG[keyof typeof AUTO_FLAG]>();
-		const userFlagNames = new Set(indexFlags(flags).names);
-
-		if (options.version && !userFlagNames.has(AUTO_FLAG.version)) {
-			flags[AUTO_FLAG.version] = autoFlagVersion;
-			injectedFlags.add(AUTO_FLAG.version);
-		}
-
+		// Auto-version/auto-help logic only fires for the names cleye actually
+		// injected — if the user claimed `version`, `help`, or `h` (as a name
+		// OR an alias), cleye stays out of the way.
+		const injectedFlags = injectAutoFlags(flags, options);
 		const { help } = options;
-		const isHelpEnabled = helpEnabled(help);
-
-		if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.helpShort)) {
-			flags[AUTO_FLAG.helpShort] = autoFlagShortHelp;
-			injectedFlags.add(AUTO_FLAG.helpShort);
-		}
-
-		if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.help)) {
-			flags[AUTO_FLAG.help] = autoFlagLongHelp;
-			injectedFlags.add(AUTO_FLAG.help);
-		}
 
 		const parsed = typeFlag(
 			flags,
 			argv,
 			{
+				// `hitCommand` flips on the first command-name argument the
+				// parser sees. From then on, every remaining token is preserved
+				// verbatim in argv for the matched command's handler.
 				ignore(type, flagOrArgv, value) {
 					if (hitCommand) {
 						return true;
 					}
-
 					if (type === 'argument' && commandIndex.names.has(flagOrArgv)) {
 						hitCommand = true;
 						return true;
 					}
-
 					return options.ignoreArgv?.(type, flagOrArgv, value);
 				},
-				booleanNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
+				booleanNegation: booleanFlagNegation,
 			},
 		);
 
 		const showVersion = () => {
 			console.log(options.version);
 		};
+		const showHelp = createShowHelp(options, effectiveName, flags, help);
 
-		if (
-			injectedFlags.has(AUTO_FLAG.version)
-		&& parsed.flags.version === true
-		) {
+		// Auto-exits: `--help` wins over `-h` when both are present (long form
+		// is more informative). The throws short-circuit cli(); the outer catch
+		// either calls `process.exit` or rethrows depending on `throwOnExit`.
+		const parsedFlags = parsed.flags as Record<string, unknown>;
+		if (injectedFlags.has(AUTO_FLAG.version) && parsedFlags.version === true) {
 			showVersion();
 			throw new CleyeExit(0, 'version');
 		}
-
-		const showHelp = (helpOptions?: HelpOptions, form: HelpForm = 'long') => {
-			const effectiveHelp = helpOptions ?? help;
-
-			const effectiveOptions = {
-				...options,
-				name: effectiveName,
-				flags,
-				...(helpOptions ? { help: helpOptions } : {}),
-			};
-			const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
-			const result = renderFunction(effectiveOptions, { form });
-			let output: string;
-			if (typeof result === 'string') {
-				output = result;
-			} else if (Array.isArray(result)) {
-				output = render(...result);
-			} else {
-				output = render(result);
-			}
-			console.log(output);
-		};
-
-		const parsedFlags = parsed.flags as Record<string, unknown>;
-
 		if (injectedFlags.has(AUTO_FLAG.help) && parsedFlags.help === true) {
-		// --help wins over -h when both are present (long form is more informative)
 			showHelp(undefined, 'long');
 			throw new CleyeExit(0, 'help');
 		}
-
 		if (injectedFlags.has(AUTO_FLAG.helpShort) && parsedFlags.h === true) {
 			showHelp(undefined, 'short');
 			throw new CleyeExit(0, 'help');
 		}
 
-		// Strict flags
+		// Strict flags: error on any unknown flag, suggesting the closest known
+		// flag/alias by Levenshtein distance ≤ 2.
 		const strictFlags = options.strictFlags ?? parentOptions?.strictFlags;
 		if (strictFlags) {
-			handleUnknownFlags(parsed.unknownFlags, indexFlags(flags));
+			const unknownFlagNames = Object.keys(parsed.unknownFlags);
+			if (unknownFlagNames.length > 0) {
+				const flagIndex = buildNameIndex(flags, getFlagAlias);
+				for (const flag of unknownFlagNames) {
+					const match = findClosest(flag, flagIndex.names, flagIndex.aliases);
+					let suggestion = '';
+					if (match) {
+						suggestion = match.aliasFor
+							? ` (Did you mean -${match.name} (alias for --${match.aliasFor})?)`
+							: ` (Did you mean --${match.name}?)`;
+					}
+					console.error(`Error: Unknown flag: --${flag}.${suggestion}`);
+				}
+				throw new CleyeExit(1, 'unknown-flag');
+			}
 		}
 
-		// Map parameters
 		if (options.parameters) {
-			let parameters = options.parameters as string[];
-			let cliArguments = parsed._ as string[];
-			const hasEof = parameters.indexOf(END_OF_FLAGS);
-			const hasEofSplit = hasEof !== -1 && hasEof < parameters.length - 1;
-			const mapping: Record<string, string | string[]> = Object.create(null);
-
-			let eofArguments: string[] = [];
-			let eofParameters: string[] = [];
-			if (hasEofSplit) {
-				eofParameters = parameters.slice(hasEof + 1);
-				parameters = parameters.slice(0, hasEof);
-				eofArguments = parsed._[END_OF_FLAGS];
-				cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
-			}
-
-			const preEofParsed = parseParameters(parameters);
-			const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
-			checkDuplicateParameters([...preEofParsed, ...eofParsed]);
-
-			mapParametersToArguments(mapping, preEofParsed, cliArguments, showHelp);
-			if (hasEofSplit) {
-				mapParametersToArguments(mapping, eofParsed, eofArguments, showHelp);
-			}
-
-			Object.assign(
-				parsed._,
-				mapping,
+			applyParameters(
+				options.parameters as string[],
+				parsed as unknown as ApplyParametersTarget,
+				showHelp,
 			);
 		}
 
-		let matchedCommand: {
-			name: string;
-			handler: (...arguments_: unknown[]) => unknown;
-		} | undefined;
+		let matchedCommand: MatchedCommand | undefined;
 
 		if (hitCommand && argv.length > 0) {
-			matchedCommand = resolveCommand(argv[0], options.commands!, commandIndex.aliases);
-		}
-
-		const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
-		if (
-			strictCommands
-		&& !matchedCommand
-		&& options.commands
-		&& commandIndex.names.size > 0
-		) {
-			const potentialCommand = (parsed._ as string[])[0];
-			if (potentialCommand) {
-				const match = findClosest(potentialCommand, commandIndex.names, commandIndex.aliases);
-				let suggestion = '';
-				if (match) {
-					suggestion = match.aliasFor
-						? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
-						: ` (Did you mean "${match.name}"?)`;
-				}
-				console.error(`Error: Unknown command: "${potentialCommand}".${suggestion}`);
-				throw new CleyeExit(1, 'unknown-command');
+			const potentialCommand = argv[0];
+			const resolvedName = potentialCommand in options.commands!
+				? potentialCommand
+				: commandIndex.aliases.get(potentialCommand);
+			if (resolvedName) {
+				const entry = options.commands![resolvedName];
+				matchedCommand = {
+					name: resolvedName,
+					handler: typeof entry === 'function' ? entry : entry.loader,
+				};
 			}
 		}
 
-		// runCommand is idempotent — repeated calls return the same value
-		// (Promise or sync, mirroring the handler's shape).
-		let runCommandResult: unknown;
-		let runCommandCalled = false;
+		// Strict commands: when a command was expected but none matched, suggest
+		// the closest known command/alias and exit.
+		const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
+		const positional = (parsed._ as string[])[0];
+		if (
+			strictCommands
+			&& !matchedCommand
+			&& options.commands
+			&& commandIndex.names.size > 0
+			&& positional
+		) {
+			const match = findClosest(positional, commandIndex.names, commandIndex.aliases);
+			let suggestion = '';
+			if (match) {
+				suggestion = match.aliasFor
+					? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
+					: ` (Did you mean "${match.name}"?)`;
+			}
+			console.error(`Error: Unknown command: "${positional}".${suggestion}`);
+			throw new CleyeExit(1, 'unknown-command');
+		}
 
 		const resolvedOptions: CliOptions = {
 			strictFlags,
 			strictCommands,
 			throwOnExit,
-			booleanFlagNegation: options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation,
+			booleanFlagNegation,
 		};
 
-		const runCommand = (...handlerArguments: unknown[]): unknown => {
-		// No matched command — runCommand is a callable noop. Returns
-		// `undefined` synchronously; `await undefined` is a no-op so callers
-		// can still write `await argv.runCommand()` if they want symmetry.
-			if (!matchedCommand) {
-				return undefined;
-			}
-			if (runCommandCalled) {
-				return runCommandResult;
-			}
-			runCommandCalled = true;
-			const commandArgv = argv.slice(1);
-			const context: CliContext = {
-				name: matchedCommand.name,
-				argv: commandArgv,
-				parentOptions: resolvedOptions,
-			};
-
-			// Wrap the entire chain — handler invocation AND any default-unwrap —
-			// in `runWithCliContext` so module-default callees see the context
-			// via `getCliContext()`. AsyncLocalStorage propagates through `.then`
-			// callbacks attached inside the run.
-			runCommandResult = runWithCliContext(context, () => {
-				const handlerReturn = matchedCommand.handler(...handlerArguments);
-
-				// Async handler / loader pattern — chain through Promise.
-				// Module-namespace `{ default: fn }` returns are unwrapped.
-				if (isThenable(handlerReturn)) {
-					return handlerReturn.then(awaited => (
-						isModuleWithDefault(awaited)
-							? awaited.default(...handlerArguments)
-							: awaited
-					));
-				}
-
-				// Sync handler. Unwrap a module-with-default if returned.
-				return isModuleWithDefault(handlerReturn)
-					? handlerReturn.default(...handlerArguments)
-					: handlerReturn;
-			});
-
-			return runCommandResult;
-		};
+		const { runCommand, runCommandHasBeenCalled } = createRunCommand(
+			matchedCommand,
+			argv,
+			resolvedOptions,
+		);
 
 		const result = {
 			...parsed,
@@ -444,14 +478,14 @@ function cli<
 		};
 
 		if (typeof callback === 'function') {
-		// Async path: callback runs, then we auto-invoke runCommand if it
-		// wasn't already called. Returns the callback's resolved value.
-		// This is the ONLY auto-invoke site — the sync (no-callback) path
-		// below leaves runCommand for the caller to invoke manually.
+			// Async path: callback runs, then we auto-invoke runCommand if it
+			// wasn't already called. Returns the callback's resolved value.
+			// This is the ONLY auto-invoke site — the sync (no-callback) path
+			// below leaves runCommand for the caller to invoke manually.
 			return (async () => {
 				try {
 					const callbackResult = await callback(result as any);
-					if (matchedCommand && !runCommandCalled) {
+					if (matchedCommand && !runCommandHasBeenCalled()) {
 						await runCommand();
 					}
 					return callbackResult;
@@ -466,8 +500,8 @@ function cli<
 		// none matched, show help and exit.
 		if (
 			!matchedCommand
-		&& options.commands
-		&& commandIndex.names.size > 0
+			&& options.commands
+			&& commandIndex.names.size > 0
 		) {
 			showHelp();
 			throw new CleyeExit(1, 'no-command-match');

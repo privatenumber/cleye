@@ -1,7 +1,5 @@
 import { camelCase } from './convert-case.ts';
 
-const { stringify } = JSON;
-
 const specialCharactersPattern = /[|\\{}()[\]^$+*?.]/;
 
 export type ParsedParameter = {
@@ -11,7 +9,7 @@ export type ParsedParameter = {
 	spread: boolean;
 };
 
-export function parseParameters(parameters: string[]): ParsedParameter[] {
+export const parseParameters = (parameters: string[]): ParsedParameter[] => {
 	const parsedParameters: ParsedParameter[] = [];
 
 	let hasOptional: string | undefined;
@@ -19,7 +17,7 @@ export function parseParameters(parameters: string[]): ParsedParameter[] {
 
 	for (const parameter of parameters) {
 		if (hasSpread) {
-			throw new Error(`Invalid parameter: Spread parameter ${stringify(hasSpread)} must be last`);
+			throw new Error(`Invalid parameter: Spread parameter "${hasSpread}" must be last`);
 		}
 
 		const firstCharacter = parameter[0];
@@ -30,7 +28,7 @@ export function parseParameters(parameters: string[]): ParsedParameter[] {
 			required = true;
 
 			if (hasOptional) {
-				throw new Error(`Invalid parameter: Required parameter ${stringify(parameter)} cannot come after optional parameter ${stringify(hasOptional)}`);
+				throw new Error(`Invalid parameter: Required parameter "${parameter}" cannot come after optional parameter "${hasOptional}"`);
 			}
 		}
 
@@ -40,7 +38,7 @@ export function parseParameters(parameters: string[]): ParsedParameter[] {
 		}
 
 		if (required === undefined) {
-			throw new Error(`Invalid parameter: ${stringify(parameter)}. Must be wrapped in <> (required parameter) or [] (optional parameter)`);
+			throw new Error(`Invalid parameter: "${parameter}". Must be wrapped in <> (required parameter) or [] (optional parameter)`);
 		}
 
 		let name = parameter.slice(1, -1);
@@ -54,7 +52,7 @@ export function parseParameters(parameters: string[]): ParsedParameter[] {
 
 		const invalidCharacter = name.match(specialCharactersPattern);
 		if (invalidCharacter) {
-			throw new Error(`Invalid parameter: ${stringify(parameter)}. Invalid character found ${stringify(invalidCharacter[0])}`);
+			throw new Error(`Invalid parameter: "${parameter}". Invalid character found "${invalidCharacter[0]}"`);
 		}
 
 		parsedParameters.push({
@@ -66,18 +64,18 @@ export function parseParameters(parameters: string[]): ParsedParameter[] {
 	}
 
 	return parsedParameters;
-}
+};
 
-export function checkDuplicateParameters(parameters: ParsedParameter[]): void {
+export const checkDuplicateParameters = (parameters: ParsedParameter[]): void => {
 	const seen = new Map<string, string>();
 	for (const { name, camelCaseName } of parameters) {
 		const existing = seen.get(camelCaseName);
 		if (existing !== undefined) {
 			if (existing === name) {
-				throw new Error(`Invalid parameter: ${stringify(name)} is used more than once`);
+				throw new Error(`Invalid parameter: "${name}" is used more than once`);
 			}
-			throw new Error(`Invalid parameter: ${stringify(name)} collides with ${stringify(existing)} (both map to ${stringify(camelCaseName)})`);
+			throw new Error(`Invalid parameter: "${name}" collides with "${existing}" (both map to "${camelCaseName}")`);
 		}
 		seen.set(camelCaseName, name);
 	}
-}
+};
