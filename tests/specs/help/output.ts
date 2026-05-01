@@ -4,6 +4,19 @@ import { cli } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 import { withColumns } from '../../utils/with-columns.ts';
 
+// Tests in this file assert content + layout, not styling. Strip ANSI from
+// the captured help output so assertions remain hermetic against ambient
+// color env (NO_COLOR / FORCE_COLOR / TTY state). One styling-lock test
+// below intentionally compares the raw ANSI form.
+//
+// Also enforces "exactly one console.log call" — replaces the
+// `toStrictEqual([['<output>']])` shape's implicit call-count check.
+const getOutput = (mocked: ReturnType<typeof mockEnvFunctions>) => {
+	expect(mocked.consoleLog.callCount).toBe(1);
+	expect(mocked.consoleLog.calls[0]).toHaveLength(1);
+	return stripVTControlCharacters(mocked.consoleLog.calls[0][0] as string);
+};
+
 describe('help output', () => {
 	describe('show help', () => {
 		test('empty cli', async () => {
@@ -12,7 +25,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('name', async () => {
@@ -23,7 +36,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['npm\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m \u001B[1m\u001B[36mnpm\u001B[39m\u001B[22m \u001B[36m[flags...]\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('npm\n\nUsage: npm [flags...]\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('empty parameters', async () => {
@@ -35,7 +48,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('parameters with no name', async () => {
@@ -47,7 +60,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('parameters with name', async () => {
@@ -59,7 +72,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m \u001B[1m\u001B[36mmy-cli\u001B[39m\u001B[22m \u001B[36m[flags...]\u001B[39m \u001B[36m<arg-a>\u001B[39m \u001B[36m[arg-b]\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [flags...] <arg-a> [arg-b]\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('parameters with optional --', async () => {
@@ -71,7 +84,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m \u001B[1m\u001B[36mmy-cli\u001B[39m\u001B[22m \u001B[36m[flags...]\u001B[39m \u001B[36m<arg-a>\u001B[39m \u001B[36m[arg-b]\u001B[39m \u001B[36m[--]\u001B[39m \u001B[36m[arg-c]\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [flags...] <arg-a> [arg-b] [--] [arg-c]\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('parameters with required --', async () => {
@@ -83,7 +96,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m \u001B[1m\u001B[36mmy-cli\u001B[39m\u001B[22m \u001B[36m[flags...]\u001B[39m \u001B[36m<arg-a>\u001B[39m \u001B[36m[arg-b]\u001B[39m \u001B[36m--\u001B[39m \u001B[36m<arg-c>\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [flags...] <arg-a> [arg-b] -- <arg-c>\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('empty commands', async () => {
@@ -95,7 +108,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('commands', async () => {
@@ -109,7 +122,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...]\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mtest\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('commands with description', async () => {
@@ -126,7 +139,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...]\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mtest\u001B[39m  test command\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test  test command\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('commands without description', async () => {
@@ -142,7 +155,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...]\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mtest\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('undefined flags', async () => {
@@ -154,7 +167,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('empty flags', async () => {
@@ -166,7 +179,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('flags', async () => {
@@ -188,7 +201,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n      \u001B[1m\u001B[36m--flag\u001B[39m\u001B[22m             \n      \u001B[1m\u001B[36m--flag-a\u001B[39m\u001B[22m \u001B[36m<string>\u001B[39m  \n      \u001B[1m\u001B[36m--flag-b\u001B[39m\u001B[22m \u001B[36m<number>\u001B[39m  \n      \u001B[1m\u001B[36m--flag-c\u001B[39m\u001B[22m \u001B[36m<value>\u001B[39m   (default: {})\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m                     Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m             Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n      --flag             \n      --flag-a <string>  \n      --flag-b <number>  \n      --flag-c <value>   (default: {})\n  -h                     Show short help\n      --help             Show help');
 		});
 
 		test('help disabled', async () => {
@@ -217,7 +230,7 @@ describe('help output', () => {
 			);
 			mocked.restore();
 
-			expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.2.3\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m \u001B[1m\u001B[36mmy-cli\u001B[39m\u001B[22m \u001B[36m[flags...]\u001B[39m\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('my-cli v1.2.3\n\nUsage: my-cli [flags...]\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('empty help.examples', async () => {
@@ -231,7 +244,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Flags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('help.version with --help', async () => {
@@ -244,7 +257,7 @@ describe('help output', () => {
 			}, undefined, ['--help']);
 			mocked.restore();
 
-			expect(mocked.consoleLog.calls).toStrictEqual([['v1.0.0\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('v1.0.0\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('help.version with --version', async () => {
@@ -273,7 +286,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nusage string\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Usage:\nusage string\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('help.usage array', async () => {
@@ -291,7 +304,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nusage string a\nusage string b\nusage string c\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('Usage:\nusage string a\nusage string b\nusage string c\n\nFlags:\n  -h          Show short help\n      --help  Show help');
 		});
 
 		test('help.usage false disables usage section', async () => {
@@ -323,7 +336,44 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(mocked.consoleLog.calls).toStrictEqual([['test description\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m          Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m  Show help']]);
+			expect(getOutput(mocked)).toBe('test description\n\nFlags:\n  -h          Show short help\n      --help  Show help');
+		});
+
+		test('styling: section headings, flag names, and arg labels emit ANSI', async () => {
+			// Locks in the styling contract for the default help renderer.
+			// Other "show help" tests strip ANSI to focus on content/layout;
+			// this one is the single styling-aware assertion. Skipped when
+			// the ambient env disables color — the styling contract doesn't
+			// apply in that case.
+			if (
+				process.env.NO_COLOR
+				|| !process.env.FORCE_COLOR
+				|| process.env.FORCE_COLOR === '0'
+			) {
+				return;
+			}
+			const mocked = mockEnvFunctions();
+			cli({
+				name: 'my-cli',
+				flags: {
+					verbose: {
+						type: Boolean,
+						alias: 'v',
+						description: 'verbose mode',
+					},
+				},
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			expect(mocked.processExit.calls).toStrictEqual([[0]]);
+			const raw = mocked.consoleLog.calls[0][0] as string;
+			// Section headings: bold + green.
+			expect(raw).toContain('\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m');
+			expect(raw).toContain('\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m');
+			// Long flag name: bold + cyan.
+			expect(raw).toContain('\u001B[1m\u001B[36m--verbose\u001B[39m\u001B[22m');
+			// Short flag: bold + cyan with leading dash.
+			expect(raw).toContain('\u001B[1m\u001B[36m-v\u001B[39m\u001B[22m');
 		});
 	}, { parallel: false });
 	describe('invalid usage', () => {
@@ -348,7 +398,7 @@ describe('help output', () => {
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
-		expect(mocked.consoleLog.calls).toStrictEqual([['1.0.0']]);
+		expect(getOutput(mocked)).toBe('1.0.0');
 	});
 
 	test('smoke test', async () => {
@@ -415,7 +465,7 @@ describe('help output', () => {
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
-		expect(mocked.consoleLog.calls).toStrictEqual([['my-cli v1.1.1\n\n\u001B[1m\u001B[32mUsage:\u001B[39m\u001B[22m\nmy-cli [flags...]\nmy-cli <command>\n\n\u001B[1m\u001B[32mCommands:\u001B[39m\u001B[22m\n  \u001B[36mmy-command\u001B[39m  my command description\n\n\u001B[1m\u001B[32mFlags:\u001B[39m\u001B[22m\n  \u001B[1m\u001B[36m-d\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--dark-mode\u001B[39m\u001B[22m          Show tweet in dark mode\n  \u001B[1m\u001B[36m-h\u001B[39m\u001B[22m                       Show short help\n      \u001B[1m\u001B[36m--help\u001B[39m\u001B[22m               Show help\n      \u001B[1m\u001B[36m--locale\u001B[39m\u001B[22m \u001B[36m<locale>\u001B[39m    Locale (default: "en")\n  \u001B[1m\u001B[36m-o\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--output-dir\u001B[39m\u001B[22m \u001B[36m<path>\u001B[39m  Tweet screenshot output directory\n  \u001B[1m\u001B[36m-t\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--show-tweet\u001B[39m\u001B[22m         Show tweet thread\n      \u001B[1m\u001B[36m--version\u001B[39m\u001B[22m            Show version\n  \u001B[1m\u001B[36m-w\u001B[39m\u001B[22m, \u001B[1m\u001B[36m--width\u001B[39m\u001B[22m \u001B[36m<width>\u001B[39m      Width of tweet (default: 550)\n\n\u001B[1m\u001B[32mExamples:\u001B[39m\u001B[22m\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode']]);
+		expect(getOutput(mocked)).toBe('my-cli v1.1.1\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  my-command  my command description\n\nFlags:\n  -d, --dark-mode          Show tweet in dark mode\n  -h                       Show short help\n      --help               Show help\n      --locale <locale>    Locale (default: "en")\n  -o, --output-dir <path>  Tweet screenshot output directory\n  -t, --show-tweet         Show tweet thread\n      --version            Show version\n  -w, --width <width>      Width of tweet (default: 550)\n\nExamples:\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode');
 	});
 
 	test('acronyms in flag names render as single words (issue #38)', async () => {
