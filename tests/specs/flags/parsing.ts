@@ -224,6 +224,7 @@ describe('flags parsing', () => {
 	describe('ignoreArgv', () => {
 		test('ignores argv tokens after the predicate flips', async () => {
 			const argv = ['--unknown', 'arg', '--help'];
+			const argvSnapshot = [...argv];
 
 			let receivedArgument = false;
 			const parsed = await cli(
@@ -239,7 +240,6 @@ describe('flags parsing', () => {
 					},
 				},
 				(p) => {
-					expect(argv).toStrictEqual(['arg', '--help']);
 					expect(p.unknownFlags).toStrictEqual({
 						unknown: [true],
 					});
@@ -248,7 +248,9 @@ describe('flags parsing', () => {
 				argv,
 			);
 
-			expect(argv).toStrictEqual(['arg', '--help']);
+			// cleye doesn't leak type-flag's argv mutation: the caller's
+			// array is untouched after cli() returns.
+			expect(argv).toStrictEqual(argvSnapshot);
 			expect(parsed.unknownFlags).toStrictEqual({
 				unknown: [true],
 			});

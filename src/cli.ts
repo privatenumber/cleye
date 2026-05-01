@@ -10,12 +10,7 @@ import type {
 } from './types.ts';
 import { defaultHelp } from './render/default-help.ts';
 import { render } from './render/render.ts';
-import {
-	AUTO_FLAG,
-	autoFlagLongHelp,
-	autoFlagShortHelp,
-	autoFlagVersion,
-} from './utils/auto-flags.ts';
+import { AUTO_FLAG, resolveAutoFlags } from './utils/auto-flags.ts';
 import { CleyeExit } from './utils/cleye-exit.ts';
 import { isThenable, isModuleWithDefault } from './utils/promise-helpers.ts';
 import { findClosest } from './utils/find-closest.ts';
@@ -96,39 +91,6 @@ const applyParameters = (
 	}
 
 	Object.assign(parsed._, mapping);
-};
-
-type InjectedFlag = typeof AUTO_FLAG[keyof typeof AUTO_FLAG];
-
-/**
- * Auto-inject `--version`, `--help`, and `-h` into the user's flag set —
- * but only if the user hasn't claimed those names themselves. Mutates
- * `flags` in place; returns the set of names cleye actually injected so
- * callers can distinguish "user passed --help" from "cleye observed --help".
- */
-const injectAutoFlags = (
-	flags: Record<string, unknown>,
-	options: CliOptions,
-): Set<InjectedFlag> => {
-	const injectedFlags = new Set<InjectedFlag>();
-	const userFlagNames = buildNameIndex(flags, getFlagAlias).names;
-
-	if (options.version && !userFlagNames.has(AUTO_FLAG.version)) {
-		flags[AUTO_FLAG.version] = autoFlagVersion;
-		injectedFlags.add(AUTO_FLAG.version);
-	}
-
-	const isHelpEnabled = options.help !== false;
-	if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.helpShort)) {
-		flags[AUTO_FLAG.helpShort] = autoFlagShortHelp;
-		injectedFlags.add(AUTO_FLAG.helpShort);
-	}
-	if (isHelpEnabled && !userFlagNames.has(AUTO_FLAG.help)) {
-		flags[AUTO_FLAG.help] = autoFlagLongHelp;
-		injectedFlags.add(AUTO_FLAG.help);
-	}
-
-	return injectedFlags;
 };
 
 // Shared sentinel so commandless cli() invocations don't allocate a fresh
@@ -288,9 +250,12 @@ function cli<
 		throw new Error('cleye: `parameters` and `commands` are mutually exclusive at the same level. To accept arbitrary command names, omit `parameters` and inspect `parsed.command === undefined` with `parsed._[0]` in your callback.');
 	}
 
-	// Check AsyncLocalStorage for parent context
+	// Check AsyncLocalStorage for parent context. Copy the source argv —
+	// type-flag mutates its argv input as a low-level filter feature, and
+	// we don't want to leak that to the caller's (or parent's) array.
+	// `process.argv.slice(2)` is already a fresh array, no extra copy needed.
 	const parentContext = getCliContext();
-	const rawArgv = argvInput ?? parentContext?.argv ?? process.argv.slice(2);
+	const argv = argvInput?.slice() ?? parentContext?.argv.slice() ?? process.argv.slice(2);
 	const parentOptions = parentContext?.parentOptions;
 	const throwOnExit = options.throwOnExit ?? parentOptions?.throwOnExit ?? false;
 	const booleanFlagNegation = options.booleanFlagNegation ?? parentOptions?.booleanFlagNegation;
@@ -315,7 +280,6 @@ function cli<
 			)
 			: EMPTY_NAME_INDEX;
 
-		const argv = rawArgv;
 		let hitCommand = false;
 
 		// Parse flags
@@ -324,7 +288,7 @@ function cli<
 		// Auto-version/auto-help logic only fires for the names cleye actually
 		// injected — if the user claimed `version`, `help`, or `h` (as a name
 		// OR an alias), cleye stays out of the way.
-		const injectedFlags = injectAutoFlags(flags, options);
+		const injectedFlags = resolveAutoFlags(flags, options);
 		const { help } = options;
 
 		const parsed = typeFlag(
@@ -349,7 +313,9 @@ function cli<
 		);
 
 		const showVersion = () => {
-			console.log(options.version);
+			if (options.version !== undefined) {
+				console.log(options.version);
+			}
 		};
 		const showHelp = createShowHelp(options, effectiveName, flags, help);
 

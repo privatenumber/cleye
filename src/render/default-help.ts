@@ -1,5 +1,5 @@
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
-import { autoFlagLongHelp, autoFlagShortHelp, autoFlagVersion } from '../utils/auto-flags.ts';
+import { resolveAutoFlags } from '../utils/auto-flags.ts';
 import {
 	type Components, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
@@ -27,19 +27,12 @@ export const createDefaultHelp = (
 	const name = options.name ?? '';
 
 	// Build the full flag set: user flags + auto-injected version/help.
-	// When invoked from cli's showHelp the spread is already done upstream,
-	// so the `in` checks are no-ops; standalone callers (`defaultHelp({...})`)
-	// rely on this branch to get help/version flags rendered.
+	// `resolveAutoFlags` is the single source of truth shared with cli.ts —
+	// alias-aware, respects `options.help === false`. When invoked from cli's
+	// showHelp the upstream injection has already populated these names, so
+	// the resolver's name-collision checks correctly skip the redundant adds.
 	const allFlags: Flags = { ...options.flags };
-	if (options.version && !('version' in allFlags)) {
-		allFlags.version = autoFlagVersion;
-	}
-	if (!('h' in allFlags)) {
-		allFlags.h = autoFlagShortHelp;
-	}
-	if (!('help' in allFlags)) {
-		allFlags.help = autoFlagLongHelp;
-	}
+	resolveAutoFlags(allFlags, options);
 
 	const nodes: Node[] = [];
 

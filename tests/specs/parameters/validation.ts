@@ -111,6 +111,20 @@ describe('parameter validation', () => {
 				() => cli({ parameters: ['<file-name>', '<fileName>'] }),
 			).toThrow(/Invalid parameter: ["']?fileName["']? collides with ["']?file-name["']?/);
 		});
+
+		test('rejects empty parameter name "<>"', () => {
+			expect(() => cli({ parameters: ['<>'] })).toThrow(
+				/Invalid parameter/,
+			);
+		});
+
+		test('rejects parameter that camelCases to empty string', () => {
+			// "<-->" strips to "--", camelCase('--') === ''. Currently populates
+			// `parsed._['']`. Should reject at parse time.
+			expect(() => cli({ parameters: ['<-->'] })).toThrow(
+				/Invalid parameter/,
+			);
+		});
 	}, { parallel: false });
 
 	describe('missing arguments', () => {

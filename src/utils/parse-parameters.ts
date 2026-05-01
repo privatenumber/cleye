@@ -61,9 +61,14 @@ export const parseParameters = (parameters: string[]): ParsedParameter[] => {
 			throw new Error(`Invalid parameter: "${parameter}". Invalid character found "${invalidCharacter[0]}"`);
 		}
 
+		const camelCaseName = camelCase(name);
+		if (name === '' || camelCaseName === '') {
+			throw new Error(`Invalid parameter: "${parameter}". Name must contain at least one alphanumeric character`);
+		}
+
 		parsedParameters.push({
 			name,
-			camelCaseName: camelCase(name),
+			camelCaseName,
 			required,
 			spread,
 		});

@@ -412,7 +412,7 @@ Parameters are defined in the following formats:
 - **Optional parameters** are indicated by square brackets (eg. `[parameter name]`).
 - **Spread parameters** are indicated by `...` suffix. Required spread (`<files...>`) needs at least one value; optional spread (`[files...]`) accepts zero or more.
 
-Note, required parameters cannot come after optional parameters, and spread parameters must be last.
+Note, required parameters cannot come after optional parameters, and spread parameters must be last. Names must contain at least one alphanumeric character (after camelCase normalization).
 
 Parameters can be accessed in camelCase on the `_` property of the returned object.
 
@@ -1000,7 +1000,7 @@ type ParsedArgv = {
     // loaders. Idempotent — repeated calls return the same value.
     runCommand: (...arguments_: unknown[]) => unknown
 
-    // Method to print version
+    // Print the configured version to stdout; no-op when no version is set.
     showVersion: () => void
 
     // Method to print help (pass HelpOptions to override content)

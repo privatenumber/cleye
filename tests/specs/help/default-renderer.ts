@@ -321,6 +321,37 @@ describe('defaultHelp', () => {
 			expect(qLine).toContain('-q');
 			expect(qLine).not.toContain('--q');
 		});
+
+		test('does not render --help/-h when options.help === false', () => {
+			// Standalone defaultHelp should respect `help: false` the same way
+			// cli() does — no `--help` or `-h` row in the flags section.
+			const output = stripVTControlCharacters(renderDefault({
+				name: 'my-cli',
+				help: false,
+				flags: { verbose: Boolean },
+			}));
+			expect(output).not.toContain('--help');
+			expect(output).not.toContain('-h ');
+		});
+
+		test('does not inject -h when a user flag aliases h', () => {
+			// User claimed `h` as an alias for `--verbose`. defaultHelp must
+			// not also inject `autoFlagShortHelp` — there's only one `-h`,
+			// and it belongs to the user's flag.
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					verbose: {
+						type: Boolean,
+						alias: 'h',
+					},
+				},
+			}));
+			// The single `-h` row should be the user's --verbose; the
+			// stand-alone short-help row (no --long counterpart) must not exist.
+			const hLines = output.split('\n').filter(line => /\s-h(?:\s|,|$)/.test(line));
+			expect(hLines.length).toBe(1);
+			expect(hLines[0]).toContain('--verbose');
+		});
 	});
 
 	describe('commands section', () => {

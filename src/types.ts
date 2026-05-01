@@ -110,6 +110,9 @@ type ParametersOrCommands<Parameters extends string[]> =
 		 * - Optional parameter: `[parameter name]`
 		 * - Required spread parameter: `<parameter name...>`
 		 * - Optional spread parameter: `[parameter name...]`
+		 *
+		 * Names must contain at least one alphanumeric character (after
+		 * camelCase normalization).
 		 */
 		parameters?: Parameters;
 		commands?: never;
@@ -222,7 +225,9 @@ export type ParsedArgv<
 	/** Show help documentation. */
 	showHelp: (options?: HelpOptions) => void;
 
-	/** Show version. */
+	/**
+	 * Print the configured `version` to stdout. No-op when no version is set.
+	 */
 	showVersion: () => void;
 } & CommandUnion<Options['commands']>;
 
