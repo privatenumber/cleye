@@ -53,32 +53,27 @@ const mapParametersToArguments = (
 	}
 };
 
-type ApplyParametersTarget = { _: string[] & { '--': string[] } & Record<string, unknown> };
-
 /**
- * Bind positional argv tokens onto `parsed._` using the user's parameter
- * declarations, including the `--` end-of-flags split when present. Validates
- * (parse-time) that no two declared parameter names collide on camelCase, then
- * (map-time) that required parameters got values.
+ * Bind positional argv tokens to the user's parameter declarations, including
+ * the `--` end-of-flags split when present. Validates (parse-time) that no
+ * two declared parameter names collide on camelCase, then (map-time) that
+ * required parameters got values. Returns the camelCased mapping; the caller
+ * installs it onto `parsed._`.
  */
 const applyParameters = (
 	rawParameters: string[],
-	parsed: ApplyParametersTarget,
+	positionals: string[],
+	eofPositionals: string[],
 	showHelp: () => void,
-): void => {
+): Record<string, string | string[]> => {
 	const hasEof = rawParameters.indexOf(END_OF_FLAGS);
 	const hasEofSplit = hasEof !== -1 && hasEof < rawParameters.length - 1;
 
-	let parameters = rawParameters;
-	let cliArguments: string[] = parsed._;
-	let eofArguments: string[] = [];
-	let eofParameters: string[] = [];
-	if (hasEofSplit) {
-		eofParameters = parameters.slice(hasEof + 1);
-		parameters = parameters.slice(0, hasEof);
-		eofArguments = parsed._[END_OF_FLAGS];
-		cliArguments = cliArguments.slice(0, -eofArguments.length || undefined);
-	}
+	const parameters = hasEofSplit ? rawParameters.slice(0, hasEof) : rawParameters;
+	const eofParameters = hasEofSplit ? rawParameters.slice(hasEof + 1) : [];
+	const cliArguments = hasEofSplit
+		? positionals.slice(0, -eofPositionals.length || undefined)
+		: positionals;
 
 	const preEofParsed = parseParameters(parameters);
 	const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
@@ -87,10 +82,10 @@ const applyParameters = (
 	const mapping: Record<string, string | string[]> = Object.create(null);
 	mapParametersToArguments(mapping, preEofParsed, cliArguments, showHelp);
 	if (hasEofSplit) {
-		mapParametersToArguments(mapping, eofParsed, eofArguments, showHelp);
+		mapParametersToArguments(mapping, eofParsed, eofPositionals, showHelp);
 	}
 
-	Object.assign(parsed._, mapping);
+	return mapping;
 };
 
 // Shared sentinel so commandless cli() invocations don't allocate a fresh
@@ -358,11 +353,13 @@ function cli<
 		}
 
 		if (options.parameters) {
-			applyParameters(
+			const mapping = applyParameters(
 				options.parameters as string[],
-				parsed as unknown as ApplyParametersTarget,
+				parsed._ as string[],
+				parsed._['--'],
 				showHelp,
 			);
+			Object.assign(parsed._, mapping);
 		}
 
 		let matchedCommand: MatchedCommand | undefined;
