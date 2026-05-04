@@ -4,6 +4,9 @@ import type { Flags } from 'type-flag';
  * Any callable. Used as the constraint for handler/loader functions in
  * CommandEntry and the type-machinery that extracts and forwards their
  * signatures (`EntryHandler`, `RunCommandFor`).
+ *
+ * `any` is intentional here: using `unknown[]` for a function constraint makes
+ * typed handlers such as `(name: string) => void` fail parameter compatibility.
  */
 export type AnyFunction = (...arguments_: any) => any;
 
