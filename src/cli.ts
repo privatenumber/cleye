@@ -71,9 +71,10 @@ const applyParameters = (
 
 	const parameters = hasEofSplit ? rawParameters.slice(0, hasEof) : rawParameters;
 	const eofParameters = hasEofSplit ? rawParameters.slice(hasEof + 1) : [];
-	const cliArguments = hasEofSplit
-		? positionals.slice(0, -eofPositionals.length || undefined)
-		: positionals;
+	let cliArguments = positionals;
+	if (hasEofSplit && eofPositionals.length > 0) {
+		cliArguments = positionals.slice(0, -eofPositionals.length);
+	}
 
 	const preEofParsed = parseParameters(parameters);
 	const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
