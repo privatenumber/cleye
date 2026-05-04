@@ -99,13 +99,10 @@ export const createDefaultHelp = (
 		}
 
 		if (usageLines.length > 0) {
-			nodes.push(usage(name, usageLines[0].slice(name.length + 1)));
-
-			// Additional lines (e.g. command usage) rendered as a follow-up section
 			if (usageLines.length > 1) {
-				// Replace the last pushed node with a section containing all lines
-				nodes.pop();
 				nodes.push(section('Usage', p(usageLines.join('\n'))));
+			} else {
+				nodes.push(usage(name, usageLines[0].slice(name.length + 1)));
 			}
 		}
 	}
