@@ -2,6 +2,13 @@ import { flagNameToKebab } from 'type-flag';
 import type { Flags } from '../types.ts';
 import type { Flag } from './components.ts';
 
+type FlagEntry = readonly [name: string, kebabName: string];
+
+const flagNameSorter = new Intl.Collator('en', {
+	numeric: true,
+	sensitivity: 'base',
+});
+
 /**
  * Map a flag's `type` constructor (or array thereof) to a human-readable
  * `<arg>` label for help output. `Boolean` flags don't carry a value, so
@@ -25,13 +32,15 @@ const inferFlagArgument = (typeValue: unknown): string | undefined => {
 
 /**
  * Convert a user-declared flag config map into the `Flag[]` shape the help
- * components render. Sorts alphabetically, kebab-cases names, infers `<arg>`
+ * components render. Sorts naturally by displayed name, infers `<arg>`
  * labels, appends `(default: ...)` to descriptions, and routes single-char
  * names through the short-flag (`-x`) path.
  */
 export const flagsToComponentList = (rawFlags: Flags): Flag[] => {
-	const names = Object.keys(rawFlags).sort((a, b) => (a < b ? -1 : (a > b ? 1 : 0)));
-	return names.map((name) => {
+	const flagEntries = Object.keys(rawFlags)
+		.map((name): FlagEntry => [name, flagNameToKebab(name)])
+		.sort((a, b) => flagNameSorter.compare(a[1], b[1]));
+	return flagEntries.map(([name, kebabName]) => {
 		const config = rawFlags[name];
 		const cfg = (
 			config !== null
@@ -77,7 +86,7 @@ export const flagsToComponentList = (rawFlags: Flags): Flag[] => {
 		}
 
 		return {
-			long: `--${flagNameToKebab(name)}`,
+			long: `--${kebabName}`,
 			short: aliasShort,
 			arg: argument,
 			description: description || undefined,

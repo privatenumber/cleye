@@ -241,16 +241,29 @@ describe('defaultHelp', () => {
 			expect(output).toContain('(default: "")');
 		});
 
-		test('flags sorted alphabetically', () => {
+		test('flags sorted naturally by displayed name', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				flags: {
 					zebra: { type: Boolean },
+					flag10: { type: Boolean },
 					apple: { type: Boolean },
+					flag2: { type: Boolean },
+					dryRun: { type: Boolean },
+					'a-b': { type: Boolean },
+					ab: { type: Boolean },
 				},
 			}));
-			const appleIndex = output.indexOf('--apple');
-			const zebraIndex = output.indexOf('--zebra');
-			expect(appleIndex).toBeLessThan(zebraIndex);
+			const flagOrder = [
+				'--a-b',
+				'--ab',
+				'--apple',
+				'--dry-run',
+				'--flag2',
+				'--flag10',
+				'--zebra',
+			].map(flag => output.indexOf(flag));
+			expect(flagOrder.every(index => index >= 0)).toBe(true);
+			expect(flagOrder).toStrictEqual([...flagOrder].sort((a, b) => a - b));
 		});
 
 		test('camelCase flag name converted to kebab-case', () => {
