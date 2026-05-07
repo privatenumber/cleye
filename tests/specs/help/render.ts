@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'manten';
-import { render } from '../../../src/render/render.ts';
+import { render, renderToString } from '../../../src/render/render.ts';
 import type { Node } from '../../../src/render/components.ts';
 
 describe('render()', () => {
@@ -38,5 +38,31 @@ describe('render()', () => {
 		};
 		const result = render(node);
 		expect(result).toBe('x');
+	});
+}, { parallel: false });
+
+describe('renderToString()', () => {
+	test('returns pre-rendered strings unchanged', () => {
+		expect(renderToString('ready')).toBe('ready');
+	});
+
+	test('renders a single node', () => {
+		const node: Node = {
+			kind: 'text',
+			render: () => 'hello',
+		};
+		expect(renderToString(node)).toBe('hello');
+	});
+
+	test('renders node arrays with blank-line separation', () => {
+		const a: Node = {
+			kind: 'text',
+			render: () => 'a',
+		};
+		const b: Node = {
+			kind: 'text',
+			render: () => 'b',
+		};
+		expect(renderToString([a, b])).toBe('a\n\nb');
 	});
 }, { parallel: false });

@@ -9,7 +9,7 @@ import type {
 	StrictOptions,
 } from './types.ts';
 import { defaultHelp } from './render/default-help.ts';
-import { render } from './render/render.ts';
+import { renderToString } from './render/render.ts';
 import { AUTO_FLAG, resolveAutoFlags } from './utils/auto-flags.ts';
 import { unwrapDescribedDefaults } from './utils/flag-defaults.ts';
 import { CleyeExit } from './utils/cleye-exit.ts';
@@ -188,16 +188,7 @@ const createShowHelp = (
 		...(helpOptions ? { help: helpOptions } : {}),
 	} as CliOptions;
 	const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
-	const result = renderFunction(effectiveOptions, { form });
-	let output: string;
-	if (typeof result === 'string') {
-		output = result;
-	} else if (Array.isArray(result)) {
-		output = render(...result);
-	} else {
-		output = render(result);
-	}
-	console.log(output);
+	console.log(renderToString(renderFunction(effectiveOptions, { form })));
 };
 
 // Overload: with callback — async, resolves to the callback's return value

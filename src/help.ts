@@ -1,4 +1,4 @@
-export { render } from './render/render.ts';
+export { render, renderToString } from './render/render.ts';
 export type { Node } from './render/components.ts';
 export {
 	p, usage, footer, section, cmds, flags, flagsInline, flagsHanging,

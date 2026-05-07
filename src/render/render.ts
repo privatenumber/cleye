@@ -1,3 +1,4 @@
+import type { HelpRenderer } from '../types.ts';
 import type { Node } from './components.ts';
 
 /**
@@ -11,3 +12,13 @@ import type { Node } from './components.ts';
  * ```
  */
 export const render = (...nodes: Node[]): string => nodes.map(node => node.render()).join('\n\n');
+
+export const renderToString = (result: ReturnType<HelpRenderer>): string => {
+	if (typeof result === 'string') {
+		return result;
+	}
+	if (Array.isArray(result)) {
+		return render(...result);
+	}
+	return render(result);
+};
