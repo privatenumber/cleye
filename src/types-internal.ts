@@ -11,6 +11,16 @@ import type { Flags } from 'type-flag';
 export type AnyFunction = (...arguments_: any) => any;
 
 /**
+ * Default value plus explicit help text. Recognized only when both `value` and
+ * `description` are present; objects with just one of those keys remain plain
+ * object defaults.
+ */
+export type DescribedDefault<Value = unknown> = {
+	value: Value | (() => Value);
+	description: string;
+};
+
+/**
  * The shape of `runCommand` when no command matched — a callable noop that
  * returns `undefined` synchronously. `await undefined` is a no-op, so callers
  * can still write `await argv.runCommand()` if they want symmetry across
@@ -60,8 +70,20 @@ export type ParameterType<Parameter extends string> = (
  * Defaults `flags` to `{}` when omitted so the intersection doesn't collapse
  * to `never` for the no-flags case (e.g. `cli({})`).
  */
+type NormalizeDescribedDefault<Default> = (
+	Default extends DescribedDefault<infer Value>
+		? Value | (() => Value)
+		: Default
+);
+
+type NormalizeDescribedDefaults<Schemas> = {
+	[FlagName in keyof Schemas]: Schemas[FlagName] extends { default: infer Default }
+		? Omit<Schemas[FlagName], 'default'> & { default: NormalizeDescribedDefault<Default> }
+		: Schemas[FlagName];
+};
+
 export type ResolvedFlags<Options extends { flags?: Flags }> = (
-	(Options['flags'] extends Flags ? Options['flags'] : unknown)
+	(Options['flags'] extends Flags ? NormalizeDescribedDefaults<Options['flags']> : unknown)
 	& (Options extends { version: string } ? { version: BooleanConstructor } : unknown)
 	& (Options extends { help: false } ? unknown : { help: BooleanConstructor })
 );

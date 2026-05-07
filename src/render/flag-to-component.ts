@@ -1,5 +1,6 @@
 import { flagNameToKebab } from 'type-flag';
 import type { Flags } from '../types.ts';
+import { getDefaultDescription } from '../utils/flag-defaults.ts';
 import type { Flag } from './components.ts';
 
 type FlagEntry = readonly [name: string, kebabName: string];
@@ -62,12 +63,9 @@ export const flagsToComponentList = (rawFlags: Flags): Flag[] => {
 
 		let description = typeof cfg.description === 'string' ? cfg.description : '';
 		if ('default' in cfg) {
-			let defaultValue = cfg.default;
-			if (typeof defaultValue === 'function') {
-				defaultValue = (defaultValue as () => unknown)();
-			}
-			if (defaultValue !== undefined) {
-				description += ` (default: ${JSON.stringify(defaultValue)})`;
+			const defaultDescription = getDefaultDescription(cfg.default);
+			if (defaultDescription !== undefined) {
+				description += ` (default: ${defaultDescription})`;
 			}
 		}
 

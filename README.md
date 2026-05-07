@@ -143,6 +143,25 @@ The flag description object can be used to store additional information about th
 
 All of the provided information will be used to generate better help documentation.
 
+If a default is computed at runtime, use `default: { value, description }` to show stable help text without calling the default function while rendering `--help`:
+
+```ts
+cli({
+    flags: {
+        token: {
+            type: String,
+            description: 'API token',
+            default: {
+                value: () => process.env.API_TOKEN,
+                description: 'from API_TOKEN'
+            }
+        }
+    }
+})
+```
+
+The wrapper is only recognized when both `value` and `description` are present. Object defaults like `{ value: 30 }` or `{ description: 'local' }` remain plain default values.
+
 Example:
 
 ```ts
@@ -1032,7 +1051,7 @@ An object mapping flag names (in camelCase) to a type function or descriptor:
 | - | - | - |
 | `type` | `Function` | Flag value parsing function. |
 | `alias` | `string` | Single character alias for the flag. |
-| `default` | `any` | Default value for the flag. |
+| `default` | `any \| { value: any, description: string }` | Default value for the flag. Use `{ value, description }` to show explicit help text for computed defaults without executing them while rendering help. |
 | `description` | `string` | Description shown in `--help`. |
 | `placeholder` | `string` | Placeholder for the flag value shown in `--help`. |
 

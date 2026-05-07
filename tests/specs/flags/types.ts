@@ -41,6 +41,30 @@ describe('flags types', () => {
 		expectTypeOf(parsed.flags.booleanFlag).toBeBoolean();
 	});
 
+	test('flag types with described defaults', async () => {
+		const parsed = cli({
+			flags: {
+				stringFlag: {
+					type: String,
+					default: {
+						value: 'default',
+						description: 'from config',
+					},
+				},
+				numberFlag: {
+					type: Number,
+					default: {
+						value: () => 42,
+						description: 'computed',
+					},
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.stringFlag).toBeString();
+		expectTypeOf(parsed.flags.numberFlag).toBeNumber();
+	});
+
 	test('array flag types', async () => {
 		const parsed = cli({
 			flags: {

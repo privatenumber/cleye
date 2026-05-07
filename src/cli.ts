@@ -11,6 +11,7 @@ import type {
 import { defaultHelp } from './render/default-help.ts';
 import { render } from './render/render.ts';
 import { AUTO_FLAG, resolveAutoFlags } from './utils/auto-flags.ts';
+import { unwrapDescribedDefaults } from './utils/flag-defaults.ts';
 import { CleyeExit } from './utils/cleye-exit.ts';
 import { isThenable, isModuleWithDefault } from './utils/promise-helpers.ts';
 import { findClosest } from './utils/find-closest.ts';
@@ -287,8 +288,10 @@ function cli<
 		const injectedFlags = resolveAutoFlags(flags, options);
 		const { help } = options;
 
+		const parseFlags = unwrapDescribedDefaults(flags);
+
 		const parsed = typeFlag(
-			flags,
+			parseFlags,
 			argv,
 			{
 				// `hitCommand` flips on the first command-name argument the

@@ -66,6 +66,30 @@ argv.flags.count // number[]
 
 Flag name is camelCase; parsed from kebab-case CLI input (`--output-dir` → `outputDir`).
 
+**Described defaults** — use `default: { value, description }` when a default
+needs separate help text, especially for function defaults that should not run
+while rendering `--help`:
+
+```ts
+cli({
+    flags: {
+        token: {
+            type: String,
+            default: {
+                value: () => process.env.API_TOKEN,
+                description: 'from API_TOKEN'
+            }
+        }
+    }
+})
+// --help shows: (default: from API_TOKEN)
+// argv.flags.token is still string | undefined
+```
+
+The wrapper is only recognized when both `value` and `description` are present.
+`default: { value: 30 }` and `default: { description: 'local' }` are plain
+object defaults.
+
 **Delimiters** — `=`, `:`, and `.` all work as value separators:
 
 ```sh

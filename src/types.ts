@@ -7,12 +7,15 @@ import type { Node } from './render/components.ts';
 import type {
 	AnyFunction,
 	CamelCase,
+	DescribedDefault,
 	NoopRunCommand,
 	ParameterType,
 	ResolvedFlags,
 	RunCommandFor,
 	StripBrackets,
 } from './types-internal.ts';
+
+export type { DescribedDefault } from './types-internal.ts';
 
 export type Flags = BaseFlags<{
 
@@ -35,6 +38,13 @@ export type Flags = BaseFlags<{
 	 * ```
 	 */
 	placeholder?: string;
+
+	/**
+	 * Default value plus display text for help output. `value` is used for
+	 * parsing; `description` is rendered in help without executing `value`.
+	 * Objects with only `value` or only `description` are plain object defaults.
+	 */
+	default?: unknown | (() => unknown) | DescribedDefault;
 }>;
 
 export type HelpForm = 'short' | 'long';

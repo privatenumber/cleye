@@ -146,6 +146,101 @@ describe('flags parsing', () => {
 			}
 		});
 
+		test('described default unwraps value for parsing', () => {
+			const parsed = cli({
+				flags: {
+					timeout: {
+						type: Number,
+						default: {
+							value: 30,
+							description: '30 seconds',
+						},
+					},
+				},
+			}, undefined, []);
+			if (parsed.command === undefined) {
+				expect<number>(parsed.flags.timeout).toBe(30);
+			}
+		});
+
+		test('described function default unwraps value for parsing', () => {
+			const defaultFunction = spy(() => 'hello');
+			const parsed = cli({
+				flags: {
+					myFlag: {
+						type: String,
+						default: {
+							value: defaultFunction,
+							description: 'from config',
+						},
+					},
+				},
+			}, undefined, []);
+			if (parsed.command === undefined) {
+				expect<string>(parsed.flags.myFlag).toBe('hello');
+				expect(defaultFunction.called).toBe(true);
+			}
+		});
+
+		test('object default without reserved keys remains a plain default object', () => {
+			const defaultValue = { count: 1 };
+			const parsed = cli({
+				flags: {
+					config: {
+						type: String,
+						default: defaultValue,
+					},
+				},
+			}, undefined, []);
+			if (parsed.command === undefined) {
+				expect(parsed.flags.config).toBe(defaultValue);
+			}
+		});
+
+		test('object default with only value key remains a plain default object', () => {
+			const defaultValue = { value: 30 };
+			const parsed = cli({
+				flags: {
+					timeout: {
+						type: Number,
+						default: defaultValue,
+					},
+				},
+			}, undefined, []);
+			if (parsed.command === undefined) {
+				expect(parsed.flags.timeout).toBe(defaultValue);
+			}
+		});
+
+		test('object default with only description key remains a plain default object', () => {
+			const defaultValue = { description: '30 seconds' };
+			const parsed = cli({
+				flags: {
+					timeout: {
+						type: Number,
+						default: defaultValue,
+					},
+				},
+			}, undefined, []);
+			if (parsed.command === undefined) {
+				expect(parsed.flags.timeout).toBe(defaultValue);
+			}
+		});
+
+		test('described default requires string description', () => {
+			expect(() => cli({
+				flags: {
+					timeout: {
+						type: Number,
+						default: {
+							value: 30,
+							description: 30,
+						},
+					},
+				},
+			}, undefined, [])).toThrow('Invalid described default');
+		});
+
 		test('flag with empty string value', () => {
 			const parsed = cli({
 				flags: {

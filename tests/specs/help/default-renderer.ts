@@ -1,5 +1,6 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
+import { spy } from 'nanospy';
 import { defaultHelp } from '../../../src/render/default-help.ts';
 import { render } from '../../../src/render/render.ts';
 
@@ -289,17 +290,105 @@ describe('defaultHelp', () => {
 			expect(portLine).toContain('<number>');
 		});
 
-		test('function default is invoked and shown in help', () => {
+		test('function default is not invoked while rendering help', () => {
+			const defaultFunction = spy(() => 'computed-default');
 			const output = stripVTControlCharacters(renderDefault({
 				flags: {
 					token: {
 						type: String,
 						description: 'API token',
-						default: () => 'computed-default',
+						default: defaultFunction,
 					},
 				},
 			}));
-			expect(output).toContain('(default: "computed-default")');
+			expect(output).toContain('(default: computed)');
+			expect(defaultFunction.called).toBe(false);
+		});
+
+		test('described default uses description in help', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					timeout: {
+						type: Number,
+						description: 'Request timeout',
+						default: {
+							value: 30,
+							description: '30 seconds',
+						},
+					},
+				},
+			}));
+			expect(output).toContain('(default: 30 seconds)');
+		});
+
+		test('described function default uses description without invoking value', () => {
+			const defaultFunction = spy(() => 'computed-default');
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					token: {
+						type: String,
+						description: 'API token',
+						default: {
+							value: defaultFunction,
+							description: 'from config',
+						},
+					},
+				},
+			}));
+			expect(output).toContain('(default: from config)');
+			expect(defaultFunction.called).toBe(false);
+		});
+
+		test('object default with only value key renders as a plain default object', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					timeout: {
+						type: Number,
+						default: { value: 30 },
+					},
+				},
+			}));
+			expect(output).toContain('(default: {"value":30})');
+		});
+
+		test('object default with only description key renders as a plain default object', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					timeout: {
+						type: Number,
+						default: { description: '30 seconds' },
+					},
+				},
+			}));
+			expect(output).toContain('(default: {"description":"30 seconds"})');
+		});
+
+		test('explicit undefined default does not render a default annotation', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					token: {
+						type: String,
+						description: 'API token',
+						default: undefined,
+					},
+				},
+			}));
+			expect(output).toContain('API token');
+			expect(output).not.toContain('(default:');
+		});
+
+		test('described default with non-string description throws while rendering help', () => {
+			expect(() => renderDefault({
+				flags: {
+					timeout: {
+						type: Number,
+						default: {
+							value: 30,
+							description: 30,
+						},
+					},
+				},
+			})).toThrow('Invalid described default');
 		});
 
 		test('single-character flag name renders as short-only flag', () => {
