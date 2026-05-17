@@ -119,6 +119,29 @@ describe('flags types', () => {
 		}>();
 	});
 
+	test('user-defined help flag keeps its parser type', async () => {
+		const parsed = cli({
+			flags: {
+				help: String,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.help).toEqualTypeOf<string | undefined>();
+	});
+
+	test('user-defined version flag keeps its parser type when version option is set', async () => {
+		const parsed = cli({
+			version: '1.0.0',
+			flags: {
+				version: {
+					type: Number,
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.version).toEqualTypeOf<number | undefined>();
+	});
+
 	test('help flag is not added when help is false', async () => {
 		const parsed = cli({
 			help: false,

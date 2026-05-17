@@ -82,10 +82,28 @@ type NormalizeDescribedDefaults<Schemas> = {
 		: Schemas[FlagName];
 };
 
+type UserFlags<Options extends { flags?: Flags }> = Options['flags'] extends Flags
+	? NormalizeDescribedDefaults<Options['flags']>
+	: unknown;
+
+type FlagKeyExists<Options extends { flags?: Flags }, FlagName extends string> = (
+	Options['flags'] extends Flags
+		? FlagName extends keyof Options['flags']
+			? true
+			: false
+		: false
+);
+
+type AutoFlag<
+	Options extends { flags?: Flags },
+	FlagName extends string,
+	Schema,
+> = FlagKeyExists<Options, FlagName> extends true ? unknown : Schema;
+
 export type ResolvedFlags<Options extends { flags?: Flags }> = (
-	(Options['flags'] extends Flags ? NormalizeDescribedDefaults<Options['flags']> : unknown)
-	& (Options extends { version: string } ? { version: BooleanConstructor } : unknown)
-	& (Options extends { help: false } ? unknown : { help: BooleanConstructor })
+	UserFlags<Options>
+	& (Options extends { version: string } ? AutoFlag<Options, 'version', { version: BooleanConstructor }> : unknown)
+	& (Options extends { help: false } ? unknown : AutoFlag<Options, 'help', { help: BooleanConstructor }>)
 );
 
 /** Extract the handler from a CommandEntry — the entry itself or `entry.loader`. */
