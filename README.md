@@ -579,7 +579,7 @@ await cli({
 })
 ```
 
-`runCommand` is idempotent — calling it multiple times returns the same value. Its return type mirrors the matched handler: synchronous handlers return their value directly, async handlers (and the `loader: () => import(...)` pattern) return a Promise. See [Passing data to commands](#passing-data-to-commands) for how the child receives the argument.
+`runCommand` invokes the matched command each time you call it, using the arguments from that call. Store the returned value or Promise yourself if you need to reuse a result. Its return type mirrors the matched handler: synchronous handlers return their value directly, async handlers (and the `loader: () => import(...)` pattern) return a Promise. See [Passing data to commands](#passing-data-to-commands) for how the child receives the argument.
 
 ### Command files
 
@@ -625,6 +625,8 @@ export default (config: Config) => cli({
     console.log(config, argv._.package, argv.flags.saveDev)
 })
 ```
+
+Default-export handlers run every time `runCommand(...)` is called, so this is the right style when parent code may retry or invoke a command with different data. Side-effect command files still follow JavaScript module caching: a second dynamic import of the same file does not re-run its top-level `cli()` call.
 
 ### Passing data to commands
 
@@ -1016,7 +1018,7 @@ type ParsedArgv = {
     // `undefined`) when no command matched. When a command matched, the
     // signature and return mirror the handler's shape: arguments and sync
     // value for sync handlers, Promise for async handlers and lazy
-    // loaders. Idempotent — repeated calls return the same value.
+    // loaders. Each call invokes the command with that call's arguments.
     runCommand: (...arguments_: unknown[]) => unknown
 
     // Print the configured version to stdout; no-op when no version is set.

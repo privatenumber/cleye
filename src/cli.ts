@@ -111,9 +111,8 @@ type MatchedCommand = {
  * invoked it themselves (preserves fire-and-forget semantics for unhandled
  * rejections in user code).
  *
- * Repeated calls to `run` return the cached result (idempotent); the
- * second-and-later `handlerArguments` are silently ignored. When no command
- * matched, returns a no-op that yields `undefined` synchronously so
+ * Each `runCommand` call invokes the matched handler. When no command matched,
+ * returns a no-op that yields `undefined` synchronously so
  * `await parsed.runCommand()` is harmless.
  *
  * The handler invocation runs inside an AsyncLocalStorage context so nested
@@ -129,54 +128,44 @@ const createRunCommand = (
 	runCommand: Handler;
 	runCommandHasBeenCalled: () => boolean;
 } => {
-	let runCommandResult: unknown;
-	let runCommandError: unknown;
-	let runCommandFailed = false;
 	let runCommandCalled = false;
+	const runCommandHasBeenCalled = () => runCommandCalled;
+
+	if (!matchedCommand) {
+		return {
+			runCommand: () => undefined,
+			runCommandHasBeenCalled,
+		};
+	}
+
+	const context: CliContext = {
+		name: matchedCommand.name,
+		argv: argv.slice(1),
+		parentOptions: resolvedOptions,
+	};
+	const { handler } = matchedCommand;
 
 	const runCommand: Handler = (...handlerArguments) => {
-		if (!matchedCommand) {
-			return undefined;
-		}
-		if (runCommandCalled) {
-			if (runCommandFailed) {
-				throw runCommandError;
-			}
-			return runCommandResult;
-		}
 		runCommandCalled = true;
-		const context: CliContext = {
-			name: matchedCommand.name,
-			argv: argv.slice(1),
-			parentOptions: resolvedOptions,
-		};
 
-		try {
-			runCommandResult = runWithCliContext(context, () => {
-				const handlerReturn = matchedCommand.handler(...handlerArguments);
-				if (isThenable(handlerReturn)) {
-					return handlerReturn.then(awaited => (
-						isModuleWithDefault(awaited)
-							? awaited.default(...handlerArguments)
-							: awaited
-					));
-				}
-				return isModuleWithDefault(handlerReturn)
-					? handlerReturn.default(...handlerArguments)
-					: handlerReturn;
-			});
-		} catch (error) {
-			runCommandError = error;
-			runCommandFailed = true;
-			throw error;
-		}
-
-		return runCommandResult;
+		return runWithCliContext(context, () => {
+			const handlerReturn = handler(...handlerArguments);
+			if (isThenable(handlerReturn)) {
+				return handlerReturn.then(awaited => (
+					isModuleWithDefault(awaited)
+						? awaited.default(...handlerArguments)
+						: awaited
+				));
+			}
+			return isModuleWithDefault(handlerReturn)
+				? handlerReturn.default(...handlerArguments)
+				: handlerReturn;
+		});
 	};
 
 	return {
 		runCommand,
-		runCommandHasBeenCalled: () => runCommandCalled,
+		runCommandHasBeenCalled,
 	};
 };
 

@@ -499,48 +499,95 @@ describe('runCommand error handling', () => {
 	});
 }, { parallel: false });
 
-describe('runCommand idempotency', () => {
-	test('returns the same promise on multiple calls', async () => {
+describe('runCommand repeated invocation', () => {
+	test('invokes the handler on each call with the latest arguments', async () => {
+		const calls: string[] = [];
 		const parsed = cli({
 			commands: {
-				build: () => {},
+				build: async (value: string) => {
+					calls.push(value);
+					return `built:${value}`;
+				},
 			},
 		}, undefined, ['build']);
 
-		const promise1 = parsed.runCommand();
-		const promise2 = parsed.runCommand();
-		expect(promise1).toBe(promise2);
-		await promise1;
+		const promise1 = parsed.runCommand('one');
+		const promise2 = parsed.runCommand('two');
+
+		expect(promise1).not.toBe(promise2);
+		expect(await promise1).toBe('built:one');
+		expect(await promise2).toBe('built:two');
+		expect(calls).toStrictEqual(['one', 'two']);
 	});
 
-	test('rethrows the same sync failure on multiple calls', () => {
-		const error = new Error('boom');
+	test('invokes a loader default export on each call with the latest arguments', async () => {
+		const calls: string[] = [];
+		let loaderCalls = 0;
+		const moduleNamespace = {
+			default: (value: string) => {
+				calls.push(value);
+				return `built:${value}`;
+			},
+		};
+		const parsed = cli({
+			commands: {
+				build: {
+					loader: () => {
+						loaderCalls += 1;
+						return moduleNamespace;
+					},
+				},
+			},
+		}, undefined, ['build']);
+
+		expect(await parsed.runCommand('one')).toBe('built:one');
+		expect(await parsed.runCommand('two')).toBe('built:two');
+		expect(loaderCalls).toBe(2);
+		expect(calls).toStrictEqual(['one', 'two']);
+	});
+
+	test('can retry after a synchronous failure', () => {
+		let ready = false;
 		let callCount = 0;
 		const parsed = cli({
 			commands: {
 				fail: () => {
 					callCount += 1;
-					throw error;
+					if (!ready) {
+						throw new Error('not ready');
+					}
+					return 'ok';
 				},
 			},
 		}, undefined, ['fail']);
 
-		let firstError: unknown;
-		let secondError: unknown;
-		try {
-			parsed.runCommand();
-		} catch (error_) {
-			firstError = error_;
-		}
-		try {
-			parsed.runCommand();
-		} catch (error_) {
-			secondError = error_;
-		}
+		expect(() => parsed.runCommand()).toThrow('not ready');
+		ready = true;
 
-		expect(firstError).toBe(error);
-		expect(secondError).toBe(error);
-		expect(callCount).toBe(1);
+		expect(parsed.runCommand()).toBe('ok');
+		expect(callCount).toBe(2);
+	});
+
+	test('can retry after an asynchronous failure', async () => {
+		let ready = false;
+		let callCount = 0;
+		const parsed = cli({
+			commands: {
+				fail: async () => {
+					callCount += 1;
+					if (!ready) {
+						throw new Error('not ready');
+					}
+					return 'ok';
+				},
+			},
+		}, undefined, ['fail']);
+
+		await expect(parsed.runCommand()).rejects.toThrow('not ready');
+		ready = true;
+
+		await expect(parsed.runCommand()).resolves.toBe('ok');
+		expect(callCount).toBe(2);
 	});
 }, { parallel: false });
 

@@ -317,7 +317,7 @@ cli({
 })
 ```
 
-`runCommand` is idempotent — repeated calls return the same value. When no command matched, it's a callable noop returning `undefined` (sync), so `await argv.runCommand()` works regardless.
+`runCommand` invokes the matched command each time you call it, using that call's arguments. When no command matched, it's a callable noop returning `undefined` (sync), so `await argv.runCommand()` works regardless.
 
 ---
 
