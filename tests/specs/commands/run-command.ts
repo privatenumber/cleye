@@ -475,6 +475,36 @@ describe('runCommand idempotency', () => {
 		expect(promise1).toBe(promise2);
 		await promise1;
 	});
+
+	test('rethrows the same sync failure on multiple calls', () => {
+		const error = new Error('boom');
+		let callCount = 0;
+		const parsed = cli({
+			commands: {
+				fail: () => {
+					callCount += 1;
+					throw error;
+				},
+			},
+		}, undefined, ['fail']);
+
+		let firstError: unknown;
+		let secondError: unknown;
+		try {
+			parsed.runCommand();
+		} catch (error_) {
+			firstError = error_;
+		}
+		try {
+			parsed.runCommand();
+		} catch (error_) {
+			secondError = error_;
+		}
+
+		expect(firstError).toBe(error);
+		expect(secondError).toBe(error);
+		expect(callCount).toBe(1);
+	});
 }, { parallel: false });
 
 describe('runCommand return value', () => {

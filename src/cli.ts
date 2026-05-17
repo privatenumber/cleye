@@ -130,6 +130,8 @@ const createRunCommand = (
 	runCommandHasBeenCalled: () => boolean;
 } => {
 	let runCommandResult: unknown;
+	let runCommandError: unknown;
+	let runCommandFailed = false;
 	let runCommandCalled = false;
 
 	const runCommand: Handler = (...handlerArguments) => {
@@ -137,6 +139,9 @@ const createRunCommand = (
 			return undefined;
 		}
 		if (runCommandCalled) {
+			if (runCommandFailed) {
+				throw runCommandError;
+			}
 			return runCommandResult;
 		}
 		runCommandCalled = true;
@@ -146,19 +151,25 @@ const createRunCommand = (
 			parentOptions: resolvedOptions,
 		};
 
-		runCommandResult = runWithCliContext(context, () => {
-			const handlerReturn = matchedCommand.handler(...handlerArguments);
-			if (isThenable(handlerReturn)) {
-				return handlerReturn.then(awaited => (
-					isModuleWithDefault(awaited)
-						? awaited.default(...handlerArguments)
-						: awaited
-				));
-			}
-			return isModuleWithDefault(handlerReturn)
-				? handlerReturn.default(...handlerArguments)
-				: handlerReturn;
-		});
+		try {
+			runCommandResult = runWithCliContext(context, () => {
+				const handlerReturn = matchedCommand.handler(...handlerArguments);
+				if (isThenable(handlerReturn)) {
+					return handlerReturn.then(awaited => (
+						isModuleWithDefault(awaited)
+							? awaited.default(...handlerArguments)
+							: awaited
+					));
+				}
+				return isModuleWithDefault(handlerReturn)
+					? handlerReturn.default(...handlerArguments)
+					: handlerReturn;
+			});
+		} catch (error) {
+			runCommandError = error;
+			runCommandFailed = true;
+			throw error;
+		}
 
 		return runCommandResult;
 	};
