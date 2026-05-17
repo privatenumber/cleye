@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { typeFlag } from 'type-flag';
+import { createPositionalArguments, typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
 	CliOptions,
@@ -296,14 +296,14 @@ function cli<
 			parseFlags,
 			argv,
 			{
-				// `hitCommand` flips on the first command-name argument the
-				// parser sees. From then on, every remaining token is preserved
-				// verbatim in argv for the matched command's handler.
+				// `hitCommand` flips on the first positional when commands are
+				// defined. From then on, every remaining token is preserved
+				// verbatim in argv for command matching or wildcard dispatch.
 				ignore(type, flagOrArgv, value) {
 					if (hitCommand) {
 						return true;
 					}
-					if (type === 'argument' && commandIndex.names.has(flagOrArgv)) {
+					if (type === 'argument' && commandIndex.names.size > 0) {
 						hitCommand = true;
 						return true;
 					}
@@ -384,10 +384,14 @@ function cli<
 			}
 		}
 
+		if (hitCommand && !matchedCommand) {
+			parsed._ = createPositionalArguments(argv);
+		}
+
 		// Strict commands: when a command was expected but none matched, suggest
 		// the closest known command/alias and exit.
 		const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
-		const positional = (parsed._ as string[])[0];
+		const positional = hitCommand ? argv[0] : undefined;
 		if (
 			strictCommands
 			&& !matchedCommand

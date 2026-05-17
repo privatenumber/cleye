@@ -80,6 +80,43 @@ describe('command with callback', () => {
 		expect(callbackSpy.called).toBe(true);
 		expect(buildHandler.called).toBe(false);
 	});
+
+	test('leading unknown command candidate is not skipped to match a later command', async () => {
+		const buildHandler = spy();
+
+		await cli(
+			{
+				commands: {
+					build: () => {
+						buildHandler();
+					},
+				},
+			},
+			(parsed) => {
+				expect(parsed.command).toBeUndefined();
+				expect(parsed._.slice()).toStrictEqual(['typo', 'build']);
+			},
+			['typo', 'build'],
+		);
+
+		expect(buildHandler.called).toBe(false);
+	});
+
+	test('leading unknown command candidate preserves end-of-flags positionals', async () => {
+		await cli(
+			{
+				commands: {
+					build: () => {},
+				},
+			},
+			(parsed) => {
+				expect(parsed.command).toBeUndefined();
+				expect(parsed._.slice()).toStrictEqual(['typo', 'after']);
+				expect(parsed._['--']).toStrictEqual(['after']);
+			},
+			['typo', '--', 'after'],
+		);
+	});
 }, { parallel: false });
 
 describe('async command callbacks', () => {

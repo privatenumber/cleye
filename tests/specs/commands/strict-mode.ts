@@ -33,6 +33,25 @@ describe('strictCommands', () => {
 		expect(mocked.processExit.calls[0]).toStrictEqual([1]);
 	});
 
+	test('unknown command is reported before flags after the command candidate', () => {
+		const mocked = mockEnvFunctions();
+
+		cli({
+			commands: {
+				build: () => 'built',
+			},
+			strictCommands: true,
+			strictFlags: true,
+		}, undefined, ['biuld', '--watch']);
+
+		mocked.restore();
+
+		expect(mocked.consoleError.calls).toStrictEqual([[
+			'Error: Unknown command: "biuld". (Did you mean "build"?)',
+		]]);
+		expect(mocked.processExit.calls[0]).toStrictEqual([1]);
+	});
+
 	test('unknown command with no close match omits suggestion', () => {
 		const mocked = mockEnvFunctions();
 

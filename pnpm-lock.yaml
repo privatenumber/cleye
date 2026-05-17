@@ -15,8 +15,8 @@ importers:
         specifier: 8.2.0
         version: 8.2.0
       type-flag:
-        specifier: 5.0.0-beta.6
-        version: 5.0.0-beta.6
+        specifier: 5.0.0-beta.7
+        version: 5.0.0-beta.7
     devDependencies:
       '@types/node':
         specifier: ^24.9.2
@@ -2800,8 +2800,8 @@ packages:
   type-flag@4.2.0:
     resolution: {integrity: sha512-6h6QpSh5glA+BrMCq8FINo4o/BqSHNQdfIPpeSBt0s/6mynPaQWWZL+RHaYm95htTbid/spUbJer1yOCsA6ezQ==}
 
-  type-flag@5.0.0-beta.6:
-    resolution: {integrity: sha512-2QkF4uxDuj3RP5Gsvuac+lV0onYID50Wll2aKBlHABbL4iNrVAG/gKfQS0n+yTcTtOVO/mZbNfEhb/lgjOo+fw==}
+  type-flag@5.0.0-beta.7:
+    resolution: {integrity: sha512-F8zbG8r3NTlO9A3LXl6NFU4+ceMU6JJDDuJ3YixsNKBOfaTVTyctPjW2U3WHlo4tUbo+dlV3Nts88w9zGs81pg==}
     engines: {node: '>=22.22.2'}
 
   typed-array-buffer@1.0.3:
@@ -6134,7 +6134,7 @@ snapshots:
 
   type-flag@4.2.0: {}
 
-  type-flag@5.0.0-beta.6: {}
+  type-flag@5.0.0-beta.7: {}
 
   typed-array-buffer@1.0.3:
     dependencies:
