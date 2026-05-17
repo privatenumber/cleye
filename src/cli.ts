@@ -361,7 +361,7 @@ function cli<
 
 		if (hitCommand && argv.length > 0) {
 			const potentialCommand = argv[0];
-			const resolvedName = potentialCommand in options.commands!
+			const resolvedName = Object.hasOwn(options.commands!, potentialCommand)
 				? potentialCommand
 				: commandIndex.aliases.get(potentialCommand);
 			if (resolvedName) {

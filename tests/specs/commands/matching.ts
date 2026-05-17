@@ -46,6 +46,24 @@ describe('error handling', () => {
 			),
 		).toThrow('Duplicate command alias: "shared"');
 	});
+
+	test('alias cannot shadow an existing command name', () => {
+		expect(
+			() => cli(
+				{
+					commands: {
+						build: () => {},
+						test: {
+							alias: 'build',
+							loader: () => {},
+						},
+					},
+				},
+				undefined,
+				['build'],
+			),
+		).toThrow('Duplicate command alias: "build"');
+	});
 }, { parallel: false });
 
 describe('command matching', () => {
@@ -129,6 +147,22 @@ describe('command matching', () => {
 				build: () => {},
 			},
 		}, undefined, []);
+
+		mocked.restore();
+
+		expect(mocked.consoleLog.called).toBe(true);
+		expect(mocked.processExit.calls[0]).toStrictEqual([1]);
+	});
+
+	test('Object.prototype keys are not matched as commands', async () => {
+		const mocked = mockEnvFunctions();
+
+		cli({
+			name: 'my-cli',
+			commands: {
+				build: () => {},
+			},
+		}, undefined, ['toString']);
 
 		mocked.restore();
 

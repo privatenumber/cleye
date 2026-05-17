@@ -12,8 +12,8 @@
  *   - an array of alias strings
  *   - `undefined` when the entry has no alias
  *
- * If `onDuplicateAlias` is provided, it is invoked when the same alias is
- * declared by two different entries; throw inside the callback to reject
+ * If `onDuplicateAlias` is provided, it is invoked when an alias collides
+ * with another alias or a canonical name; throw inside the callback to reject
  * the configuration.
  */
 export type NameIndex = {
@@ -39,10 +39,9 @@ export const buildNameIndex = <Entry>(
 	getAlias: (entry: Entry) => string | string[] | undefined,
 	onDuplicateAlias?: (alias: string) => void,
 ): NameIndex => {
-	const names = new Set<string>();
+	const names = new Set(Object.keys(entries));
 	const aliases = new Map<string, string>();
 	for (const [name, entry] of Object.entries(entries)) {
-		names.add(name);
 		const aliasList = getAlias(entry);
 		if (aliasList === undefined) {
 			continue;
@@ -55,7 +54,7 @@ export const buildNameIndex = <Entry>(
 			if (typeof alias !== 'string' || !alias) {
 				continue;
 			}
-			if (onDuplicateAlias && aliases.has(alias)) {
+			if (onDuplicateAlias && names.has(alias)) {
 				onDuplicateAlias(alias);
 			}
 			names.add(alias);
