@@ -508,7 +508,7 @@ $ my-cli --verbose install lodash --save-dev
 #        parent flag              child flags
 ```
 
-If no callback is provided, step 2 is skipped and the command runs immediately. If no command matches, help is shown (or an error if [`strictCommands`](#strict-commands) is enabled).
+If no callback is provided, step 2 is skipped and you must call await argv.runCommand() explicitly. If no command matches, help is shown (or an error if [strictCommands](#strict-commands) is enabled).
 
 > [!IMPORTANT]
 > `parameters` and `commands` are mutually exclusive at the same level. The leading positional token can be a command name OR a parameter value, never both — there's no way to disambiguate without violating fail-fast (a typo in a command name would silently become a parameter value). cleye enforces this at the type level and throws at runtime if both are passed.
