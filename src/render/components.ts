@@ -156,6 +156,10 @@ export const createComponents = ({ measureString }: CreateComponentsOptions) => 
 		kind: 'flags-inline',
 		flags: flagList,
 		render: () => {
+			if (flagList.length === 0) {
+				return '';
+			}
+
 			const width = getWidth();
 			const flagWidth = Math.max(...flagList.map(flagCellLength)) + 2;
 			const contIndent = ' '.repeat(flagWidth);

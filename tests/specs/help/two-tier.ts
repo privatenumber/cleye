@@ -160,6 +160,37 @@ describe('two-tier help (-h vs --help)', () => {
 		expect(mocked.consoleLog.calls[0]?.[0]).toBe('first\n\nsecond');
 	});
 
+	test('showHelp overrides preserve configured help.render', async () => {
+		const mocked = mockEnvFunctions();
+		let receivedDescription: string | undefined;
+		let receivedVersion: string | undefined;
+
+		await cli(
+			{
+				name: 'my-cli',
+				help: {
+					description: 'configured description',
+					render: (options) => {
+						if (typeof options.help === 'object') {
+							receivedDescription = options.help.description;
+							receivedVersion = options.help.version;
+						}
+						return 'configured renderer';
+					},
+				},
+			},
+			parsed => parsed.showHelp({
+				version: '1.2.3',
+			}),
+			[],
+		);
+		mocked.restore();
+
+		expect(mocked.consoleLog.calls[0]?.[0]).toBe('configured renderer');
+		expect(receivedDescription).toBe('configured description');
+		expect(receivedVersion).toBe('1.2.3');
+	});
+
 	test('help.render returning an invalid shape throws (fail-fast on misuse)', () => {
 		// TypeScript prevents this at compile time; the runtime behavior is
 		// to fail loudly rather than silently print empty output. Pin it.

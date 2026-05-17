@@ -206,6 +206,10 @@ describe('components', () => {
 			expect(descriptionColumn(lines[0], 'show help'))
 				.toBe(descriptionColumn(lines[1], 'enable verbose output'));
 		});
+
+		test('empty list renders empty output', () => {
+			expect(flagsInline([]).render()).toBe('');
+		});
 	});
 
 	describe('flagsHanging', () => {
@@ -271,6 +275,15 @@ describe('components', () => {
 			const node = flags(testFlags);
 			expect(node.kind).toBe('flags');
 			expect((node as unknown as { flags: Flag[] }).flags).toBe(testFlags);
+		});
+
+		test('empty list renders empty output', () => {
+			const restore = withColumns(80);
+			try {
+				expect(flags([]).render()).toBe('');
+			} finally {
+				restore();
+			}
 		});
 	});
 

@@ -1079,7 +1079,7 @@ type CommandEntry =
 | `description` | `string` | Description shown in `--help`. |
 | `usage` | `string \| string[] \| false` | Usage examples. `false` disables auto-generated usage. |
 | `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
-| `render` | `(nodes, renderers) => string` | Function to customize the help document. |
+| `render` | `HelpRenderer` (`(options, { form }) => string \| Node \| Node[]`) | Function to customize the help document. |
 
 #### callback(parsed)
 
@@ -1104,13 +1104,18 @@ import type {
     CliOptions,
     CommandEntry,
     Commands,
+    DescribedDefault,
+    ExitReason,
     Flags,
-    HelpDocumentNode,
     HelpOptions,
-    ParsedArgv,
-    Renderers,
-    TypeFlag
+    HelpRenderer,
+    ParsedArgv
 } from 'cleye'
+
+import type {
+    Flag,
+    Node
+} from 'cleye/help'
 ```
 
 ## Sponsors

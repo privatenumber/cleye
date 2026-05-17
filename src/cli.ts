@@ -180,12 +180,18 @@ const createShowHelp = (
 	flags: Record<string, unknown>,
 	help: false | HelpOptions | undefined,
 ) => (helpOptions?: HelpOptions, form: HelpForm = 'long'): void => {
-	const effectiveHelp = helpOptions ?? help;
+	const effectiveHelp = typeof help === 'object' && helpOptions
+		? {
+			...help,
+			...helpOptions,
+			render: helpOptions.render ?? help.render,
+		}
+		: helpOptions ?? help;
 	const effectiveOptions = {
 		...options,
 		name: effectiveName,
 		flags,
-		...(helpOptions ? { help: helpOptions } : {}),
+		...(effectiveHelp === undefined ? {} : { help: effectiveHelp }),
 	} as CliOptions;
 	const renderFunction = (typeof effectiveHelp === 'object' && effectiveHelp?.render) ? effectiveHelp.render : defaultHelp;
 	console.log(renderToString(renderFunction(effectiveOptions, { form })));
