@@ -585,6 +585,18 @@ describe('defaultHelp', () => {
 			expect(output).not.toContain('(default: 3)');
 		});
 
+		test('short form preserves authored default-looking descriptions', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					output: {
+						type: String,
+						description: 'Destination (default: stdout)',
+					},
+				},
+			}, { form: 'short' }));
+			expect(output).toContain('Destination (default: stdout)');
+		});
+
 		test('long form (default) includes description and examples', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				name: 'my-cli',

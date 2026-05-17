@@ -5,6 +5,10 @@ import type { Flag } from './components.ts';
 
 type FlagEntry = readonly [name: string, kebabName: string];
 
+type FlagsToComponentListOptions = {
+	includeDefaultDescriptions?: boolean;
+};
+
 const flagNameSorter = new Intl.Collator('en', {
 	numeric: true,
 	sensitivity: 'base',
@@ -34,10 +38,13 @@ const inferFlagArgument = (typeValue: unknown): string | undefined => {
 /**
  * Convert a user-declared flag config map into the `Flag[]` shape the help
  * components render. Sorts naturally by displayed name, infers `<arg>`
- * labels, appends `(default: ...)` to descriptions, and routes single-char
- * names through the short-flag (`-x`) path.
+ * labels, optionally appends `(default: ...)` to descriptions, and routes
+ * single-char names through the short-flag (`-x`) path.
  */
-export const flagsToComponentList = (rawFlags: Flags): Flag[] => {
+export const flagsToComponentList = (
+	rawFlags: Flags,
+	{ includeDefaultDescriptions = true }: FlagsToComponentListOptions = {},
+): Flag[] => {
 	const flagEntries = Object.keys(rawFlags)
 		.map((name): FlagEntry => [name, flagNameToKebab(name)])
 		.sort((a, b) => flagNameSorter.compare(a[1], b[1]));
@@ -62,7 +69,7 @@ export const flagsToComponentList = (rawFlags: Flags): Flag[] => {
 		}
 
 		let description = typeof cfg.description === 'string' ? cfg.description : '';
-		if ('default' in cfg) {
+		if (includeDefaultDescriptions && 'default' in cfg) {
 			const defaultDescription = getDefaultDescription(cfg.default);
 			if (defaultDescription !== undefined) {
 				description += ` (default: ${defaultDescription})`;

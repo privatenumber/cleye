@@ -124,14 +124,10 @@ export const createDefaultHelp = (
 	}
 
 	// ── Flags ─────────────────────────────────────────────────────────────
-	// Short form: strip default-value annotations from descriptions so each
-	// flag fits on one line. We build a pruned copy of the flag list.
+	// Short form: omit generated default-value annotations so each flag fits
+	// on one line without stripping authored text that happens to look similar.
 	const flagList = isShort
-		? flagsToComponentList(allFlags).map(flag => ({
-			...flag,
-			// Drop the "(default: ...)" suffix appended during flagsToComponentList
-			description: flag.description?.replace(/ \(default: .*\)$/, '') || flag.description,
-		}))
+		? flagsToComponentList(allFlags, { includeDefaultDescriptions: false })
 		: flagsToComponentList(allFlags);
 
 	if (flagList.length > 0) {
