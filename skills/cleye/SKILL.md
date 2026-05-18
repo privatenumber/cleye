@@ -1,6 +1,6 @@
 ---
 name: cleye
-description: Build Node.js CLIs with cleye: typed positional parameters, flags, command maps, runCommand flow, generated help/version output, and help components. Use when authoring or reviewing code that imports `cli` from `cleye`, `cleye/formats`, or `cleye/help`. Do not use for unrelated CLI libraries.
+description: "Build Node.js CLIs with cleye: typed positional parameters, flags, command maps, runCommand flow, generated help/version output, and help components. Use when authoring or reviewing code that imports `cli` from `cleye`, `cleye/formats`, or `cleye/help`. Do not use for unrelated CLI libraries."
 ---
 
 # cleye
