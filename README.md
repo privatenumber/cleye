@@ -36,6 +36,11 @@ The intuitive command-line interface (CLI) development tool.
 npm i cleye
 ```
 
+## Agent Skills
+_Cleye_ ships with a bundled [agent skill](https://agentskills.io) for AI coding assistants that use the package's `skills/` directory.
+
+Projects using [`skills-npm`](https://github.com/antfu/skills-npm) can discover the skill from installed dependencies and link it into supported agent setups.
+
 ## Quick start
 _Cleye_ makes it very easy to develop command-line scripts in Node.js. It handles argv parsing to give you strongly typed parameters + flags and generates `--help` documentation based on the provided information.
 
@@ -92,12 +97,12 @@ $ node greet.js --help
 
 greet.js
 
-Usage:
-  greet.js [flags...] <first name> [last name]
+Usage: greet.js [flags...] <first name> [last name]
 
 Flags:
-  -h, --help                 Show help
-      --time <string>        Time of day to greet (morning or evening) (default: "morning")
+  -h                   Show short help
+      --help           Show help
+      --time <string>  Time of day to greet (morning or evening) (default: "morning")
 ```
 
 Run the script to see it in action:
@@ -300,12 +305,17 @@ cli({
 | `url()` | `URL` | Parses with `new URL()`. Returns a `URL` object so callers get `.host`, `.pathname`, etc. |
 
 ### Default flags
-By default, _Cleye_ will try to handle the `--help, -h` and `--version` flags.
+By default, _Cleye_ will try to handle the `--help`, `-h`, and `--version` flags.
 
-#### Help flag
-Handling `--help, -h` is enabled by default.
+#### Help flags
+Handling `--help` and `-h` is enabled by default.
 
-To disable it, set `help` to `false`. The help documentation can still be manually displayed by calling `.showHelp(helpOptions)` on the returned object.
+- `--help` shows the full help output.
+- `-h` shows short help output.
+
+To disable both auto-injected help flags, set `help` to `false`. The help documentation can still be manually displayed by calling `.showHelp(helpOptions)` on the returned object.
+
+If you define your own `help` or `h` flag, or use either name as another flag's alias, _Cleye_ will not auto-inject that name. User-defined flags always take precedence.
 
 #### Version flag
 To enable handling `--version`, specify the `version` property.
