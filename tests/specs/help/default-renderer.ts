@@ -57,7 +57,7 @@ describe('defaultHelp', () => {
 			expect(output).toContain('my-cli [flags...] <file>');
 		});
 
-		test('includes command usage line when commands present', () => {
+		test('includes global flags in command usage when commands present', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				name: 'my-cli',
 				commands: {
@@ -66,7 +66,7 @@ describe('defaultHelp', () => {
 					},
 				},
 			}));
-			expect(output).toContain('my-cli <command>');
+			expect(output).toContain('my-cli [global flags...] <command>');
 		});
 
 		test('custom usage string overrides auto usage', () => {

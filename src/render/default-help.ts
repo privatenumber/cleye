@@ -73,42 +73,43 @@ export const createDefaultHelp = (
 		const hasParameters = options.parameters && options.parameters.length > 0;
 		const hasCommands = options.commands && Object.keys(options.commands).length > 0;
 
-		const usageLines: string[] = [];
-
-		const firstLine: string[] = [name];
-		if (hasFlags) {
-			firstLine.push('[flags...]');
-		}
-		if (hasParameters) {
-			const params = options.parameters!;
-			const eofIndex = params.indexOf('--');
-			const hasRequiredAfterEof = eofIndex !== -1
-				&& params.slice(eofIndex + 1).some(parameter => parameter.startsWith('<'));
-
-			firstLine.push(
-				...params.map((parameter) => {
-					if (parameter !== '--') {
-						return parameter;
-					}
-					return hasRequiredAfterEof ? '--' : '[--]';
-				}),
-			);
-		}
-
-		if (firstLine.length > 1) {
-			usageLines.push(firstLine.join(' '));
-		}
+		let usageLine: string | undefined;
 
 		if (hasCommands) {
-			usageLines.push(`${name} <command>`);
+			const firstLine = [name];
+			if (hasFlags) {
+				firstLine.push('[global flags...]');
+			}
+			firstLine.push('<command>');
+			usageLine = firstLine.join(' ');
+		} else {
+			const firstLine: string[] = [name];
+			if (hasFlags) {
+				firstLine.push('[flags...]');
+			}
+			if (hasParameters) {
+				const params = options.parameters!;
+				const eofIndex = params.indexOf('--');
+				const hasRequiredAfterEof = eofIndex !== -1
+					&& params.slice(eofIndex + 1).some(parameter => parameter.startsWith('<'));
+
+				firstLine.push(
+					...params.map((parameter) => {
+						if (parameter !== '--') {
+							return parameter;
+						}
+						return hasRequiredAfterEof ? '--' : '[--]';
+					}),
+				);
+			}
+
+			if (firstLine.length > 1) {
+				usageLine = firstLine.join(' ');
+			}
 		}
 
-		if (usageLines.length > 0) {
-			if (usageLines.length > 1) {
-				nodes.push(section('Usage', p(usageLines.join('\n'))));
-			} else {
-				nodes.push(usage(name, usageLines[0].slice(name.length + 1)));
-			}
+		if (usageLine) {
+			nodes.push(usage(name, usageLine.slice(name.length + 1)));
 		}
 	}
 

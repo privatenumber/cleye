@@ -122,7 +122,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test\n\nFlags:\n  -h, --help  Show help (-h for short form)');
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [global flags...] <command>\n\nCommands:\n  test\n\nFlags:\n  -h, --help  Show help (-h for short form)');
 		});
 
 		test('commands with description', async () => {
@@ -139,7 +139,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test  test command\n\nFlags:\n  -h, --help  Show help (-h for short form)');
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [global flags...] <command>\n\nCommands:\n  test  test command\n\nFlags:\n  -h, --help  Show help (-h for short form)');
 		});
 
 		test('commands without description', async () => {
@@ -155,7 +155,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(getOutput(mocked)).toBe('my-cli\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  test\n\nFlags:\n  -h, --help  Show help (-h for short form)');
+			expect(getOutput(mocked)).toBe('my-cli\n\nUsage: my-cli [global flags...] <command>\n\nCommands:\n  test\n\nFlags:\n  -h, --help  Show help (-h for short form)');
 		});
 
 		test('undefined flags', async () => {
@@ -465,7 +465,7 @@ describe('help output', () => {
 		mocked.restore();
 
 		expect(mocked.processExit.calls).toStrictEqual([[0]]);
-		expect(getOutput(mocked)).toBe('my-cli v1.1.1\n\nUsage:\nmy-cli [flags...]\nmy-cli <command>\n\nCommands:\n  my-command  my command description\n\nFlags:\n  -d, --dark-mode          Show tweet in dark mode\n  -h, --help               Show help (-h for short form)\n      --locale <locale>    Locale (default: "en")\n  -o, --output-dir <path>  Tweet screenshot output directory\n  -t, --show-tweet         Show tweet thread\n      --version            Show version\n  -w, --width <width>      Width of tweet (default: 550)\n\nExamples:\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode');
+		expect(getOutput(mocked)).toBe('my-cli v1.1.1\n\nUsage: my-cli [global flags...] <command>\n\nCommands:\n  my-command  my command description\n\nFlags:\n  -d, --dark-mode          Show tweet in dark mode\n  -h, --help               Show help (-h for short form)\n      --locale <locale>    Locale (default: "en")\n  -o, --output-dir <path>  Tweet screenshot output directory\n  -t, --show-tweet         Show tweet thread\n      --version            Show version\n  -w, --width <width>      Width of tweet (default: 550)\n\nExamples:\n# Snapshot a tweet\nsnap-tweet https://twitter.com/jack/status/20\n\n# Snapshot a tweet with Japanese locale\nsnap-tweet https://twitter.com/TwitterJP/status/578707432 --locale ja\n\n# Snapshot a tweet with dark mode and 900px width\nsnap-tweet https://twitter.com/Interior/status/463440424141459456 --width 900 --dark-mode');
 	});
 
 	test('acronyms in flag names render as single words (issue #38)', async () => {
