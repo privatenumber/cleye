@@ -100,8 +100,7 @@ greet.js
 Usage: greet.js [flags...] <first name> [last name]
 
 Flags:
-  -h                   Show short help
-      --help           Show help
+  -h, --help           Show help (-h for short form)
       --time <string>  Time of day to greet (morning or evening) (default: "morning")
 ```
 
