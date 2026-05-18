@@ -1,5 +1,10 @@
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
-import { resolveAutoFlags } from '../utils/auto-flags.ts';
+import {
+	AUTO_FLAG,
+	autoFlagLongHelp,
+	autoFlagShortHelp,
+	resolveAutoFlags,
+} from '../utils/auto-flags.ts';
 import {
 	type Components, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
@@ -126,6 +131,17 @@ export const createDefaultHelp = (
 	// ── Flags ─────────────────────────────────────────────────────────────
 	// Short form: omit generated default-value annotations so each flag fits
 	// on one line without stripping authored text that happens to look similar.
+	if (
+		allFlags[AUTO_FLAG.helpShort] === autoFlagShortHelp
+		&& allFlags[AUTO_FLAG.help] === autoFlagLongHelp
+	) {
+		delete allFlags[AUTO_FLAG.helpShort];
+		allFlags[AUTO_FLAG.help] = {
+			...autoFlagLongHelp,
+			alias: AUTO_FLAG.helpShort,
+			description: 'Show help (-h for short form)',
+		};
+	}
 	const flagList = isShort
 		? flagsToComponentList(allFlags, { includeDefaultDescriptions: false })
 		: flagsToComponentList(allFlags);

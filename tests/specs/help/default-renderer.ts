@@ -108,6 +108,25 @@ describe('defaultHelp', () => {
 			expect(output).toContain('--help');
 		});
 
+		test('merges auto-injected -h and --help in generated output', () => {
+			const output = stripVTControlCharacters(renderDefault({}));
+			expect(output).toBe('Flags:\n  -h, --help  Show help (-h for short form)');
+		});
+
+		test('does not merge help display when user owns --help', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					help: {
+						type: Boolean,
+						description: 'Use custom help',
+					},
+				},
+			}));
+			expect(output).toContain('Show short help');
+			expect(output).toContain('Use custom help');
+			expect(output).not.toContain('-h, --help');
+		});
+
 		test('shows user-defined flags', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				flags: {
