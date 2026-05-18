@@ -109,6 +109,10 @@ export const createComponents = ({ measureString }: CreateComponentsOptions) => 
 		kind: 'cmds',
 		commands,
 		render: () => {
+			if (commands.length === 0) {
+				return '';
+			}
+
 			const width = getWidth();
 			const nameWidth = Math.max(...commands.map(c => measureString(c.name)));
 			const descStart = 2 + nameWidth + 2;
@@ -179,10 +183,14 @@ export const createComponents = ({ measureString }: CreateComponentsOptions) => 
 		render: () => {
 			const width = getWidth();
 			const hangIndent = '          ';
+			const descriptionIndent = ' '.repeat(Math.max(0, Math.min(hangIndent.length, width - 1)));
+			const descriptionWidth = Math.max(width - descriptionIndent.length, 1);
 			return flagList
 				.map((flag) => {
-					const desc = flag.description ?? '';
-					return `  ${renderFlagCell(flag)}\n${hangIndent}${wrap(desc, width - hangIndent.length, hangIndent)}`;
+					const flagLine = `  ${renderFlagCell(flag)}`;
+					return flag.description
+						? `${flagLine}\n${descriptionIndent}${wrap(flag.description, descriptionWidth, descriptionIndent)}`
+						: flagLine;
 				})
 				.join('\n');
 		},

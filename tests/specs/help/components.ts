@@ -128,6 +128,10 @@ describe('components', () => {
 			expect(result).toContain(cyan('run'));
 		});
 
+		test('empty list renders empty output', () => {
+			expect(cmds([]).render()).toBe('');
+		});
+
 		test('CJK command names align description column (cleye/help/responsive)', () => {
 			// '部署' has display width 4 (two 2-cell wide CJK chars); 'run' has width 3.
 			// Default cmds uses .length, so this only holds for the responsive variant.
@@ -232,6 +236,36 @@ describe('components', () => {
 			expect(lines[1]).toContain('show version');
 			// Description line is indented
 			expect(lines[1]).toMatch(/^\s+/);
+		});
+
+		test('very narrow widths keep hanging descriptions visible', () => {
+			const restore = withColumns(8);
+			try {
+				let result = '';
+				expect(() => {
+					result = flagsHanging([{
+						short: 'v',
+						long: '--version',
+						description: 'show version',
+					}]).render();
+				}).not.toThrow();
+
+				const lines = result.split('\n').map(line => stripVTControlCharacters(line));
+				expect(lines[0]).toContain('-v, --version');
+				expect(lines[1]).toBe('       show');
+				expect(lines[2]).toBe('       version');
+			} finally {
+				restore();
+			}
+		});
+
+		test('omits description line when flag has no description', () => {
+			const result = flagsHanging([{
+				long: '--quiet',
+			}]).render();
+
+			expect(result.split('\n').map(line => stripVTControlCharacters(line)))
+				.toStrictEqual(['      --quiet']);
 		});
 	});
 
