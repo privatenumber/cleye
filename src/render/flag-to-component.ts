@@ -1,5 +1,6 @@
 import { flagNameToKebab } from 'type-flag';
 import type { Flags } from '../types.ts';
+import { getFlagAlias } from '../utils/build-name-index.ts';
 import { getDefaultDescription } from '../utils/flag-defaults.ts';
 import type { Flag } from './components.ts';
 
@@ -9,10 +10,26 @@ type FlagsToComponentListOptions = {
 	includeDefaultDescriptions?: boolean;
 };
 
+type HelpFlagConfig = {
+	alias?: unknown;
+	default?: unknown;
+	description?: unknown;
+	placeholder?: unknown;
+	type?: unknown;
+};
+
 const flagNameSorter = new Intl.Collator('en', {
 	numeric: true,
 	sensitivity: 'base',
 });
+
+const normalizeFlagConfig = (config: unknown): HelpFlagConfig => (
+	config !== null
+	&& typeof config === 'object'
+	&& !Array.isArray(config)
+		? config
+		: { type: config }
+);
 
 /**
  * Map a flag's `type` constructor (or array thereof) to a human-readable
@@ -50,15 +67,7 @@ export const flagsToComponentList = (
 		.sort((a, b) => flagNameSorter.compare(a[1], b[1]));
 	return flagEntries.map(([name, kebabName]) => {
 		const config = rawFlags[name];
-		const cfg = (
-			config !== null
-			&& typeof config === 'object'
-			&& !Array.isArray(config)
-			&& typeof config !== 'function'
-		)
-			? config as Record<string, unknown>
-			: { type: config };
-
+		const cfg = normalizeFlagConfig(config);
 		const type = cfg.type ?? config;
 
 		let argument: string | undefined;
@@ -76,10 +85,7 @@ export const flagsToComponentList = (
 			}
 		}
 
-		const aliasRaw = cfg.alias;
-		const aliasShort = typeof aliasRaw === 'string' && aliasRaw
-			? aliasRaw
-			: (Array.isArray(aliasRaw) && typeof aliasRaw[0] === 'string' ? aliasRaw[0] : undefined);
+		const aliasShort = getFlagAlias(cfg, name);
 
 		// Single-char flag names are short flags (-x), not long flags (--x)
 		if (name.length === 1) {

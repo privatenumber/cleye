@@ -141,6 +141,8 @@ The flag type function can be any function that accepts a string and returns the
 
 The flag description object can be used to store additional information about the flag, such as `alias`, `default`, and `description`. To accept multiple values for a flag, wrap the type function in an array.
 
+Flag aliases must be non-empty single-character strings. Single-character flag names, such as `v`, already render as short flags and cannot define a separate alias.
+
 All of the provided information will be used to generate better help documentation.
 
 If a default is computed at runtime, use `default: { value, description }` to show stable help text without calling the default function while rendering `--help`:
@@ -872,7 +874,7 @@ startServer(argv.flags.host ?? 'localhost', argv.flags.port ?? 3000)
 
 ### Errors in sync mode
 
-Parse-time errors (invalid parameters, duplicate aliases, missing required parameters) throw synchronously. Wrap with `try/catch` if you want to handle them:
+Parse-time errors (invalid parameters, invalid flag aliases, duplicate aliases, missing required parameters) throw synchronously. Wrap with `try/catch` if you want to handle them:
 
 ```ts
 try {
@@ -1052,7 +1054,7 @@ An object mapping flag names (in camelCase) to a type function or descriptor:
 | Property | Type | Description |
 | - | - | - |
 | `type` | `Function` | Flag value parsing function. |
-| `alias` | `string` | Single character alias for the flag. |
+| `alias` | `string` | Non-empty single-character alias for the flag. Not allowed on single-character flag names. |
 | `default` | `any \| { value: any, description: string }` | Default value for the flag. Use `{ value, description }` to show explicit help text for computed defaults without executing them while rendering help. |
 | `description` | `string` | Description shown in `--help`. |
 | `placeholder` | `string` | Placeholder for the flag value shown in `--help`. |

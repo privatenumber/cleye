@@ -142,6 +142,46 @@ describe('defaultHelp', () => {
 			expect(output).toContain('-o, --output');
 		});
 
+		test('flag with explicit undefined alias renders long form only', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					output: {
+						type: String,
+						alias: undefined,
+						description: 'Output path',
+					},
+				},
+			}));
+			expect(output).not.toContain('-o, --output');
+			expect(output).toContain('--output');
+		});
+
+		test('empty flag alias throws', () => {
+			expect(() => renderDefault({
+				flags: {
+					verbose: {
+						type: Boolean,
+						alias: '',
+						description: 'Verbose mode',
+					},
+				},
+			})).toThrow('Flag alias "" for flag "verbose" cannot be empty');
+		});
+
+		test('flag alias array throws instead of rendering unsupported short form', () => {
+			const flags = {
+				verbose: {
+					type: Boolean,
+					alias: ['v'],
+					description: 'Verbose mode',
+				},
+			} as unknown as NonNullable<Parameters<typeof defaultHelp>[0]['flags']>;
+
+			expect(() => renderDefault({
+				flags,
+			})).toThrow('Flag alias for flag "verbose" must be a string');
+		});
+
 		test('Boolean flag has no <arg> label', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				flags: {

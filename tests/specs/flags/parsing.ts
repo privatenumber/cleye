@@ -130,6 +130,66 @@ describe('flags parsing', () => {
 			}
 		});
 
+		test('throws on empty flag alias', () => {
+			expect(() => cli(
+				{
+					flags: {
+						verbose: {
+							type: Boolean,
+							alias: '',
+						},
+					},
+				},
+				undefined,
+				[],
+			)).toThrow('Flag alias "" for flag "verbose" cannot be empty');
+		});
+
+		test('throws on flag alias array', () => {
+			expect(() => cli(
+				{
+					flags: {
+						verbose: {
+							type: Boolean,
+							alias: ['v'] as unknown as string,
+						},
+					},
+				},
+				undefined,
+				[],
+			)).toThrow('Flag alias for flag "verbose" must be a string');
+		});
+
+		test('throws when a single-character flag defines an alias', () => {
+			expect(() => cli(
+				{
+					flags: {
+						v: {
+							type: Boolean,
+							alias: 'x',
+						},
+					},
+				},
+				undefined,
+				[],
+			)).toThrow('Flag alias "x" for flag "v" cannot be defined for a single-character flag');
+		});
+
+		test('throws on multi-character flag alias', () => {
+			expect(() => cli(
+				{
+					flags: {
+						verbose: {
+							type: Boolean,
+							alias: 'vv',
+						},
+					},
+				},
+				undefined,
+				[],
+			)).toThrow('Flag alias "vv" for flag "verbose" must be a single character');
+		});
+
 		test('default value as a function', () => {
 			const defaultFunction = spy(() => 'hello');
 			const parsed = cli({

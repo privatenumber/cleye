@@ -22,27 +22,45 @@ export type NameIndex = {
 };
 
 /**
- * Standard alias-extractor for flag config entries: returns the `alias` field
- * if the entry is an object that declares one, else `undefined`. Used as the
- * `getAlias` argument to `buildNameIndex` for both auto-flag injection and
- * strict-mode unknown-flag suggestion.
+ * Standard alias-extractor for flag config entries. Validates the same public
+ * alias contract that type-flag enforces for flags: one non-empty
+ * single-character alias, and no alias on single-character flag names. This
+ * keeps help and auto-flag metadata from advertising unsupported aliases.
  */
-export const getFlagAlias = (config: unknown): string | string[] | undefined => {
-	if (config && typeof config === 'object' && 'alias' in config) {
-		return (config as { alias?: string | string[] }).alias;
+export const getFlagAlias = (config: unknown, flagName: string): string | undefined => {
+	if (!config || typeof config !== 'object' || !('alias' in config)) {
+		return undefined;
 	}
-	return undefined;
+	const { alias } = config as { alias?: unknown };
+	if (alias === undefined) {
+		return undefined;
+	}
+	if (typeof alias !== 'string') {
+		throw new TypeError(`Flag alias for flag "${flagName}" must be a string`);
+	}
+
+	const message = `Flag alias "${alias}" for flag "${flagName}"`;
+	if (flagName.length === 1) {
+		throw new Error(`${message} cannot be defined for a single-character flag`);
+	}
+	if (alias.length === 0) {
+		throw new Error(`${message} cannot be empty`);
+	}
+	if (alias.length > 1) {
+		throw new Error(`${message} must be a single character`);
+	}
+	return alias;
 };
 
 export const buildNameIndex = <Entry>(
 	entries: Record<string, Entry>,
-	getAlias: (entry: Entry) => string | string[] | undefined,
+	getAlias: (entry: Entry, name: string) => string | string[] | undefined,
 	onDuplicateAlias?: (alias: string) => void,
 ): NameIndex => {
 	const names = new Set(Object.keys(entries));
 	const aliases = new Map<string, string>();
 	for (const [name, entry] of Object.entries(entries)) {
-		const aliasList = getAlias(entry);
+		const aliasList = getAlias(entry, name);
 		if (aliasList === undefined) {
 			continue;
 		}
