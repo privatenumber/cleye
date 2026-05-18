@@ -27,6 +27,29 @@ tool --verbose false
 
 The second form sets `verbose` to `true` and leaves `false` in `argv._`.
 
+## Required Flags
+
+In command-line APIs, flags are presence-based and may be absent. cleye inherits
+that boundary: when a flag is not passed, the parsed value is `undefined` unless
+the flag defines a `default`.
+
+Use positional `parameters` for required data when order is natural. When a
+named flag is required by application logic, assert it after parsing. cleye does
+not provide `required: true` for flags because requiredness is application
+validation, not flag parsing.
+
+```ts
+import assert from 'node:assert/strict'
+
+const argv = cli({
+    flags: {
+        token: String
+    }
+})
+
+assert.ok(argv.flags.token !== undefined, 'Missing required flag: --token')
+```
+
 ## Aliases And Arrays
 
 Aliases must be non-empty single-character strings. Single-character flag

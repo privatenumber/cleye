@@ -145,9 +145,13 @@ Important flag behavior:
 - Use `[Boolean]` for counting flags: `-vvv` becomes an array with length `3`.
 - Use `strictFlags: true` to reject unknown flags with suggestions.
 - For computed defaults, use `default: { value, description }` so help can show stable text without executing runtime code.
+- Command-line flags are presence-based and may be absent. For a
+  business-required flag, assert after parsing instead of looking for
+  `required: true`.
 
 Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`,
-`range`, `commaList`, `url`, custom parsers, and described defaults.
+`range`, `commaList`, `url`, required-flag assertions, custom parsers, and
+described defaults.
 
 ## Help And Version
 

@@ -198,6 +198,33 @@ await cli({
 })
 ```
 
+### Required flags
+In command-line APIs, flags are presence-based and may be absent. cleye inherits
+that boundary: when a flag is not passed, the parsed value is `undefined` unless
+the flag defines a `default`.
+
+For required data, prefer positional `parameters` when order is natural. When a
+named flag is a business requirement, assert it after parsing. cleye does not
+provide `required: true` for flags because requiredness is application
+validation, not flag parsing.
+
+```ts
+import assert from 'node:assert/strict'
+
+const argv = cli({
+    flags: {
+        token: {
+            type: String,
+            description: 'API token'
+        }
+    }
+})
+
+assert.ok(argv.flags.token !== undefined, 'Missing required flag: --token')
+
+argv.flags.token // => string
+```
+
 ### Boolean flag negation
 By default, boolean flags can be set to `false` by explicitly passing the value with `=`:
 
