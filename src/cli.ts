@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { createPositionalArguments, typeFlag } from 'type-flag';
+import { typeFlag } from 'type-flag';
 import type {
 	CallbackFunction,
 	CliOptions,
@@ -237,11 +237,30 @@ function cli<
 		throw new Error('Options is required');
 	}
 
+	// Required parameters can't coexist with commands — when a command matches,
+	// parameter validation is skipped, so the "required" annotation would only
+	// fire in the fallback path. Force optional declarations instead.
+	//
+	// strictCommands and parameters are also semantically opposed: strictCommands
+	// errors on unknown leading positionals, parameters absorbs them. Letting
+	// both be set silently neuters strictCommands. Throw to make the conflict
+	// explicit. (Inherited strictCommands is allowed — declaring parameters at
+	// a child level implicitly overrides it for that level.)
 	if (
-		(options.parameters?.length ?? 0) > 0
-		&& options.commands && Object.keys(options.commands).length > 0
+		options.commands
+		&& Object.keys(options.commands).length > 0
+		&& options.parameters
+		&& options.parameters.length > 0
 	) {
-		throw new Error('cleye: `parameters` and `commands` are mutually exclusive at the same level. To accept arbitrary command names, omit `parameters` and inspect `parsed.command === undefined` with `parsed._[0]` in your callback.');
+		const hasRequiredParameter = options.parameters.some(
+			parameter => parameter.startsWith('<') && parameter.endsWith('>'),
+		);
+		if (hasRequiredParameter) {
+			throw new Error('Required parameters cannot be used with commands');
+		}
+		if (options.strictCommands) {
+			throw new Error('strictCommands cannot be used with parameters');
+		}
 	}
 
 	// Check AsyncLocalStorage for parent context. Copy the source argv —
@@ -275,6 +294,7 @@ function cli<
 			: EMPTY_NAME_INDEX;
 
 		let hitCommand = false;
+		let firstPositionalSeen = false;
 
 		// Parse flags
 		const flags = { ...options.flags };
@@ -291,18 +311,30 @@ function cli<
 			parseFlags,
 			argv,
 			{
-				// `hitCommand` flips on the first positional when commands are
-				// defined. From then on, every remaining token is preserved
-				// verbatim in argv for command matching or wildcard dispatch.
+				// `hitCommand` flips on the first positional IF it is a known
+				// command. From then on, every remaining token is preserved
+				// verbatim in argv for the matched command's handler. If the
+				// first positional is unknown, we continue parsing so parent
+				// flags appearing after it are extracted.
 				ignore(type, flagOrArgv, value) {
 					if (hitCommand) {
 						return true;
 					}
-					if (type === 'argument' && commandIndex.names.size > 0) {
-						hitCommand = true;
+
+					const ignored = options.ignoreArgv?.(type, flagOrArgv, value);
+					if (ignored) {
 						return true;
 					}
-					return options.ignoreArgv?.(type, flagOrArgv, value);
+
+					if (type === 'argument' && !firstPositionalSeen) {
+						firstPositionalSeen = true;
+						if (commandIndex.names.has(flagOrArgv)) {
+							hitCommand = true;
+							return true;
+						}
+					}
+
+					return false;
 				},
 				booleanNegation: booleanFlagNegation,
 			},
@@ -314,6 +346,45 @@ function cli<
 			}
 		};
 		const showHelp = createShowHelp(options, effectiveName, flags, help);
+
+		let matchedCommand: MatchedCommand | undefined;
+
+		if (hitCommand && argv.length > 0) {
+			const potentialCommand = argv[0];
+			const resolvedName = Object.hasOwn(options.commands!, potentialCommand)
+				? potentialCommand
+				: commandIndex.aliases.get(potentialCommand);
+			if (resolvedName) {
+				const entry = options.commands![resolvedName];
+				matchedCommand = {
+					name: resolvedName,
+					handler: typeof entry === 'function' ? entry : entry.loader,
+				};
+			}
+		}
+
+		// Strict commands: when a command was expected but none matched, suggest
+		// the closest known command/alias and exit.
+		const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
+		const positional = hitCommand ? argv[0] : parsed._[0];
+		if (
+			strictCommands
+			&& !matchedCommand
+			&& options.commands
+			&& commandIndex.names.size > 0
+			&& positional
+			&& (options.parameters?.length ?? 0) === 0
+		) {
+			const match = findClosest(positional, commandIndex.names, commandIndex.aliases);
+			let suggestion = '';
+			if (match) {
+				suggestion = match.aliasFor
+					? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
+					: ` (Did you mean "${match.name}"?)`;
+			}
+			console.error(`Error: Unknown command: "${positional}".${suggestion}`);
+			throw new CleyeExit(1, 'unknown-command');
+		}
 
 		// Auto-exits: `--help` wins over `-h` when both are present (long form
 		// is more informative). The throws short-circuit cli(); the outer catch
@@ -363,48 +434,6 @@ function cli<
 			Object.assign(parsed._, mapping);
 		}
 
-		let matchedCommand: MatchedCommand | undefined;
-
-		if (hitCommand && argv.length > 0) {
-			const potentialCommand = argv[0];
-			const resolvedName = Object.hasOwn(options.commands!, potentialCommand)
-				? potentialCommand
-				: commandIndex.aliases.get(potentialCommand);
-			if (resolvedName) {
-				const entry = options.commands![resolvedName];
-				matchedCommand = {
-					name: resolvedName,
-					handler: typeof entry === 'function' ? entry : entry.loader,
-				};
-			}
-		}
-
-		if (hitCommand && !matchedCommand) {
-			parsed._ = createPositionalArguments(argv);
-		}
-
-		// Strict commands: when a command was expected but none matched, suggest
-		// the closest known command/alias and exit.
-		const strictCommands = options.strictCommands ?? parentOptions?.strictCommands;
-		const positional = hitCommand ? argv[0] : undefined;
-		if (
-			strictCommands
-			&& !matchedCommand
-			&& options.commands
-			&& commandIndex.names.size > 0
-			&& positional
-		) {
-			const match = findClosest(positional, commandIndex.names, commandIndex.aliases);
-			let suggestion = '';
-			if (match) {
-				suggestion = match.aliasFor
-					? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
-					: ` (Did you mean "${match.name}"?)`;
-			}
-			console.error(`Error: Unknown command: "${positional}".${suggestion}`);
-			throw new CleyeExit(1, 'unknown-command');
-		}
-
 		const resolvedOptions: CliOptions = {
 			strictFlags,
 			strictCommands,
@@ -446,11 +475,14 @@ function cli<
 
 		// Sync path: no callback. Caller is responsible for invoking runCommand
 		// themselves (`await argv.runCommand()`). If commands are defined and
-		// none matched, show help and exit.
+		// none matched, show help and exit — unless `parameters` are declared,
+		// in which case the unparsed positional is a parameter value, not a
+		// missing command.
 		if (
 			!matchedCommand
 			&& options.commands
 			&& commandIndex.names.size > 0
+			&& (options.parameters?.length ?? 0) === 0
 		) {
 			showHelp();
 			throw new CleyeExit(1, 'no-command-match');

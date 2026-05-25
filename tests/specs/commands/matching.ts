@@ -328,3 +328,39 @@ describe('command name edge cases', () => {
 		}, undefined, ['my_command'])).not.toThrow();
 	});
 }, { parallel: false });
+
+describe('wildcard dispatch', () => {
+	test('parses flags after an unknown command candidate', () => {
+		const parsed = cli({
+			parameters: ['[param]'],
+			flags: {
+				json: Boolean,
+			},
+			commands: {
+				build: () => {},
+			},
+		}, undefined, ['unknown-command', '--json']);
+
+		expect(parsed.command).toBeUndefined();
+		expect(Array.from(parsed._)).toStrictEqual(['unknown-command']);
+		expect(parsed._.param).toBe('unknown-command');
+		expect(parsed.flags.json).toBe(true);
+	});
+
+	test('parses flags before an unknown command candidate', () => {
+		const parsed = cli({
+			parameters: ['[param]'],
+			flags: {
+				json: Boolean,
+			},
+			commands: {
+				build: () => {},
+			},
+		}, undefined, ['--json', 'unknown-command']);
+
+		expect(parsed.command).toBeUndefined();
+		expect(Array.from(parsed._)).toStrictEqual(['unknown-command']);
+		expect(parsed._.param).toBe('unknown-command');
+		expect(parsed.flags.json).toBe(true);
+	});
+});

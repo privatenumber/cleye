@@ -59,7 +59,7 @@ return value after checking `argv.command`.
 
 | Option | Expert note |
 | --- | --- |
-| `parameters` | Use for positional data. Mutually exclusive with `commands` at the same level. |
+| `parameters` | Use for positional data. Can be combined with `commands` for fallback routing. |
 | `commands` | Use for dispatch by the first positional token. Values are handler functions or `{ description, alias, loader }`. |
 | `flags` | Values are type functions or descriptor objects with `type`, `alias`, `default`, `description`, and `placeholder`. |
 | `help` | `false` disables automatic help handling; `showHelp()` still works. |

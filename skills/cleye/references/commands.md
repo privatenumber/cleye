@@ -24,10 +24,18 @@ await cli({
 Use object entries when the command needs metadata for help output. Use a bare
 function when there is no alias or description.
 
-Do not combine `commands` with `parameters` at the same `cli()` level. If the
-first positional token selects behavior, use `commands`; if it is just data,
-use `parameters`. Read [Design Recipes](design-recipes.md) for wildcard command
-dispatch.
+You can combine `commands` with `parameters` at the same `cli()` level. If the
+first positional token matches a registered command, it resolves as the command;
+otherwise, it falls back to parsing as parameters. Read [Design Recipes](design-recipes.md)
+for wildcard command dispatch.
+
+When combining, cleye rejects two configurations at config time:
+
+- **Required parameters** (`<name>`): when a command matches, parameter
+  validation is bypassed, so the "required" annotation would only fire in the
+  fallback path. Use `[name]` instead.
+- **`strictCommands: true`**: strict-mode errors on unknown positionals;
+  parameters absorbs them. Pick one.
 
 ## Command Boundary
 

@@ -103,40 +103,25 @@ export type CommandEntry =
 
 export type Commands = Record<string, CommandEntry>;
 
-/**
- * `parameters` and `commands` are mutually exclusive at the same level: the
- * leading positional token cannot meaningfully be both a parameter value and
- * a command name. Pick one. Wildcard dispatch (catching arbitrary command
- * names) is done by leaving `commands` defined and inspecting
- * `parsed.command === undefined` plus `parsed._[0]` in the callback.
- */
-type ParametersOrCommands<Parameters extends string[]> =
-	| {
-
-		/**
-		 * Parameters accepted by the script. Parameters must be in the following formats:
-		 *
-		 * - Required parameter: `<parameter name>`
-		 * - Optional parameter: `[parameter name]`
-		 * - Required spread parameter: `<parameter name...>`
-		 * - Optional spread parameter: `[parameter name...]`
-		 *
-		 * Names must contain at least one alphanumeric character (after
-		 * camelCase normalization).
-		 */
-		parameters?: Parameters;
-		commands?: never;
-	}
-	| {
-		parameters?: never;
-
-		/** Commands to register to the script. */
-		commands?: Commands;
-	};
-
 export type CliOptions<
 	Parameters extends string[] = string[],
-> = ParametersOrCommands<Parameters> & {
+> = {
+
+	/**
+	 * Parameters accepted by the script. Parameters must be in the following formats:
+	 *
+	 * - Required parameter: `<parameter name>`
+	 * - Optional parameter: `[parameter name]`
+	 * - Required spread parameter: `<parameter name...>`
+	 * - Optional spread parameter: `[parameter name...]`
+	 *
+	 * Names must contain at least one alphanumeric character (after
+	 * camelCase normalization).
+	 */
+	parameters?: Parameters;
+
+	/** Commands to register to the script. */
+	commands?: Commands;
 
 	/** Name of the script displayed in `--help` output. */
 	name?: string;

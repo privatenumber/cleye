@@ -3,23 +3,31 @@
 Use this reference when choosing the shape of a cleye CLI, reviewing generated
 code, or resolving ambiguous behavior before implementation.
 
-## Choose Parameters Or Commands
+## Combine Parameters and Commands for Fallbacks
 
-At one `cli()` level, use `parameters` for positional values and `commands` for
-dispatch. Do not define both at the same level:
+At one `cli()` level, you can use `parameters` for positional values and `commands` for
+dispatch. They can be combined to create hybrid CLIs with a default mode:
 
 ```ts
 cli({
-    parameters: ['<file>'],
+    parameters: ['[script]'],
     commands: {
         build: () => import('./commands/build.ts')
     }
 })
 ```
 
-The leading positional token cannot safely be both a command candidate and a
-parameter value. If a command typo fell through as a parameter, the CLI would
-run the wrong path instead of failing fast.
+If the leading positional token matches a registered command, it resolves as the
+command. If it does not match, it falls back to being parsed as a parameter.
+
+In the combined mode, cleye refuses two configurations at config time:
+
+- **Required parameters** (`<name>`, not `[name]`): when a command matches,
+  parameter validation is bypassed, so the "required" annotation would only
+  fire in the fallback path. Asymmetric in a confusing way.
+- **`strictCommands: true`**: strict-mode treats unknown positionals as command
+  typos; parameters absorbs them as values. Semantically opposed; cleye refuses
+  to let strictCommands be silently neutered.
 
 Use this rule:
 
@@ -28,20 +36,20 @@ Use this rule:
 | `tool input.txt --json` | `parameters` |
 | `tool build --watch` | `commands` |
 | `tool remote add origin` | nested `commands` |
-| `tool run any-name -- --flags` | `commands` plus wildcard handling |
+| `tool [script] --flags` | `parameters` and `commands` combined |
 
-For wildcard dispatch, keep a command map and inspect unmatched positionals in
+For wildcard dispatch or a default fallback mode, inspect the parameters in
 the callback:
 
 ```ts
 await cli({
+    parameters: ['[script]', '[args...]'],
     commands: {
         build: () => import('./commands/build.ts')
     }
 }, async (parsed) => {
-    if (parsed.command === undefined && parsed._[0]) {
-        const [commandName, ...commandArgv] = parsed._
-        await runDynamicCommand(commandName, commandArgv)
+    if (parsed.command === undefined && parsed._.script) {
+        await runDynamicCommand(parsed._.script, parsed._.args)
         return
     }
 
@@ -50,7 +58,7 @@ await cli({
 ```
 
 Enable `strictCommands: true` when unknown commands should be treated as typos
-instead of custom wildcard input.
+instead of falling back to parameters or custom wildcard input.
 
 ## Choose Callback Or Sync Mode
 

@@ -28,7 +28,7 @@ commands as a map, and lazy-load command files with dynamic imports.
 1. Start with one `cli()` call and declare `name`, `parameters`, and `flags`.
 2. Use the callback form for most CLIs, especially when commands are involved.
 3. Add declarative help metadata before reaching for custom help components.
-4. Choose `parameters` or `commands` at a level, not both. Use command maps
+4. Choose `parameters` or `commands` at a level. They can be combined for fallback routing.
    when the first positional token selects behavior.
 5. Put command files in separate modules and lazy-load them.
 6. Enable strict modes when typos should fail instead of landing in
@@ -226,7 +226,7 @@ handlers.
 
 - Do not use a `command()` helper; cleye's public entry point is `cli()`.
 - Do not register commands as an array; use `commands: { name: entry }`.
-- Do not combine `parameters` and `commands` at the same `cli()` level.
+- You can combine `parameters` and `commands` at the same `cli()` level. Commands take precedence.
 - Do not pass custom argv as the second `cli()` argument. Use
   `cli(options, undefined, argv)` when there is no callback.
 - Do not customize help before trying `help.description`, `help.usage`, and
