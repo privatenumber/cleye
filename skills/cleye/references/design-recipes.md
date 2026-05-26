@@ -136,6 +136,91 @@ export default (config: Config) => cli({
 `runCommand(config)` invokes the exported function each time and forwards that
 call's arguments.
 
+## Choose Command File Layout
+
+Default to a flat file per command:
+
+```
+commands/
+    install.ts
+    build.ts
+    test.ts
+```
+
+Promote a command to its own directory when it accumulates supporting code:
+
+```
+commands/
+    install.ts           # still flat — no supporting files yet
+    build/               # promoted — has its own helpers
+        index.ts         # entry the parent imports
+        bundler.ts
+        cache.ts
+    test/
+        index.ts
+        runner.ts
+        fixtures.ts
+```
+
+Do not create `index.ts` while it would be the only file in the folder. Keep the
+flat `./commands/<name>.ts` file until there is actually something else to put
+alongside it. A folder with one `index.ts` adds path depth and import ceremony
+without delivering co-location benefit.
+
+The promotion is reversible. If supporting code later goes away, collapse the
+folder back to a flat file.
+
+## Use Layered Flags For Multi-Command CLIs
+
+Each command level declares its own flags. Parent flags apply to whichever
+subcommand runs; child flags apply only to that subcommand. Real CLIs like
+`git`, `docker`, and `kubectl` use this pattern — global options before the
+subcommand, subcommand-specific options after.
+
+The parent passes its parsed flags down as typed context via `runCommand(data)`.
+The child receives it via the default-export argument:
+
+```ts
+// cli.ts (parent)
+await cli({
+    name: 'git',
+    flags: {
+        C: { type: String, default: '.' },
+        noPager: { type: Boolean }
+    },
+    commands: {
+        status: () => import('./commands/status.ts')
+    },
+    booleanFlagNegation: true
+}, async ({ flags, runCommand }) => {
+    await runCommand({
+        cwd: flags.C,
+        pager: !flags.noPager
+    })
+})
+```
+
+```ts
+// commands/status.ts (child) — has its OWN flags
+type Context = { cwd: string; pager: boolean }
+
+export default ({ cwd, pager }: Context) => cli({
+    flags: { short: { type: Boolean, alias: 's' } }
+}, (parsed) => {
+    runStatus(cwd, parsed.flags.short, pager)
+})
+```
+
+Invocation: `git -C /tmp --no-pager status --short`. Parent flags (`-C`,
+`--no-pager`) come before the subcommand; child flags (`--short`) come after.
+
+The parent's callback acts as middleware: pick which subset of parent state the
+child needs, transform it (e.g. `!flags.noPager`), and forward it. The child
+doesn't reach back into parent argv it doesn't own.
+
+For deeper nesting, the same pattern composes: each level's callback passes a
+context to the next via `runCommand(data)`.
+
 ## Choose Strict Or Permissive Parsing
 
 Use strict modes for tools with a known command and flag surface:

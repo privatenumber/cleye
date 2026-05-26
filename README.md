@@ -671,6 +671,36 @@ export default (config: Config) => cli({
 
 Default-export handlers run every time `runCommand(...)` is called, so this is the right style when parent code may retry or invoke a command with different data. Side-effect command files still follow JavaScript module caching: a second dynamic import of the same file does not re-run its top-level `cli()` call.
 
+### Command file layout
+
+Default to a flat file per command:
+
+```
+commands/
+    install.ts
+    build.ts
+    test.ts
+```
+
+Promote a command to its own directory when it accumulates supporting code:
+
+```
+commands/
+    install.ts          # still flat — no supporting files yet
+    build/              # promoted — has its own helpers
+        index.ts        # entry the parent imports
+        bundler.ts
+        cache.ts
+    test/
+        index.ts
+        runner.ts
+        fixtures.ts
+```
+
+Do not create `index.ts` while it would be the only file in the folder. Keep the flat `./commands/<name>.ts` file until there is actually something else to put alongside it — a folder with one `index.ts` adds path depth and import ceremony without delivering co-location benefit.
+
+The promotion is reversible. If supporting code later goes away, collapse the folder back to a flat file.
+
 ### Passing data to commands
 
 Pass data to a command by calling `runCommand(data)`. The command file exports a function that receives it:
@@ -749,6 +779,78 @@ await cli({
 ```
 
 When no command matched, `parsed.runCommand` is a sync no-op typed as `() => undefined`.
+
+### Layered flags
+
+**Each level of a multi-command CLI can declare its own flags.** Parent flags apply to whichever subcommand runs; child flags apply only to that subcommand. The parent passes its parsed flags down via `runCommand(data)`, the child receives them as the first argument to its default export. Real CLIs like `git`, `docker`, and `kubectl` use this pattern — global options before the subcommand, subcommand-specific options after.
+
+A minimal `git` reimplementation showing the pattern:
+
+```ts
+// cli.ts (parent)
+await cli({
+    name: 'git',
+    flags: {
+        C: {
+            type: String,
+            default: '.',
+            placeholder: '<path>',
+            description: 'Run as if started in <path>'
+        },
+        noPager: {
+            type: Boolean,
+            description: 'Disable the pager'
+        }
+    },
+    commands: {
+        status: () => import('./commands/status.ts'),
+        log: () => import('./commands/log.ts')
+    },
+    booleanFlagNegation: true
+}, async ({ flags, runCommand }) => {
+    // Parent flags become typed context for whichever subcommand runs.
+    await runCommand({
+        cwd: flags.C,
+        pager: !flags.noPager
+    })
+})
+```
+
+```ts
+// commands/status.ts (child)
+import { cli } from 'cleye'
+
+type Context = {
+    cwd: string
+    pager: boolean
+}
+
+export default ({ cwd, pager }: Context) => cli({
+    // Child declares its own flags. Parent flags are NOT inherited at the
+    // flag level — they arrive via the `Context` argument instead.
+    flags: {
+        short: {
+            type: Boolean,
+            alias: 's',
+            description: 'Give the output in the short-format'
+        }
+    }
+}, (parsed) => {
+    runStatus(cwd, parsed.flags.short, pager)
+})
+```
+
+Invocation:
+
+```sh
+git -C /tmp --no-pager status --short
+#   ^^^^^^^^^^^^^^^^^^^^^^^^         parent flags
+#                             ^^^^^^ child flag
+```
+
+The parent's callback acts as middleware between the user's invocation and the child: it picks which subset of parent state the child needs, transforms it (e.g. `pager: !flags.noPager`), and forwards it. The child sees a clean typed `Context` instead of reaching back into a parent argv it doesn't own.
+
+See [`examples/07-git`](/examples/07-git) for the full runnable version. The same pattern composes through deeper nesting — see [Nested commands](#nested-commands) below.
 
 ### Nested commands
 
