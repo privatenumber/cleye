@@ -548,23 +548,28 @@ $ my-cli --verbose install lodash --save-dev
 
 If no callback is provided, step 2 is skipped and you must call await argv.runCommand() explicitly. If no command matches, help is shown (or an error if [strictCommands](#strict-commands) is enabled).
 
-> [!IMPORTANT]
-> `parameters` and `commands` are mutually exclusive at the same level. The leading positional token can be a command name OR a parameter value, never both — there's no way to disambiguate without violating fail-fast (a typo in a command name would silently become a parameter value). cleye enforces this at the type level and throws at runtime if both are passed.
+> [!TIP]
+> `parameters` and `commands` can be used together. If the first positional token matches a registered command, it resolves as that command. If it doesn't match any command, it falls back to being parsed as a parameter.
 >
-> **To accept arbitrary command names** (a script runner, a router, anything dynamic), keep `commands` defined and check for unknown commands in your callback:
+> This is useful for building hybrid CLIs with a default fallback mode, like a script runner:
 >
 > ```ts
 > cli({
+>     parameters: ['[script]'],
 >     commands: {
->         build: () => { /* known */ }
+>         install: () => { /* known */ }
 >     }
 > }, (parsed) => {
->     if (parsed.command === undefined && parsed._[0]) {
->         // wildcard dispatch — `parsed._[0]` is the unknown command name,
->         // `parsed._.slice(1)` are its remaining args
+>     if (parsed.command === undefined && parsed._.script) {
+>         // `parsed._.script` is the fallback script name
 >     }
 > })
 > ```
+>
+> When `parameters` and `commands` are declared together, cleye throws at config time on two conflicts:
+>
+> - **Required parameters** (`<...>`) — when a command matches, parameter validation is bypassed, so a "required" parameter would only be enforced in the fallback path. Use `[...]` (optional) instead.
+> - **`strictCommands: true`** — strict-mode says "unknown positional is a typo, error and suggest"; parameters says "unknown positional is a value, absorb it." Pick one.
 
 ### Defining commands
 

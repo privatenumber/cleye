@@ -1,5 +1,5 @@
-import { a as CliOptions, S as StrictOptions, C as CallbackFunction, P as ParsedArgv, E as ExitReason } from './types-fuOw0PxZ.mjs';
-export { b as CommandEntry, c as Commands, D as DescribedDefault, d as Flags, e as HelpOptions, f as HelpRenderer } from './types-fuOw0PxZ.mjs';
+import { a as CliOptions, S as StrictOptions, C as CallbackFunction, P as ParsedArgv, E as ExitReason } from './types-BgE9RpFj.mjs';
+export { b as CommandEntry, c as Commands, D as DescribedDefault, d as Flags, e as HelpOptions, f as HelpRenderer } from './types-BgE9RpFj.mjs';
 import 'type-flag';
 
 declare function cli<Options extends CliOptions<[...Parameters]>, Parameters extends string[], CallbackReturn>(options: StrictOptions<Options> & CliOptions<[...Parameters]>, callback: CallbackFunction<ParsedArgv<Options, Parameters>, CallbackReturn>, argv?: string[]): Promise<CallbackReturn>;
