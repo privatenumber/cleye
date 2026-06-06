@@ -90,14 +90,6 @@ const applyParameters = (
 	return mapping;
 };
 
-// Shared sentinel so commandless cli() invocations don't allocate a fresh
-// empty Set + Map every call. Treat as read-only — the rest of the code only
-// reads `commandIndex.names` (size + has).
-const EMPTY_NAME_INDEX: NameIndex = {
-	names: new Set(),
-	aliases: new Map(),
-};
-
 type Handler = (...arguments_: unknown[]) => unknown;
 
 type MatchedCommand = {
@@ -291,7 +283,10 @@ function cli<
 					throw new Error(`Duplicate command alias: "${alias}"`);
 				},
 			)
-			: EMPTY_NAME_INDEX;
+			: {
+				names: new Set(),
+				aliases: new Map(),
+			};
 
 		let hitCommand = false;
 		let firstPositionalSeen = false;
