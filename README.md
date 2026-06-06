@@ -548,6 +548,9 @@ $ my-cli --verbose install lodash --save-dev
 
 If no callback is provided, step 2 is skipped and you must call await argv.runCommand() explicitly. If no command matches, help is shown (or an error if [strictCommands](#strict-commands) is enabled).
 
+> [!WARNING]
+> **A flag is owned by the level adjacent to the command name.** Tokens before the command name are parsed by the parent; tokens after, by the matched subcommand. So `my-cli --json install` gives `--json` to the parent, and `install` never sees it. Conversely, `my-cli install --json` gives it to `install`, and the parent never sees it. Whichever level didn't declare the flag collects it into `unknownFlags` and ignores it, or rejects it as a typo under [`strictFlags`](#strict-flags). So a flag that should work on *either* side of the command has to be declared at both levels, with the parent forwarding its value so the child can fall back to it (see [Layered flags](#layered-flags)).
+
 > [!TIP]
 > `parameters` and `commands` can be used together. If the first positional token matches a registered command, it resolves as that command. If it doesn't match any command, it falls back to being parsed as a parameter.
 >
@@ -570,6 +573,8 @@ If no callback is provided, step 2 is skipped and you must call await argv.runCo
 >
 > - **Required parameters** (`<...>`) — when a command matches, parameter validation is bypassed, so a "required" parameter would only be enforced in the fallback path. Use `[...]` (optional) instead.
 > - **`strictCommands: true`** — strict-mode says "unknown positional is a typo, error and suggest"; parameters says "unknown positional is a value, absorb it." Pick one.
+>
+> Flags follow the same split. The fallback path's flags are declared on the parent, so a flag placed before a subcommand is consumed by the parent, not the command. If a subcommand needs that flag too, forward it down (see [Layered flags](#layered-flags)).
 
 ### Defining commands
 
@@ -598,7 +603,7 @@ await cli({
 ```
 
 > [!TIP]
-> **Put each command in its own file.** Use the `loader: () => import('./commands/<name>.ts')` pattern even for trivial handlers. It keeps the parent CLI declarative and lazy-loads each subcommand's code only when invoked — flag parsing for `cli --help` doesn't pay the cost of loading every command's dependencies. This is the canonical pattern; see [`examples/04-npm`](/examples/04-npm) for a multi-command setup.
+> **Put each command in its own file.** Use the `loader: () => import('./commands/<name>.ts')` pattern even for trivial handlers. It keeps the parent CLI declarative and lazy-loads each subcommand's code only when invoked — flag parsing for `cli --help` doesn't pay the cost of loading every command's dependencies. This is the canonical pattern; see [`examples/05-npm`](/examples/05-npm) for a multi-command setup.
 
 ### Explicit `runCommand`
 
@@ -644,6 +649,8 @@ await cli({
 
 The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`.
 
+Side-effect command files cannot receive forwarded data: the dynamic import runs the file, but nothing passes it an argument. If the parent forwards parent flags or config via `runCommand(data)`, use the default-export style below instead.
+
 > [!TIP]
 > **Side-effect command files double as standalone scripts.** Because the file runs `cli()` at the top level, you can invoke it directly during development:
 >
@@ -670,6 +677,36 @@ export default (config: Config) => cli({
 ```
 
 Default-export handlers run every time `runCommand(...)` is called, so this is the right style when parent code may retry or invoke a command with different data. Side-effect command files still follow JavaScript module caching: a second dynamic import of the same file does not re-run its top-level `cli()` call.
+
+### Command file layout
+
+Default to a flat file per command:
+
+```
+commands/
+    install.ts
+    build.ts
+    test.ts
+```
+
+Promote a command to its own directory when it accumulates supporting code:
+
+```
+commands/
+    install.ts          # still flat — no supporting files yet
+    build/              # promoted — has its own helpers
+        index.ts        # entry the parent imports
+        bundler.ts
+        cache.ts
+    test/
+        index.ts
+        runner.ts
+        fixtures.ts
+```
+
+Do not create `index.ts` while it would be the only file in the folder. Keep the flat `./commands/<name>.ts` file until there is actually something else to put alongside it — a folder with one `index.ts` adds path depth and import ceremony without delivering co-location benefit.
+
+The promotion is reversible. If supporting code later goes away, collapse the folder back to a flat file.
 
 ### Passing data to commands
 
@@ -749,6 +786,132 @@ await cli({
 ```
 
 When no command matched, `parsed.runCommand` is a sync no-op typed as `() => undefined`.
+
+### Layered flags
+
+**Each level of a multi-command CLI can declare its own flags.** Parent flags apply to whichever subcommand runs; child flags apply only to that subcommand. The parent passes its parsed flags down via `runCommand(data)`, the child receives them as the first argument to its default export. Real CLIs like `git`, `docker`, and `kubectl` use this pattern — global options before the subcommand, subcommand-specific options after.
+
+> [!NOTE]
+> **Looking for global or persistent flags?** cleye has no global-flag primitive (no yargs `.global()`, no oclif or commander persistent flags). This forwarding pattern is the equivalent: the parent declares the flag once and passes its value to whichever subcommand runs. Each level keeps owning its own argv slice, and the parent decides exactly what each child receives.
+
+A minimal `git` reimplementation showing the pattern:
+
+```ts
+// cli.ts (parent)
+await cli({
+    name: 'git',
+    flags: {
+        C: {
+            type: String,
+            default: '.',
+            placeholder: '<path>',
+            description: 'Run as if started in <path>'
+        },
+        noPager: {
+            type: Boolean,
+            description: 'Disable the pager'
+        }
+    },
+    commands: {
+        status: () => import('./commands/status.ts'),
+        log: () => import('./commands/log.ts')
+    },
+    booleanFlagNegation: true
+}, async ({ flags, runCommand }) => {
+    // Parent flags become typed context for whichever subcommand runs.
+    await runCommand({
+        cwd: flags.C,
+        pager: !flags.noPager
+    })
+})
+```
+
+```ts
+// commands/status.ts (child)
+import { cli } from 'cleye'
+
+type Context = {
+    cwd: string
+    pager: boolean
+}
+
+export default ({ cwd, pager }: Context) => cli({
+    // Child declares its own flags. Parent flags are NOT inherited at the
+    // flag level — they arrive via the `Context` argument instead.
+    flags: {
+        short: {
+            type: Boolean,
+            alias: 's',
+            description: 'Give the output in the short-format'
+        }
+    }
+}, (parsed) => {
+    runStatus(cwd, parsed.flags.short, pager)
+})
+```
+
+Invocation:
+
+```sh
+git -C /tmp --no-pager status --short
+#   ^^^^^^^^^^^^^^^^^^^^^^^^         parent flags
+#                             ^^^^^^ child flag
+```
+
+The parent's callback acts as middleware between the user's invocation and the child: it picks which subset of parent state the child needs, transforms it (e.g. `pager: !flags.noPager`), and forwards it. The child sees a clean typed `Context` instead of reaching back into a parent argv it doesn't own.
+
+#### Sharing a flag across levels
+
+The example above keeps parent and child flags disjoint, which is the common case. Sometimes the *same* flag is meaningful at both levels: a `--json` that switches output format whether it appears before or after the command. For that, declare it at **both** levels, have the parent forward its value, and let the child fall back to that value when its own flag is unset:
+
+```ts
+// cli.ts (parent)
+await cli({
+    flags: {
+        json: {
+            type: Boolean,
+            default: false
+        }
+    },
+    commands: {
+        status: () => import('./commands/status.ts')
+    }
+}, async ({ flags, runCommand }) => {
+    await runCommand({ json: flags.json })
+})
+```
+
+```ts
+// commands/status.ts (child)
+import { cli } from 'cleye'
+
+export default (context: { json: boolean }) => cli({
+    flags: { json: Boolean }
+}, (parsed) => {
+    // Child flag wins when set; otherwise use the forwarded parent value.
+    const json = parsed.flags.json ?? context.json
+    render(json)
+})
+```
+
+Now both `my-cli --json status` and `my-cli status --json` produce JSON, because each placement reaches the level that asked for it. Both declarations are needed: under [`strictFlags`](#strict-flags) (which the child inherits), the level missing the declaration rejects the flag rather than ignoring it.
+
+> [!WARNING]
+> **Don't blind-merge the parent's flags into the child's.** It is tempting to forward the parent's whole `flags` object and spread-merge it (`{ ...parentFlags, ...parsed.flags }`). But a flag the user didn't pass is not absent: it carries a value (`undefined` for most types, `[]` for an array flag, or whatever `default` the child declared), and that value overwrites the forwarded one. Forwarding a small transformed context (as above, or as in the `git` example) sidesteps this: there is nothing to merge. If you must merge raw flag objects, drop the unset keys first, and don't give a shared child flag a `default` (a configured default is indistinguishable from a user-passed value, so apply it as a fallback after merging instead, e.g. `merged.json ?? false`):
+> ```ts
+> const isSet = (value: unknown) => (
+>     value !== undefined && !(Array.isArray(value) && value.length === 0)
+> )
+> const defined = Object.fromEntries(
+>     Object.entries(parsed.flags).filter(([, value]) => isSet(value))
+> )
+> const merged = {
+>     ...context,
+>     ...defined
+> }
+> ```
+
+See [`examples/07-git`](/examples/07-git) for the full runnable version. The same pattern composes through deeper nesting — see [Nested commands](#nested-commands) below.
 
 ### Nested commands
 

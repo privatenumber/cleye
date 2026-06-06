@@ -1,8 +1,6 @@
 # Help Customization
 
-Use this reference only when declarative help metadata is not enough. Most CLIs
-should start with `name`, `version`, `help.description`, `help.usage`, and
-`help.examples`.
+Use this reference only when declarative help metadata is not enough. Most CLIs should start with `name`, `version`, `help.description`, `help.usage`, and `help.examples`.
 
 ## Declarative Help First
 
@@ -28,13 +26,11 @@ cli({
 })
 ```
 
-`--help` prints long help. `-h` prints short help. If both are present,
-`--help` wins.
+`--help` prints long help. `-h` prints short help. If both are present, `--help` wins.
 
 ## Extending Default Help
 
-`help.render` receives the resolved CLI options and a render context containing
-`form: 'long' | 'short'`. Return a component, a component array, or a string:
+`help.render` receives the resolved CLI options and a render context containing `form: 'long' | 'short'`. Return a component, a component array, or a string:
 
 ```ts
 import { cli } from 'cleye'
@@ -52,8 +48,7 @@ await cli({
 })
 ```
 
-Use this for small additions, such as a footer or banner, without replacing the
-whole default layout.
+Use this for small additions, such as a footer or banner, without replacing the whole default layout.
 
 ## Fully Custom Layouts
 
@@ -103,12 +98,10 @@ Common components:
 | `flagsHanging(list)` | Force hanging flag table. |
 | `footer(text)` | Literal trailing text. |
 
-Use `cleye/help/responsive` when display-width-aware alignment matters for CJK,
-emoji, or other wide characters:
+Use `cleye/help/responsive` when display-width-aware alignment matters for CJK, emoji, or other wide characters:
 
 ```ts
 import { flags, section } from 'cleye/help/responsive'
 ```
 
-Use `render(...nodes)` or `renderToString(result)` only when manually rendering
-outside cleye. `cli()` already renders the return value of `help.render`.
+Use `render(...nodes)` or `renderToString(result)` only when manually rendering outside cleye. `cli()` already renders the return value of `help.render`.

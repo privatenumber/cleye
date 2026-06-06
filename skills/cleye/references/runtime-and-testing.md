@@ -1,12 +1,10 @@
 # Runtime And Testing
 
-Use this reference when embedding cleye in a host process, writing tests around
-CLI parsing, passing custom argv, or choosing sync mode.
+Use this reference when embedding cleye in a host process, writing tests around CLI parsing, passing custom argv, or choosing sync mode.
 
 ## Custom Argv
 
-`cli(options, callback?, argv?)` takes raw argv as the third argument. If there
-is no callback, pass `undefined` in the second slot:
+`cli(options, callback?, argv?)` takes raw argv as the third argument. If there is no callback, pass `undefined` in the second slot:
 
 ```ts
 const argv = cli({
@@ -14,14 +12,11 @@ const argv = cli({
 }, undefined, ['--verbose'])
 ```
 
-Passing the argv array as the second argument is wrong because the second
-argument is the callback position.
+Passing the argv array as the second argument is wrong because the second argument is the callback position.
 
 ## `throwOnExit`
 
-By default, cleye calls `process.exit` for help, version, missing required
-parameters, strict flag failures, strict command failures, and no-command-match
-sync mode. Use `throwOnExit: true` when the host process should stay alive:
+By default, cleye calls `process.exit` for help, version, missing required parameters, strict flag failures, strict command failures, and no-command-match sync mode. Use `throwOnExit: true` when the host process should stay alive:
 
 ```ts
 import { CleyeExit, cli } from 'cleye'
@@ -40,8 +35,7 @@ try {
 }
 ```
 
-`CleyeExit.code` is `0` for help/version and `1` for validation failures.
-`CleyeExit.reason` identifies the exit cause.
+`CleyeExit.code` is `0` for help/version and `1` for validation failures. `CleyeExit.reason` identifies the exit cause.
 
 ## Sync Mode
 
@@ -53,8 +47,7 @@ const argv = cli({
 })
 ```
 
-This is useful for simple parsers and tests. With commands, sync mode does not
-auto-invoke the matched command:
+This is useful for simple parsers and tests. With commands, sync mode does not auto-invoke the matched command:
 
 ```ts
 const argv = cli({
@@ -66,12 +59,9 @@ const argv = cli({
 await argv.runCommand()
 ```
 
-Handle async errors from `runCommand()` yourself, usually with `try/catch` or an
-IIFE `.catch()` at the script boundary.
+Handle async errors from `runCommand()` yourself, usually with `try/catch` or an IIFE `.catch()` at the script boundary.
 
-If `commands` is defined and no command matches in sync mode, cleye shows help
-and exits. With `throwOnExit: true`, this becomes a `CleyeExit` with
-`reason === 'no-command-match'`.
+If `commands` is defined and no command matches in sync mode, cleye shows help and exits. With `throwOnExit: true`, this becomes a `CleyeExit` with `reason === 'no-command-match'`.
 
 ## Callback Results
 
@@ -85,16 +75,11 @@ const result = await cli({
 })
 ```
 
-If a command matched and the callback did not call `runCommand()`, cleye
-auto-invokes the command after the callback resolves. The auto-invoked command's
-return value is discarded. Call `runCommand()` yourself when the parent needs to
-capture a command result or handle command errors locally.
+If a command matched and the callback did not call `runCommand()`, cleye auto-invokes the command after the callback resolves. The auto-invoked command's return value is discarded. Call `runCommand()` yourself when the parent needs to capture a command result or handle command errors locally.
 
 ## Manual Help And Version
 
-`parsed.showHelp(options?)` prints help with optional content overrides.
-`parsed.showVersion()` prints the configured version and is a no-op when no
-version is configured.
+`parsed.showHelp(options?)` prints help with optional content overrides. `parsed.showVersion()` prints the configured version and is a no-op when no version is configured.
 
 When overriding help in middleware, pass only the fields you want to change:
 
@@ -113,8 +98,7 @@ await cli({
 
 ## Errors
 
-Parse-time errors throw during `cli()`. Command errors happen when the command
-runs:
+Parse-time errors throw during `cli()`. Command errors happen when the command runs:
 
 ```ts
 try {
@@ -126,5 +110,4 @@ try {
 }
 ```
 
-In callback mode, `await cli(options, callback)` rejects if the callback or
-auto-invoked command rejects.
+In callback mode, `await cli(options, callback)` rejects if the callback or auto-invoked command rejects.
