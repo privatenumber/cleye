@@ -98,6 +98,18 @@ type MatchedCommand = {
 };
 
 /**
+ * Build a " (Did you mean X?)" / " (Did you mean X (alias for Y)?)" suggestion
+ * clause from a `findClosest` result. The caller pre-renders the primary and
+ * alias-target tokens for its surface (quoted command names vs dashed flags),
+ * so the grammar lives in one place while formatting stays caller-specific.
+ */
+const buildDidYouMean = (primary: string, aliasTarget?: string): string => (
+	aliasTarget
+		? ` (Did you mean ${primary} (alias for ${aliasTarget})?)`
+		: ` (Did you mean ${primary}?)`
+);
+
+/**
  * Build the `runCommand` closure exposed on `parsed` plus a `hasBeenCalled`
  * probe used by the callback path to skip auto-invoke when the user already
  * invoked it themselves (preserves fire-and-forget semantics for unhandled
@@ -372,12 +384,9 @@ function cli<
 			&& !hasParameters
 		) {
 			const match = findClosest(positional, commandIndex.names, commandIndex.aliases);
-			let suggestion = '';
-			if (match) {
-				suggestion = match.aliasFor
-					? ` (Did you mean "${match.name}" (alias for "${match.aliasFor}")?)`
-					: ` (Did you mean "${match.name}"?)`;
-			}
+			const suggestion = match
+				? buildDidYouMean(`"${match.name}"`, match.aliasFor ? `"${match.aliasFor}"` : undefined)
+				: '';
 			console.error(`Error: Unknown command: "${positional}".${suggestion}`);
 			throw new CleyeExit(1, 'unknown-command');
 		}
@@ -408,12 +417,12 @@ function cli<
 				const flagIndex = buildNameIndex(flags, getFlagAlias);
 				for (const flag of unknownFlagNames) {
 					const match = findClosest(flag, flagIndex.names, flagIndex.aliases);
-					let suggestion = '';
-					if (match) {
-						suggestion = match.aliasFor
-							? ` (Did you mean -${match.name} (alias for --${match.aliasFor})?)`
-							: ` (Did you mean --${match.name}?)`;
-					}
+					const suggestion = match
+						? buildDidYouMean(
+							match.aliasFor ? `-${match.name}` : `--${match.name}`,
+							match.aliasFor ? `--${match.aliasFor}` : undefined,
+						)
+						: '';
 					console.error(`Error: Unknown flag: --${flag}.${suggestion}`);
 				}
 				throw new CleyeExit(1, 'unknown-flag');
