@@ -25,21 +25,17 @@ import { buildNameIndex, getFlagAlias, type NameIndex } from './utils/build-name
 import { getCliContext, runWithCliContext, type CliContext } from './async-context.ts';
 
 const mapParametersToArguments = (
-	mapping: Record<string, string | string[]>,
 	parameters: ParsedParameter[],
 	cliArguments: string[],
 	showHelp: () => void,
-): void => {
+): Record<string, string | string[]> => {
+	const mapping: Record<string, string | string[]> = Object.create(null);
 	for (let i = 0; i < parameters.length; i += 1) {
 		const {
 			name, camelCaseName, required, spread,
 		} = parameters[i];
 
 		const value = spread ? cliArguments.slice(i) : cliArguments[i];
-
-		if (spread) {
-			i = parameters.length;
-		}
 
 		if (
 			required
@@ -51,7 +47,12 @@ const mapParametersToArguments = (
 		}
 
 		mapping[camelCaseName] = value;
+
+		if (spread) {
+			break;
+		}
 	}
+	return mapping;
 };
 
 /**
@@ -81,10 +82,9 @@ const applyParameters = (
 	const eofParsed = hasEofSplit ? parseParameters(eofParameters) : [];
 	checkDuplicateParameters(hasEofSplit ? [...preEofParsed, ...eofParsed] : preEofParsed);
 
-	const mapping: Record<string, string | string[]> = Object.create(null);
-	mapParametersToArguments(mapping, preEofParsed, cliArguments, showHelp);
+	const mapping = mapParametersToArguments(preEofParsed, cliArguments, showHelp);
 	if (hasEofSplit) {
-		mapParametersToArguments(mapping, eofParsed, eofPositionals, showHelp);
+		Object.assign(mapping, mapParametersToArguments(eofParsed, eofPositionals, showHelp));
 	}
 
 	return mapping;
