@@ -1,7 +1,6 @@
 # Flag Formats
 
-Use this reference when a CLI needs validated values, repeated flags, boolean
-negation, described defaults, or custom flag parser functions.
+Use this reference when a CLI needs validated values, repeated flags, boolean negation, described defaults, or custom flag parser functions.
 
 ## Built-In Constructors
 
@@ -17,8 +16,7 @@ cli({
 })
 ```
 
-Boolean flags parse `--flag=false` when the value is passed with `=`.
-Without `=`, the next token is positional:
+Boolean flags parse `--flag=false` when the value is passed with `=`. Without `=`, the next token is positional:
 
 ```sh
 tool --verbose=false
@@ -29,14 +27,9 @@ The second form sets `verbose` to `true` and leaves `false` in `argv._`.
 
 ## Required Flags
 
-In command-line APIs, flags are presence-based and may be absent. cleye inherits
-that boundary: when a flag is not passed, the parsed value is `undefined` unless
-the flag defines a `default`.
+In command-line APIs, flags are presence-based and may be absent. cleye inherits that boundary: when a flag is not passed, the parsed value is `undefined` unless the flag defines a `default`.
 
-Use positional `parameters` for required data when order is natural. When a
-named flag is required by application logic, assert it after parsing. cleye does
-not provide `required: true` for flags because requiredness is application
-validation, not flag parsing.
+Use positional `parameters` for required data when order is natural. When a named flag is required by application logic, assert it after parsing. cleye does not provide `required: true` for flags because requiredness is application validation, not flag parsing.
 
 ```ts
 import assert from 'node:assert/strict'
@@ -52,9 +45,7 @@ assert.ok(argv.flags.token !== undefined, 'Missing required flag: --token')
 
 ## Aliases And Arrays
 
-Aliases must be non-empty single-character strings. Single-character flag
-names, such as `v`, already render as short flags and cannot define a separate
-alias.
+Aliases must be non-empty single-character strings. Single-character flag names, such as `v`, already render as short flags and cannot define a separate alias.
 
 Wrap a type function in an array to collect repeated values:
 
@@ -88,8 +79,7 @@ cli({
 
 ## Boolean Negation
 
-Enable `booleanFlagNegation` when users should be able to pass `--no-name` for
-boolean flags:
+Enable `booleanFlagNegation` when users should be able to pass `--no-name` for boolean flags:
 
 ```ts
 cli({
@@ -141,8 +131,7 @@ cli({
 
 ## Custom Parsers
 
-Any function `(value: string) => T` can be a type parser. Throw to reject an
-invalid value:
+Any function `(value: string) => T` can be a type parser. Throw to reject an invalid value:
 
 ```ts
 const Size = (value: string) => {
@@ -156,8 +145,7 @@ const Size = (value: string) => {
 
 ## Described Defaults
 
-Use a described default when the runtime value is computed but help should show
-stable text:
+Use a described default when the runtime value is computed but help should show stable text:
 
 ```ts
 cli({
@@ -173,5 +161,4 @@ cli({
 })
 ```
 
-The wrapper is recognized only when both `value` and `description` are present.
-Objects with only one of those keys are treated as normal default values.
+The wrapper is recognized only when both `value` and `description` are present. Objects with only one of those keys are treated as normal default values.

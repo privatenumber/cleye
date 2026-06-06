@@ -1,12 +1,10 @@
 # Design Recipes
 
-Use this reference when choosing the shape of a cleye CLI, reviewing generated
-code, or resolving ambiguous behavior before implementation.
+Use this reference when choosing the shape of a cleye CLI, reviewing generated code, or resolving ambiguous behavior before implementation.
 
 ## Combine Parameters and Commands for Fallbacks
 
-At one `cli()` level, you can use `parameters` for positional values and `commands` for
-dispatch. They can be combined to create hybrid CLIs with a default mode:
+At one `cli()` level, you can use `parameters` for positional values and `commands` for dispatch. They can be combined to create hybrid CLIs with a default mode:
 
 ```ts
 cli({
@@ -17,17 +15,12 @@ cli({
 })
 ```
 
-If the leading positional token matches a registered command, it resolves as the
-command. If it does not match, it falls back to being parsed as a parameter.
+If the leading positional token matches a registered command, it resolves as the command. If it does not match, it falls back to being parsed as a parameter.
 
 In the combined mode, cleye refuses two configurations at config time:
 
-- **Required parameters** (`<name>`, not `[name]`): when a command matches,
-  parameter validation is bypassed, so the "required" annotation would only
-  fire in the fallback path. Asymmetric in a confusing way.
-- **`strictCommands: true`**: strict-mode treats unknown positionals as command
-  typos; parameters absorbs them as values. Semantically opposed; cleye refuses
-  to let strictCommands be silently neutered.
+- **Required parameters** (`<name>`, not `[name]`): when a command matches, parameter validation is bypassed, so the "required" annotation would only fire in the fallback path. Asymmetric in a confusing way.
+- **`strictCommands: true`**: strict-mode treats unknown positionals as command typos; parameters absorbs them as values. Semantically opposed; cleye refuses to let strictCommands be silently neutered.
 
 Use this rule:
 
@@ -38,8 +31,7 @@ Use this rule:
 | `tool remote add origin` | nested `commands` |
 | `tool [script] --flags` | `parameters` and `commands` combined |
 
-For wildcard dispatch or a default fallback mode, inspect the parameters in
-the callback:
+For wildcard dispatch or a default fallback mode, inspect the parameters in the callback:
 
 ```ts
 await cli({
@@ -57,13 +49,9 @@ await cli({
 })
 ```
 
-In this hybrid, the flags the fallback path needs are declared on the parent, so
-a flag placed before a subcommand is consumed by the parent, not the command.
-Forward it via `runCommand(data)` if a subcommand needs it too (see Use Layered
-Flags For Multi-Command CLIs).
+In this hybrid, the flags the fallback path needs are declared on the parent, so a flag placed before a subcommand is consumed by the parent, not the command. Forward it via `runCommand(data)` if a subcommand needs it too (see Use Layered Flags For Multi-Command CLIs).
 
-Enable `strictCommands: true` when unknown commands should be treated as typos
-instead of falling back to parameters or custom wildcard input.
+Enable `strictCommands: true` when unknown commands should be treated as typos instead of falling back to parameters or custom wildcard input.
 
 ## Choose Callback Or Sync Mode
 
@@ -79,8 +67,7 @@ await cli({
 })
 ```
 
-Callback mode gives each level a middleware step and auto-invokes a matched
-command after the callback returns if the callback did not call `runCommand()`.
+Callback mode gives each level a middleware step and auto-invokes a matched command after the callback returns if the callback did not call `runCommand()`.
 
 Use sync mode for simple parsers or sync wrappers:
 
@@ -91,8 +78,7 @@ const argv = cli({
 })
 ```
 
-With commands, sync mode never auto-invokes. The caller must handle command
-execution and errors:
+With commands, sync mode never auto-invokes. The caller must handle command execution and errors:
 
 ```ts
 const argv = cli({
@@ -119,13 +105,9 @@ await cli({
 })
 ```
 
-This is the shortest lazy import path and also lets the command file run
-standalone during development. JavaScript module caching still applies: a
-second dynamic import of the same side-effect file does not re-run its top-level
-`cli()` call.
+This is the shortest lazy import path and also lets the command file run standalone during development. JavaScript module caching still applies: a second dynamic import of the same side-effect file does not re-run its top-level `cli()` call.
 
-Use default-export command files when the parent passes data, needs return
-values, or may retry:
+Use default-export command files when the parent passes data, needs return values, or may retry:
 
 ```ts
 // commands/build.ts
@@ -138,8 +120,7 @@ export default (config: Config) => cli({
 })
 ```
 
-`runCommand(config)` invokes the exported function each time and forwards that
-call's arguments.
+`runCommand(config)` invokes the exported function each time and forwards that call's arguments.
 
 ## Choose Command File Layout
 
@@ -167,23 +148,15 @@ commands/
         fixtures.ts
 ```
 
-Do not create `index.ts` while it would be the only file in the folder. Keep the
-flat `./commands/<name>.ts` file until there is actually something else to put
-alongside it. A folder with one `index.ts` adds path depth and import ceremony
-without delivering co-location benefit.
+Do not create `index.ts` while it would be the only file in the folder. Keep the flat `./commands/<name>.ts` file until there is actually something else to put alongside it. A folder with one `index.ts` adds path depth and import ceremony without delivering co-location benefit.
 
-The promotion is reversible. If supporting code later goes away, collapse the
-folder back to a flat file.
+The promotion is reversible. If supporting code later goes away, collapse the folder back to a flat file.
 
 ## Use Layered Flags For Multi-Command CLIs
 
-Each command level declares its own flags. Parent flags apply to whichever
-subcommand runs; child flags apply only to that subcommand. Real CLIs like
-`git`, `docker`, and `kubectl` use this pattern — global options before the
-subcommand, subcommand-specific options after.
+Each command level declares its own flags. Parent flags apply to whichever subcommand runs; child flags apply only to that subcommand. Real CLIs like `git`, `docker`, and `kubectl` use this pattern — global options before the subcommand, subcommand-specific options after.
 
-The parent passes its parsed flags down as typed context via `runCommand(data)`.
-The child receives it via the default-export argument:
+The parent passes its parsed flags down as typed context via `runCommand(data)`. The child receives it via the default-export argument:
 
 ```ts
 // cli.ts (parent)
@@ -216,29 +189,15 @@ export default ({ cwd, pager }: Context) => cli({
 })
 ```
 
-Invocation: `git -C /tmp --no-pager status --short`. Parent flags (`-C`,
-`--no-pager`) come before the subcommand; child flags (`--short`) come after.
+Invocation: `git -C /tmp --no-pager status --short`. Parent flags (`-C`, `--no-pager`) come before the subcommand; child flags (`--short`) come after.
 
-The parent's callback acts as middleware: pick which subset of parent state the
-child needs, transform it (e.g. `!flags.noPager`), and forward it. The child
-doesn't reach back into parent argv it doesn't own.
+The parent's callback acts as middleware: pick which subset of parent state the child needs, transform it (e.g. `!flags.noPager`), and forward it. The child doesn't reach back into parent argv it doesn't own.
 
-cleye has no global or persistent flag primitive (no yargs `.global()`, no oclif
-or commander persistent flags). This forwarding is the equivalent: declare the
-flag on the parent once and pass its value down.
+cleye has no global or persistent flag primitive (no yargs `.global()`, no oclif or commander persistent flags). This forwarding is the equivalent: declare the flag on the parent once and pass its value down.
 
-For a flag meaningful at both levels (a shared `--json`, say), declare it on
-both, forward the parent value, and have the child fall back to it:
-`const json = parsed.flags.json ?? context.json`. Both declarations matter:
-under `strictFlags`, the level missing one rejects the flag instead of ignoring
-it. Do not spread-merge the raw `flags` objects: an unset child flag defaults to
-`undefined` (or `[]` for an array flag, or its configured `default`) and
-clobbers the forwarded value. Keep shared child flags free of a `default` and
-apply it as a post-merge fallback; forwarding a small transformed context leaves
-nothing to merge at all.
+For a flag meaningful at both levels (a shared `--json`, say), declare it on both, forward the parent value, and have the child fall back to it: `const json = parsed.flags.json ?? context.json`. Both declarations matter: under `strictFlags`, the level missing one rejects the flag instead of ignoring it. Do not spread-merge the raw `flags` objects: an unset child flag defaults to `undefined` (or `[]` for an array flag, or its configured `default`) and clobbers the forwarded value. Keep shared child flags free of a `default` and apply it as a post-merge fallback; forwarding a small transformed context leaves nothing to merge at all.
 
-For deeper nesting, the same pattern composes: each level's callback passes a
-context to the next via `runCommand(data)`.
+For deeper nesting, the same pattern composes: each level's callback passes a context to the next via `runCommand(data)`.
 
 ## Choose Strict Or Permissive Parsing
 
@@ -254,9 +213,7 @@ await cli({
 })
 ```
 
-Leave strict modes off for wrappers that intentionally forward unknown flags or
-dynamic command names. In that case, read `argv.unknownFlags` and `argv._`
-explicitly so the forwarding behavior is visible in code review.
+Leave strict modes off for wrappers that intentionally forward unknown flags or dynamic command names. In that case, read `argv.unknownFlags` and `argv._` explicitly so the forwarding behavior is visible in code review.
 
 ## Choose Help Customization Level
 
@@ -273,6 +230,4 @@ cli({
 })
 ```
 
-Use `help.render` only when the default document cannot express the needed
-layout. Prefer extending `defaultHelp(options, { form })` before replacing the
-whole document.
+Use `help.render` only when the default document cannot express the needed layout. Prefer extending `defaultHelp(options, { form })` before replacing the whole document.

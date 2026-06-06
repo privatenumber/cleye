@@ -1,7 +1,6 @@
 # Public Types
 
-Use this reference when writing wrappers, reusable command definitions, type
-tests, or library code that exposes cleye types.
+Use this reference when writing wrappers, reusable command definitions, type tests, or library code that exposes cleye types.
 
 ## Main Types
 
@@ -47,13 +46,9 @@ type ParsedArgv = {
 }
 ```
 
-Use named parameters from `argv._` for declared `parameters`, `argv.command` to
-detect the matched command, and `argv.unknownFlags` only when intentionally
-forwarding flags with `strictFlags` disabled.
+Use named parameters from `argv._` for declared `parameters`, `argv.command` to detect the matched command, and `argv.unknownFlags` only when intentionally forwarding flags with `strictFlags` disabled.
 
-`runCommand` is always present. When no command matched, it returns `undefined`
-synchronously. When a command matched, TypeScript narrows its arguments and
-return value after checking `argv.command`.
+`runCommand` is always present. When no command matched, it returns `undefined` synchronously. When a command matched, TypeScript narrows its arguments and return value after checking `argv.command`.
 
 ## Options Surface
 
@@ -79,11 +74,8 @@ import type {
 } from 'cleye/help'
 ```
 
-Use `Flag` when building a manual flag list for `flags()`, `flagsInline()`, or
-`flagsHanging()`. Use `Node` when building helper functions that return help
-components.
+Use `Flag` when building a manual flag list for `flags()`, `flagsInline()`, or `flagsHanging()`. Use `Node` when building helper functions that return help components.
 
 ## Parser Types
 
-For type-flag parser internals, import from `type-flag` directly. cleye does
-not re-export type-flag's parsed-result internals.
+For type-flag parser internals, import from `type-flag` directly. cleye does not re-export type-flag's parsed-result internals.
