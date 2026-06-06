@@ -229,6 +229,8 @@ function cli<
 		throw new Error('Options is required');
 	}
 
+	const hasParameters = (options.parameters?.length ?? 0) > 0;
+
 	// Required parameters can't coexist with commands — when a command matches,
 	// parameter validation is skipped, so the "required" annotation would only
 	// fire in the fallback path. Force optional declarations instead.
@@ -241,10 +243,9 @@ function cli<
 	if (
 		options.commands
 		&& Object.keys(options.commands).length > 0
-		&& options.parameters
-		&& options.parameters.length > 0
+		&& hasParameters
 	) {
-		const hasRequiredParameter = options.parameters.some(
+		const hasRequiredParameter = options.parameters!.some(
 			parameter => parameter.startsWith('<') && parameter.endsWith('>'),
 		);
 		if (hasRequiredParameter) {
@@ -368,7 +369,7 @@ function cli<
 			&& options.commands
 			&& commandIndex.names.size > 0
 			&& positional
-			&& (options.parameters?.length ?? 0) === 0
+			&& !hasParameters
 		) {
 			const match = findClosest(positional, commandIndex.names, commandIndex.aliases);
 			let suggestion = '';
@@ -477,7 +478,7 @@ function cli<
 			!matchedCommand
 			&& options.commands
 			&& commandIndex.names.size > 0
-			&& (options.parameters?.length ?? 0) === 0
+			&& !hasParameters
 		) {
 			showHelp();
 			throw new CleyeExit(1, 'no-command-match');
