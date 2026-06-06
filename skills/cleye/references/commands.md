@@ -47,6 +47,15 @@ tool --verbose install lodash --save-dev
 #    parent flag       child command argv
 ```
 
+A flag is owned by the level adjacent to the command name. A flag before the
+command goes to the parent and the subcommand never sees it; a flag after goes
+to the subcommand. The level that didn't declare the flag collects it into
+`unknownFlags` and ignores it, or rejects it under `strictFlags`. So a flag that
+must work on either side is declared at both levels, with the parent forwarding
+its value via `runCommand(data)` (see the `runCommand` section) so the child can
+fall back to it. cleye has no global or persistent flag primitive; this
+forwarding is the equivalent.
+
 If a command name is misspelled and `strictCommands` is enabled, cleye reports
 the command typo before parsing flags after that candidate.
 
@@ -115,6 +124,14 @@ export default ({ cwd }: Context) => cli({
     console.log(cwd, argv.flags.short)
 })
 ```
+
+Forward a small transformed context like `{ cwd }` rather than the raw `flags`
+object. If you spread-merge raw flags (`{ ...parentFlags, ...parsed.flags }`),
+unset child flags clobber the forwarded values: a typed flag defaults to
+`undefined`, an array flag to `[]`, and a flag with a configured `default` to
+that default. Drop unset keys before merging if you must, and don't give a
+shared child flag a `default` (it is indistinguishable from a user value; apply
+it as a post-merge fallback instead).
 
 `runCommand` invokes the matched command every time it is called and uses the
 arguments from that call. Store the returned value or Promise yourself when you

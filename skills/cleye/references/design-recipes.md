@@ -57,6 +57,11 @@ await cli({
 })
 ```
 
+In this hybrid, the flags the fallback path needs are declared on the parent, so
+a flag placed before a subcommand is consumed by the parent, not the command.
+Forward it via `runCommand(data)` if a subcommand needs it too (see Use Layered
+Flags For Multi-Command CLIs).
+
 Enable `strictCommands: true` when unknown commands should be treated as typos
 instead of falling back to parameters or custom wildcard input.
 
@@ -217,6 +222,20 @@ Invocation: `git -C /tmp --no-pager status --short`. Parent flags (`-C`,
 The parent's callback acts as middleware: pick which subset of parent state the
 child needs, transform it (e.g. `!flags.noPager`), and forward it. The child
 doesn't reach back into parent argv it doesn't own.
+
+cleye has no global or persistent flag primitive (no yargs `.global()`, no oclif
+or commander persistent flags). This forwarding is the equivalent: declare the
+flag on the parent once and pass its value down.
+
+For a flag meaningful at both levels (a shared `--json`, say), declare it on
+both, forward the parent value, and have the child fall back to it:
+`const json = parsed.flags.json ?? context.json`. Both declarations matter:
+under `strictFlags`, the level missing one rejects the flag instead of ignoring
+it. Do not spread-merge the raw `flags` objects: an unset child flag defaults to
+`undefined` (or `[]` for an array flag, or its configured `default`) and
+clobbers the forwarded value. Keep shared child flags free of a `default` and
+apply it as a post-merge fallback; forwarding a small transformed context leaves
+nothing to merge at all.
 
 For deeper nesting, the same pattern composes: each level's callback passes a
 context to the next via `runCommand(data)`.
