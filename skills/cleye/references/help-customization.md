@@ -28,6 +28,28 @@ cli({
 
 `--help` prints long help. `-h` prints short help. If both are present, `--help` wins.
 
+## Dynamic Help (Function Form)
+
+`help` can be a function that receives `{ name, command, version }` and returns the help options. Use it to interpolate the command name into `examples` or `usage` without repeating it:
+
+```ts
+cli({
+    name: 'cheat',
+    help: ({ command }) => ({
+        examples: [
+            `${command} -t tar`,
+            `${command} --topic git-rebase`
+        ]
+    })
+})
+```
+
+- `name` — the command's own name (the program name at the root).
+- `command` — the full invocation path, e.g. `cheat config get` for a nested command; equals `name` at the root.
+- `version` — the configured version, if any.
+
+`command` reflects the full path the user types, so a nested command's `--help` shows `Usage: cheat config get …` rather than just the leaf.
+
 ## Extending Default Help
 
 `help.render` receives the resolved CLI options and a render context containing `form: 'long' | 'short'`. Return a component, a component array, or a string:

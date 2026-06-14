@@ -128,6 +128,7 @@ $ my-script --file-a data.json --file-b=file.txt
 _Cleye_'s flag parsing is powered by [`type-flag`](https://github.com/privatenumber/type-flag) and comes with many features:
 
 - Array & Custom types
+- [Standard Schema](https://standardschema.dev) validators (Zod, Valibot, ArkType) as flag types
 - Flag delimiters: `--flag value`, `--flag=value`, `--flag:value`, and `--flag.value`
 - Combined aliases: `-abcd 2` → `-a -b -c -d 2`
 - [End of flags](https://unix.stackexchange.com/a/11382): Pass in `--` to end flag parsing
@@ -299,6 +300,64 @@ await cli({
     argv.flags.size // => "large" ("small" | "medium" | "large")
 })
 ```
+
+### Standard Schema (Zod, Valibot, ArkType)
+
+Any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, and others) can be used directly as a flag type. _Cleye_ validates the value and infers the flag type from the schema's output. No wrapper or extra import.
+
+```ts
+import * as z from 'zod'
+
+await cli({
+    flags: {
+        size: z.enum(['small', 'medium', 'large']),
+        port: z.coerce.number(),
+        tags: [z.string()] // Wrap in an array to accept multiple values
+    }
+}, (argv) => {
+    // $ my-script --size large --port 8080 --tags a --tags b
+
+    argv.flags.size // => "large" ("small" | "medium" | "large" | undefined)
+    argv.flags.port // => 8080 (number | undefined)
+    argv.flags.tags // => ["a", "b"] (string[])
+})
+```
+
+It is library-agnostic, so any compliant schema works the same way:
+
+```ts
+import * as v from 'valibot'
+
+cli({
+    flags: {
+        mode: v.picklist(['dev', 'prod']) // 'dev' | 'prod' | undefined
+    }
+})
+```
+
+To attach help metadata (`description`, `placeholder`, `alias`, `default`), use the object form with the schema as `type`. In help output, a schema flag's value renders as `<value>` by default, so set a `placeholder` for a clearer label:
+
+```ts
+cli({
+    flags: {
+        size: {
+            type: z.enum(['small', 'large']),
+            description: 'Size of the pizza',
+            placeholder: '<size>'
+        }
+    }
+})
+```
+
+On validation failure, the schema's message is surfaced as `Flag "--<name>": <message>`. Using a schema adds no runtime dependency: the Standard Schema spec is types-only and vendored into [`type-flag`](https://github.com/privatenumber/type-flag).
+
+A few things to keep in mind:
+
+- **Numbers need coercion.** Command-line values are always strings, so `z.number()` rejects `"3000"`. Use `z.coerce.number()` (or your library's equivalent), then chain validators like `.int()`, `.min()`, and `.max()`.
+- **For multiple values, wrap the schema in `[ ]`** (as with `tags` above), not `z.array(...)`. A schema that itself outputs an array validates a single token against the array, so it type-checks but throws at runtime. To split one value into an array, use a transform such as `z.string().transform(value => value.split(','))`.
+- **Keep booleans native.** Use `Boolean` rather than a schema for boolean flags, so valueless `--flag`, `--no-flag` negation, and short-flag grouping keep working.
+- **Use cleye's `default`.** _Cleye_ only runs the parser when a flag is present, so a schema-level `.default()` never fires for an absent flag. Set `default` on the flag instead, with `as const` to preserve a literal type.
+- **Schemas must be synchronous.** Flag parsing is synchronous, so an async schema throws.
 
 ### Composable type helpers
 
@@ -1098,6 +1157,30 @@ Errors inside commands invoked via `runCommand()` reject the returned Promise �
 ## Help documentation
 _Cleye_ uses all information provided to generate rich help documentation. The more information you give, the better the docs!
 
+### Dynamic help options
+
+`help` can be a function that receives `{ name, command, version }` and returns the help options. Use it to reference the command name without repeating it — handy for `examples` and `usage`:
+
+```ts
+await cli({
+    name: 'mycli',
+    help: ({ command }) => ({
+        examples: [
+            `${command} search <query>`,
+            `${command} get <id>`
+        ]
+    })
+})
+```
+
+The context:
+
+- `name` — the command's own name (the program name at the root).
+- `command` — the full invocation path the user types, e.g. `mycli remote add` for a nested command. Equals `name` at the root.
+- `version` — the configured version, if any.
+
+Because `command` is the full path, a nested command's `--help` renders `Usage: mycli remote add …` instead of just the leaf name.
+
 ### Help customization
 
 _Cleye_'s default help output is built by composing components — small rendering units exported from `cleye/help`. To customize the output, pass a `help.render` function that returns an array of components (cleye joins them with blank lines). A single component or a pre-rendered string also work.
@@ -1244,7 +1327,7 @@ type ParsedArgv = {
 | `parameters` | `string[]` | Positional argument definitions. Formats: `<required>`, `[optional]`, `<spread...>`, `[spread...]`. |
 | `flags` | `Flags` | Flag definitions. See [Defining flags](#defining-flags). |
 | `commands` | `Record<string, CommandEntry>` | Command definitions. See [Defining commands](#defining-commands). |
-| `help` | `false \| HelpOptions` | Help configuration or `false` to disable `--help`. See [help options](#help-1). |
+| `help` | `false \| HelpOptions \| ((context: HelpContext) => HelpOptions)` | Help configuration, or `false` to disable `--help`. A function receives `{ name, command, version }` and returns `HelpOptions`. See [help options](#help-1). |
 | `ignoreArgv` | `IgnoreArgvCallback` | Callback to skip certain argv tokens from parsing. |
 | `strictFlags` | `boolean` | Error on unknown flags with typo suggestions. Inherited by commands. |
 | `strictCommands` | `boolean` | Error on unknown commands with typo suggestions. Inherited by commands. |
@@ -1287,6 +1370,14 @@ type CommandEntry =
 | `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
 | `render` | `HelpRenderer` (`(options, { form }) => string \| Node \| Node[]`) | Function to customize the help document. |
 
+`help` may also be a function that receives a `HelpContext` and returns `HelpOptions` (see [Dynamic help options](#dynamic-help-options)):
+
+| Property | Type | Description |
+| - | - | - |
+| `name` | `string` | The command's own name (the program name at the root). |
+| `command` | `string` | The full invocation path, e.g. `npm config get`. Equals `name` at the root. |
+| `version` | `string` | The configured version, if any. |
+
 #### callback(parsed)
 
 Optional callback invoked after parsing. The `cli()` Promise resolves to whatever this callback returns.
@@ -1313,6 +1404,7 @@ import type {
     DescribedDefault,
     ExitReason,
     Flags,
+    HelpContext,
     HelpOptions,
     HelpRenderer,
     ParsedArgv
