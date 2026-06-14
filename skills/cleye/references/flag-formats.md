@@ -143,6 +143,38 @@ const Size = (value: string) => {
 }
 ```
 
+## Standard Schema
+
+Any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType) can be used directly as a flag type. cleye validates the value and infers the flag type from the schema's output:
+
+```ts
+import * as z from 'zod'
+
+const argv = cli({
+    flags: {
+        size: z.enum(['small', 'large']),
+        port: z.coerce.number(),
+        tags: [z.string()]
+    }
+}, undefined, ['--size', 'small', '--port', '8080', '--tags', 'a'])
+
+argv.flags.size // 'small' | 'large' | undefined
+argv.flags.port // number | undefined
+argv.flags.tags // string[]
+```
+
+The same works with any compliant library, e.g. Valibot's `v.picklist(['dev', 'prod'])`.
+
+Rules:
+
+- Coerce numbers: CLI values are strings, so use `z.coerce.number()`, not `z.number()`.
+- Multiple values: wrap the schema in `[ ]`, not `z.array(...)` (which validates a single token and throws). Split one value with a transform like `z.string().transform(v => v.split(','))`.
+- Booleans: keep native `Boolean` so `--no-flag` negation and short grouping keep working.
+- Defaults: set cleye's `default` (with `as const` to keep a literal type); a schema's own `.default()` never fires for an absent flag.
+- Schemas must be synchronous; an async schema throws.
+- Help metadata: use the `{ type: schema, description, placeholder }` object form. A schema flag's value renders as `<value>` unless a `placeholder` is set.
+- On failure, the schema's message surfaces as `Flag "--<name>": <message>`. No runtime dependency is added (the spec is vendored into type-flag).
+
 ## Described Defaults
 
 Use a described default when the runtime value is computed but help should show stable text:

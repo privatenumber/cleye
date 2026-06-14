@@ -128,6 +128,7 @@ $ my-script --file-a data.json --file-b=file.txt
 _Cleye_'s flag parsing is powered by [`type-flag`](https://github.com/privatenumber/type-flag) and comes with many features:
 
 - Array & Custom types
+- [Standard Schema](https://standardschema.dev) validators (Zod, Valibot, ArkType) as flag types
 - Flag delimiters: `--flag value`, `--flag=value`, `--flag:value`, and `--flag.value`
 - Combined aliases: `-abcd 2` → `-a -b -c -d 2`
 - [End of flags](https://unix.stackexchange.com/a/11382): Pass in `--` to end flag parsing
@@ -299,6 +300,64 @@ await cli({
     argv.flags.size // => "large" ("small" | "medium" | "large")
 })
 ```
+
+### Standard Schema (Zod, Valibot, ArkType)
+
+Any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, and others) can be used directly as a flag type. _Cleye_ validates the value and infers the flag type from the schema's output. No wrapper or extra import.
+
+```ts
+import * as z from 'zod'
+
+await cli({
+    flags: {
+        size: z.enum(['small', 'medium', 'large']),
+        port: z.coerce.number(),
+        tags: [z.string()] // Wrap in an array to accept multiple values
+    }
+}, (argv) => {
+    // $ my-script --size large --port 8080 --tags a --tags b
+
+    argv.flags.size // => "large" ("small" | "medium" | "large" | undefined)
+    argv.flags.port // => 8080 (number | undefined)
+    argv.flags.tags // => ["a", "b"] (string[])
+})
+```
+
+It is library-agnostic, so any compliant schema works the same way:
+
+```ts
+import * as v from 'valibot'
+
+cli({
+    flags: {
+        mode: v.picklist(['dev', 'prod']) // 'dev' | 'prod' | undefined
+    }
+})
+```
+
+To attach help metadata (`description`, `placeholder`, `alias`, `default`), use the object form with the schema as `type`. In help output, a schema flag's value renders as `<value>` by default, so set a `placeholder` for a clearer label:
+
+```ts
+cli({
+    flags: {
+        size: {
+            type: z.enum(['small', 'large']),
+            description: 'Size of the pizza',
+            placeholder: '<size>'
+        }
+    }
+})
+```
+
+On validation failure, the schema's message is surfaced as `Flag "--<name>": <message>`. Using a schema adds no runtime dependency: the Standard Schema spec is types-only and vendored into [`type-flag`](https://github.com/privatenumber/type-flag).
+
+A few things to keep in mind:
+
+- **Numbers need coercion.** Command-line values are always strings, so `z.number()` rejects `"3000"`. Use `z.coerce.number()` (or your library's equivalent), then chain validators like `.int()`, `.min()`, and `.max()`.
+- **For multiple values, wrap the schema in `[ ]`** (as with `tags` above), not `z.array(...)`. A schema that itself outputs an array validates a single token against the array, so it type-checks but throws at runtime. To split one value into an array, use a transform such as `z.string().transform(value => value.split(','))`.
+- **Keep booleans native.** Use `Boolean` rather than a schema for boolean flags, so valueless `--flag`, `--no-flag` negation, and short-flag grouping keep working.
+- **Use cleye's `default`.** _Cleye_ only runs the parser when a flag is present, so a schema-level `.default()` never fires for an absent flag. Set `default` on the flag instead, with `as const` to preserve a literal type.
+- **Schemas must be synchronous.** Flag parsing is synchronous, so an async schema throws.
 
 ### Composable type helpers
 

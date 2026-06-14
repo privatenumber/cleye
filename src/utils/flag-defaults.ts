@@ -1,3 +1,4 @@
+import { isStandardSchema } from 'type-flag/internal';
 import type { Flags } from '../types.ts';
 import type { DescribedDefault } from '../types-internal.ts';
 
@@ -42,6 +43,9 @@ export const unwrapDescribedDefaults = (flags: Record<string, unknown>): Flags =
 			config === null
 			|| typeof config !== 'object'
 			|| Array.isArray(config)
+			// A Standard Schema can carry its own `.default()` method; it is the
+			// flag type, not a cleye config object, so pass it through untouched.
+			|| isStandardSchema(config)
 			|| !('default' in config)
 		) {
 			normalizedFlags[name] = config;

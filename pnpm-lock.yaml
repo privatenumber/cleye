@@ -15,8 +15,8 @@ importers:
         specifier: 8.2.1
         version: 8.2.1
       type-flag:
-        specifier: 5.0.0-beta.7
-        version: 5.0.0-beta.7
+        specifier: 5.0.0-beta.10
+        version: 5.0.0-beta.10
     devDependencies:
       '@types/node':
         specifier: ^25.8.0
@@ -51,6 +51,12 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      valibot:
+        specifier: ^1.4.1
+        version: 1.4.1(typescript@5.9.3)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
 packages:
 
@@ -2836,8 +2842,8 @@ packages:
   type-flag@4.2.0:
     resolution: {integrity: sha512-6h6QpSh5glA+BrMCq8FINo4o/BqSHNQdfIPpeSBt0s/6mynPaQWWZL+RHaYm95htTbid/spUbJer1yOCsA6ezQ==}
 
-  type-flag@5.0.0-beta.7:
-    resolution: {integrity: sha512-F8zbG8r3NTlO9A3LXl6NFU4+ceMU6JJDDuJ3YixsNKBOfaTVTyctPjW2U3WHlo4tUbo+dlV3Nts88w9zGs81pg==}
+  type-flag@5.0.0-beta.10:
+    resolution: {integrity: sha512-FeP0FRIWDpLSLyIQDPvvU7evGWho+wL7E0qif6vrOfOQXCTj1ci2VN4BnQl1xNGxmMfrFXMI654eZkCyYvuvrg==}
     engines: {node: '>=22.22.2'}
 
   typed-array-buffer@1.0.3:
@@ -2904,6 +2910,14 @@ packages:
   v8-to-istanbul@9.3.0:
     resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
     engines: {node: '>=10.12.0'}
+
+  valibot@1.4.1:
+    resolution: {integrity: sha512-klCmFTz2jeDluy9RwX+F884TCiogtdBJ/YaxSx1EOBYXa3NXNWj8kR1jjN8rzluwojJVWWaHJ4r1U5LfICnM3g==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
@@ -3010,8 +3024,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -4507,8 +4521,8 @@ snapshots:
       '@babel/parser': 7.29.2
       eslint: 9.39.4(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.3.6
-      zod-validation-error: 4.0.2(zod@4.3.6)
+      zod: 4.4.3
+      zod-validation-error: 4.0.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -6181,7 +6195,7 @@ snapshots:
 
   type-flag@4.2.0: {}
 
-  type-flag@5.0.0-beta.7: {}
+  type-flag@5.0.0-beta.10: {}
 
   typed-array-buffer@1.0.3:
     dependencies:
@@ -6300,6 +6314,10 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
+
+  valibot@1.4.1(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   validate-npm-package-license@3.0.4:
     dependencies:
@@ -6426,10 +6444,10 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-validation-error@4.0.2(zod@4.3.6):
+  zod-validation-error@4.0.2(zod@4.4.3):
     dependencies:
-      zod: 4.3.6
+      zod: 4.4.3
 
-  zod@4.3.6: {}
+  zod@4.4.3: {}
 
   zwitch@2.0.4: {}

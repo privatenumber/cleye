@@ -5,5 +5,6 @@ describe('flags', () => {
 	import('./auto-injection.ts');
 	import('./unknown.ts');
 	import('./boolean-negation.ts');
+	import('./standard-schema.ts');
 	import('./types.ts');
 }, { parallel: false });

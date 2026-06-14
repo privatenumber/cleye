@@ -15,7 +15,7 @@ commands as a map, and lazy-load command files with dynamic imports.
 | --- | --- |
 | Simple script with flags | Use `cli({ name, flags })` and read Core Patterns below. |
 | Positional args | Add `parameters`; names become camelCase on `argv._`. |
-| Validated flag values | Use `cleye/formats`; read [Flag Formats](references/flag-formats.md). |
+| Validated flag values | Use `cleye/formats` or a Standard Schema (Zod/Valibot/ArkType); read [Flag Formats](references/flag-formats.md). |
 | Generated help | Use `version` and `help.description` / `help.examples`. |
 | CLI architecture choices | Read [Design Recipes](references/design-recipes.md). |
 | Subcommands | Use a `commands` map; read [Commands](references/commands.md). |
@@ -149,9 +149,30 @@ Important flag behavior:
   business-required flag, assert after parsing instead of looking for
   `required: true`.
 
+A [Standard Schema](https://standardschema.dev) validator (Zod, Valibot,
+ArkType) can be a flag type directly. cleye infers the flag type from the
+schema output:
+
+```ts
+import * as z from 'zod'
+
+cli({
+    flags: {
+        size: z.enum(['small', 'large']), // 'small' | 'large' | undefined
+        port: z.coerce.number(), // number | undefined
+        tags: [z.string()] // string[]
+    }
+})
+```
+
+Coerce numbers (CLI values are strings), wrap in `[ ]` for multiple values
+(not `z.array`), keep booleans as native `Boolean`, and use cleye's `default`
+(not the schema's). Use the `{ type: schema, description, placeholder }` object
+form to add help metadata.
+
 Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`,
-`range`, `commaList`, `url`, required-flag assertions, custom parsers, and
-described defaults.
+`range`, `commaList`, `url`, Standard Schema validators, required-flag
+assertions, custom parsers, and described defaults.
 
 ## Help And Version
 
