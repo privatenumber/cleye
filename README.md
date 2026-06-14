@@ -1098,6 +1098,30 @@ Errors inside commands invoked via `runCommand()` reject the returned Promise �
 ## Help documentation
 _Cleye_ uses all information provided to generate rich help documentation. The more information you give, the better the docs!
 
+### Dynamic help options
+
+`help` can be a function that receives `{ name, command, version }` and returns the help options. Use it to reference the command name without repeating it — handy for `examples` and `usage`:
+
+```ts
+await cli({
+    name: 'mycli',
+    help: ({ command }) => ({
+        examples: [
+            `${command} search <query>`,
+            `${command} get <id>`
+        ]
+    })
+})
+```
+
+The context:
+
+- `name` — the command's own name (the program name at the root).
+- `command` — the full invocation path the user types, e.g. `mycli remote add` for a nested command. Equals `name` at the root.
+- `version` — the configured version, if any.
+
+Because `command` is the full path, a nested command's `--help` renders `Usage: mycli remote add …` instead of just the leaf name.
+
 ### Help customization
 
 _Cleye_'s default help output is built by composing components — small rendering units exported from `cleye/help`. To customize the output, pass a `help.render` function that returns an array of components (cleye joins them with blank lines). A single component or a pre-rendered string also work.
@@ -1244,7 +1268,7 @@ type ParsedArgv = {
 | `parameters` | `string[]` | Positional argument definitions. Formats: `<required>`, `[optional]`, `<spread...>`, `[spread...]`. |
 | `flags` | `Flags` | Flag definitions. See [Defining flags](#defining-flags). |
 | `commands` | `Record<string, CommandEntry>` | Command definitions. See [Defining commands](#defining-commands). |
-| `help` | `false \| HelpOptions` | Help configuration or `false` to disable `--help`. See [help options](#help-1). |
+| `help` | `false \| HelpOptions \| ((context: HelpContext) => HelpOptions)` | Help configuration, or `false` to disable `--help`. A function receives `{ name, command, version }` and returns `HelpOptions`. See [help options](#help-1). |
 | `ignoreArgv` | `IgnoreArgvCallback` | Callback to skip certain argv tokens from parsing. |
 | `strictFlags` | `boolean` | Error on unknown flags with typo suggestions. Inherited by commands. |
 | `strictCommands` | `boolean` | Error on unknown commands with typo suggestions. Inherited by commands. |
@@ -1287,6 +1311,14 @@ type CommandEntry =
 | `examples` | `string \| string[]` | Example code snippets shown in `--help`. |
 | `render` | `HelpRenderer` (`(options, { form }) => string \| Node \| Node[]`) | Function to customize the help document. |
 
+`help` may also be a function that receives a `HelpContext` and returns `HelpOptions` (see [Dynamic help options](#dynamic-help-options)):
+
+| Property | Type | Description |
+| - | - | - |
+| `name` | `string` | The command's own name (the program name at the root). |
+| `command` | `string` | The full invocation path, e.g. `npm config get`. Equals `name` at the root. |
+| `version` | `string` | The configured version, if any. |
+
 #### callback(parsed)
 
 Optional callback invoked after parsing. The `cli()` Promise resolves to whatever this callback returns.
@@ -1313,6 +1345,7 @@ import type {
     DescribedDefault,
     ExitReason,
     Flags,
+    HelpContext,
     HelpOptions,
     HelpRenderer,
     ParsedArgv

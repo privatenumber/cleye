@@ -128,6 +128,7 @@ const createRunCommand = (
 	matchedCommand: MatchedCommand | undefined,
 	argv: string[],
 	resolvedOptions: CliOptions,
+	commandPath: string,
 ): {
 	runCommand: Handler;
 	runCommandHasBeenCalled: () => boolean;
@@ -144,6 +145,11 @@ const createRunCommand = (
 
 	const context: CliContext = {
 		name: matchedCommand.name,
+		// Accumulate the full invocation path from the matched command names
+		// (what the user types), so nested help can render `npm config get`.
+		// Guard the empty-root case (unnamed root CLI) so no leading space
+		// leaks into the path and propagates to descendants.
+		command: commandPath ? `${commandPath} ${matchedCommand.name}` : matchedCommand.name,
 		argv: argv.slice(1),
 		parentOptions: resolvedOptions,
 	};
@@ -181,19 +187,31 @@ const createRunCommand = (
 const createShowHelp = (
 	options: CliOptions,
 	effectiveName: string,
+	commandPath: string,
 	flags: Record<string, unknown>,
-	help: false | HelpOptions | undefined,
+	help: CliOptions['help'],
 ) => (helpOptions?: HelpOptions, form: HelpForm = 'long'): void => {
-	const effectiveHelp = typeof help === 'object' && helpOptions
+	// A function `help` is resolved lazily here (only when help is shown) with
+	// the leaf name, full command path, and version.
+	const resolvedHelp = typeof help === 'function'
+		? help({
+			name: effectiveName,
+			command: commandPath,
+			version: options.version,
+		})
+		: help;
+	const effectiveHelp = typeof resolvedHelp === 'object' && helpOptions
 		? {
-			...help,
+			...resolvedHelp,
 			...helpOptions,
-			render: helpOptions.render ?? help.render,
+			render: helpOptions.render ?? resolvedHelp.render,
 		}
-		: helpOptions ?? help;
+		: helpOptions ?? resolvedHelp;
 	const effectiveOptions = {
 		...options,
-		name: effectiveName,
+		// Render the header and auto-usage against the full invocation path so
+		// a subcommand shows `npm config get`, not just the leaf `get`.
+		name: commandPath,
 		flags,
 		...(effectiveHelp === undefined ? {} : { help: effectiveHelp }),
 	} as CliOptions;
@@ -287,6 +305,10 @@ function cli<
 
 	try {
 		const effectiveName = options.name ?? parentContext?.name ?? path.basename(process.argv[1] ?? '');
+		// Full invocation path: the parent's accumulated path, or — at the
+		// root — just this CLI's own name. Threaded into child contexts so
+		// nested help renders the complete command (`npm config get`).
+		const commandPath = parentContext?.command ?? effectiveName;
 
 		const commandIndex: NameIndex = options.commands
 			? buildNameIndex(
@@ -353,7 +375,7 @@ function cli<
 				console.log(options.version);
 			}
 		};
-		const showHelp = createShowHelp(options, effectiveName, flags, help);
+		const showHelp = createShowHelp(options, effectiveName, commandPath, flags, help);
 
 		let matchedCommand: MatchedCommand | undefined;
 
@@ -450,6 +472,7 @@ function cli<
 			matchedCommand,
 			argv,
 			resolvedOptions,
+			commandPath,
 		);
 
 		const result = {

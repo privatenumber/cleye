@@ -28,8 +28,20 @@ export const createDefaultHelp = (
 	} = components;
 	const form = options_.form ?? 'long';
 	const isShort = form === 'short';
-	const help = typeof options.help === 'object' ? options.help : undefined;
 	const name = options.name ?? '';
+	// Resolve a function `help` here too, so the documented manual path
+	// (`render(...defaultHelp(options))`) behaves like it does via cli(). When
+	// invoked through cli()'s showHelp the function is already resolved
+	// upstream, so this only fires for direct callers; `command` falls back to
+	// `name` (a standalone render has no parent chain).
+	const helpOption = typeof options.help === 'function'
+		? options.help({
+			name,
+			command: name,
+			version: options.version,
+		})
+		: options.help;
+	const help = typeof helpOption === 'object' ? helpOption : undefined;
 
 	// Build the full flag set: user flags + auto-injected version/help.
 	// `resolveAutoFlags` is the single source of truth shared with cli.ts —

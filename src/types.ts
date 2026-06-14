@@ -88,6 +88,26 @@ export type HelpOptions = {
 };
 
 /**
+ * Context passed to a `help` function, resolved when help is rendered. Lets
+ * the script interpolate its own name into `examples`, `usage`, or
+ * `description` without repeating it.
+ */
+export type HelpContext = {
+
+	/** This command's own name (the leaf). For the root CLI, the program name. */
+	name: string;
+
+	/**
+	 * The full invocation path including parent commands, e.g. `npm config get`.
+	 * For the root CLI, this equals `name`.
+	 */
+	command: string;
+
+	/** The configured version, if any. */
+	version?: string;
+};
+
+/**
  * A command entry in the commands map.
  *
  * - Shorthand: a function to call when the command is matched.
@@ -135,8 +155,17 @@ export type CliOptions<
 	/**
 	 * Options to configure the help documentation. Pass in `false` to disable
 	 * handling `--help, -h`.
+	 *
+	 * Can also be a function that receives the resolved {@link HelpContext}
+	 * (`name`, `command`, `version`) and returns `HelpOptions`. Useful for
+	 * interpolating the command name into `examples`, `usage`, or
+	 * `description` without repeating it:
+	 *
+	 * ```
+	 * help: ({ command }) => ({ examples: [`${command} <query>`] })
+	 * ```
 	 */
-	help?: false | HelpOptions;
+	help?: false | HelpOptions | ((context: HelpContext) => HelpOptions);
 
 	/** Which argv elements to ignore from parsing. */
 	ignoreArgv?: IgnoreFunction;

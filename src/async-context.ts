@@ -6,6 +6,9 @@ export type CliContext = {
 	/** Command name assigned by the parent */
 	name: string;
 
+	/** Full invocation path assigned by the parent, e.g. `npm config get` */
+	command: string;
+
 	/** Remaining argv for the child command to parse */
 	argv: string[];
 

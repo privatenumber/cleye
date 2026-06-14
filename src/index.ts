@@ -9,5 +9,6 @@ export type {
 	ExitReason,
 	ParsedArgv,
 	HelpOptions,
+	HelpContext,
 	HelpRenderer,
 } from './types.ts';

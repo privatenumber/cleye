@@ -1,6 +1,6 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
-import { cli } from '#cleye';
+import { cli, type CliOptions, type HelpContext } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 import { withColumns } from '../../utils/with-columns.ts';
 
@@ -376,6 +376,146 @@ describe('help output', () => {
 			expect(raw).toContain('\u001B[1m\u001B[36m-v\u001B[39m\u001B[22m');
 		});
 	}, { parallel: false });
+
+	describe('help as a function', () => {
+		test('interpolates name, command, and version', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				name: 'mycli',
+				version: '2.1.0',
+				help: ({ name, command, version }) => ({
+					description: `${name} v${version}`,
+					examples: [`${command} run --watch`],
+				}),
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			expect(mocked.processExit.calls).toStrictEqual([[0]]);
+			const output = getOutput(mocked);
+			// description uses name + version; examples use command (=== name at root)
+			expect(output).toContain('mycli v2.1.0');
+			expect(output).toContain('mycli run --watch');
+		});
+	}, { parallel: false });
+
+	describe('command path', () => {
+		test('subcommand --help shows the full command path in usage', async () => {
+			const mocked = mockEnvFunctions();
+			await cli({
+				name: 'npm',
+				commands: {
+					config: async () => {
+						await cli({
+							name: 'config',
+							commands: {
+								get: () => {
+									cli({
+										name: 'get',
+										parameters: ['<key>'],
+									});
+								},
+							},
+						}, () => {});
+					},
+				},
+			}, () => {}, ['config', 'get', '--help']);
+			mocked.restore();
+
+			// Not just the leaf `get` — the full path the user actually types.
+			expect(getOutput(mocked)).toContain('Usage: npm config get [flags...] <key>');
+		});
+
+		test('help function in a subcommand receives the full command path', async () => {
+			const mocked = mockEnvFunctions();
+			await cli({
+				name: 'npm',
+				commands: {
+					config: () => {
+						cli({
+							name: 'config',
+							help: ({ name, command }) => ({
+								examples: [`leaf:${name}`, `path:${command}`],
+							}),
+						});
+					},
+				},
+			}, () => {}, ['config', '--help']);
+			mocked.restore();
+
+			const output = getOutput(mocked);
+			expect(output).toContain('leaf:config');
+			expect(output).toContain('path:npm config');
+		});
+
+		test('command path is dynamic per invocation; leaf name is stable', async () => {
+			// One config object, invoked two ways. `name` (leaf) is constant;
+			// `command` (full path) is resolved from the live parent chain, so
+			// it differs depending on whether the command has a parent.
+			const getCommand = {
+				name: 'get',
+				parameters: ['<key>'],
+				help: ({ name, command }: HelpContext) => ({
+					examples: [`name:${name}`, `cmd:${command}`],
+				}),
+			} satisfies CliOptions;
+
+			// Standalone: no parent → command is just its own name.
+			const solo = mockEnvFunctions();
+			cli(getCommand, undefined, ['--help']);
+			solo.restore();
+			const soloOutput = getOutput(solo);
+			expect(soloOutput).toContain('name:get');
+			expect(soloOutput).toContain('cmd:get');
+			expect(soloOutput).toContain('Usage: get [flags...] <key>');
+			expect(soloOutput).not.toContain('npm'); // no phantom parent
+
+			// Nested three levels deep (npm config get): same config object.
+			const nested = mockEnvFunctions();
+			await cli({
+				name: 'npm',
+				commands: {
+					config: async () => {
+						await cli({
+							name: 'config',
+							commands: {
+								get: () => {
+									cli(getCommand);
+								},
+							},
+						}, () => {});
+					},
+				},
+			}, () => {}, ['config', 'get', '--help']);
+			nested.restore();
+			const nestedOutput = getOutput(nested);
+			expect(nestedOutput).toContain('name:get'); // leaf unchanged
+			expect(nestedOutput).toContain('cmd:npm config get'); // full path picked up
+			expect(nestedOutput).toContain('Usage: npm config get [flags...] <key>');
+		});
+
+		test('empty root name does not leak a leading space into the command path', async () => {
+			const mocked = mockEnvFunctions();
+			await cli({
+				name: '',
+				commands: {
+					build: () => {
+						cli({
+							parameters: ['<target>'],
+							help: ({ command }) => ({ examples: [`cmd:[${command}]`] }),
+						});
+					},
+				},
+			}, () => {}, ['build', '--help']);
+			mocked.restore();
+
+			const output = getOutput(mocked);
+			// The path is `build`, not ` build` — no leading space from an empty root.
+			expect(output).toContain('cmd:[build]');
+			expect(output).not.toContain('cmd:[ build]');
+			expect(output).toContain('Usage: build [flags...] <target>');
+		});
+	}, { parallel: false });
+
 	describe('invalid usage', () => {
 		test('missing required parameter', async () => {
 			const mocked = mockEnvFunctions();

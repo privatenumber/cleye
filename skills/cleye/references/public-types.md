@@ -12,6 +12,7 @@ import type {
     DescribedDefault,
     ExitReason,
     Flags,
+    HelpContext,
     HelpOptions,
     HelpRenderer,
     ParsedArgv
@@ -27,6 +28,7 @@ import type {
 | `ParsedArgv` | Type parsed results in wrappers or tests. |
 | `HelpOptions` | Type help override objects. |
 | `HelpRenderer` | Type custom `help.render` functions. |
+| `HelpContext` | Type the context a function `help` receives (`{ name, command, version }`). |
 | `ExitReason` | Narrow `CleyeExit.reason`. |
 | `DescribedDefault` | Type `default: { value, description }`. |
 
@@ -57,7 +59,7 @@ Use named parameters from `argv._` for declared `parameters`, `argv.command` to 
 | `parameters` | Use for positional data. Can be combined with `commands` for fallback routing. |
 | `commands` | Use for dispatch by the first positional token. Values are handler functions or `{ description, alias, loader }`. |
 | `flags` | Values are type functions or descriptor objects with `type`, `alias`, `default`, `description`, and `placeholder`. |
-| `help` | `false` disables automatic help handling; `showHelp()` still works. |
+| `help` | `false` disables automatic help handling; `showHelp()` still works. Can also be a function receiving `{ name, command, version }` that returns the help options. |
 | `version` | Enables `--version`; use `help.version` to show a version in help only. |
 | `strictFlags` | Rejects unknown flags with suggestions. Inherits into command files. |
 | `strictCommands` | Rejects unknown command names with suggestions. Inherits into nested commands. |

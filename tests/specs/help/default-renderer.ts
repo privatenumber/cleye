@@ -637,6 +637,20 @@ describe('defaultHelp', () => {
 				restore();
 			}
 		});
+
+		test('resolves a function help when defaultHelp is called directly', () => {
+			// Documented manual path: render(...defaultHelp(options)). The
+			// function must be resolved here, not silently dropped.
+			const output = stripVTControlCharacters(renderDefault({
+				name: 'mycli',
+				help: ({ name, command }) => ({
+					description: `desc ${name}`,
+					examples: [`${command} run`],
+				}),
+			}));
+			expect(output).toContain('desc mycli');
+			expect(output).toContain('mycli run');
+		});
 	});
 
 	describe('short form', () => {
