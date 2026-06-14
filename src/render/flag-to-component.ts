@@ -81,7 +81,10 @@ export const flagsToComponentList = (
 		if (includeDefaultDescriptions && 'default' in cfg) {
 			const defaultDescription = getDefaultDescription(cfg.default);
 			if (defaultDescription !== undefined) {
-				description += ` (default: ${defaultDescription})`;
+				// Don't emit a leading space when there's no user description:
+				// `wrap` no longer strips it, and it would misalign the column.
+				const defaultText = `(default: ${defaultDescription})`;
+				description = description ? `${description} ${defaultText}` : defaultText;
 			}
 		}
 

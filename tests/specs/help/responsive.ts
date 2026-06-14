@@ -4,11 +4,13 @@ import stringWidth from 'string-width';
 import { cli } from '#cleye';
 import {
 	defaultHelp,
+	render,
 	cmds,
 	flagsInline,
 	type Flag,
 } from '../../../src/help/responsive.ts';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
+import { withColumns } from '../../utils/with-columns.ts';
 
 process.stdout.columns = 80;
 
@@ -65,5 +67,26 @@ describe('cleye/help/responsive', () => {
 		expect(mocked.consoleLog.calls.length).toBe(1);
 		expect(mocked.consoleLog.calls[0][0]).toContain('tool');
 		expect(mocked.consoleLog.calls[0][0]).toContain('--verbose');
+	});
+
+	test('examples render verbatim, preserving line breaks (shared with cleye/help)', () => {
+		const restore = withColumns(20);
+		try {
+			const output = stripVTControlCharacters(render(...defaultHelp({
+				name: 'tool',
+				help: {
+					examples: [
+						'tool 検索 alpha',
+						'tool 取得 bravo',
+					],
+				},
+			})));
+			// Block exceeds 20 columns, but each example stays intact — the
+			// responsive variant shares the same verbatim examples rendering.
+			expect(output).toContain('tool 検索 alpha');
+			expect(output).toContain('tool 取得 bravo');
+		} finally {
+			restore();
+		}
 	});
 }, { parallel: false });

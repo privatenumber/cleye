@@ -8,7 +8,7 @@ import {
 import {
 	type Components, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
-	cmds as defaultCmds, flags as defaultFlags,
+	cmds as defaultCmds, flags as defaultFlags, footer as defaultFooter,
 } from './components.ts';
 import { flagsToComponentList } from './flag-to-component.ts';
 
@@ -18,13 +18,13 @@ import { flagsToComponentList } from './flag-to-component.ts';
  * once by `cleye/help/responsive` (with `stringWidth`-based components).
  */
 export const createDefaultHelp = (
-	components: Pick<Components, 'p' | 'usage' | 'section' | 'cmds' | 'flags'>,
+	components: Pick<Components, 'p' | 'usage' | 'section' | 'cmds' | 'flags' | 'footer'>,
 ) => (
 	options: CliOptions,
 	options_: { form?: HelpForm } = {},
 ): Node[] => {
 	const {
-		p, usage, section, cmds, flags: flagsComponent,
+		p, usage, section, cmds, flags: flagsComponent, footer,
 	} = components;
 	const form = options_.form ?? 'long';
 	const isShort = form === 'short';
@@ -66,7 +66,10 @@ export const createDefaultHelp = (
 		// User-supplied string or string[]
 		const lines = Array.isArray(customUsage) ? customUsage : [customUsage];
 		const body = lines.join('\n');
-		nodes.push(section('Usage', p(body)));
+		// Render verbatim: usage patterns are preformatted lines, not prose.
+		// `footer` never reflows, so authored line breaks survive and a single
+		// over-long line overflows (stays copy-pasteable) rather than wrapping.
+		nodes.push(section('Usage', footer(body)));
 	} else if (name) {
 		// Auto-computed usage from name + flags + parameters + commands
 		const hasFlags = Object.keys(allFlags).length > 0;
@@ -157,7 +160,10 @@ export const createDefaultHelp = (
 		if (examples && (!Array.isArray(examples) || examples.length > 0)) {
 			const examplesText = Array.isArray(examples) ? examples.join('\n') : examples;
 			if (examplesText) {
-				nodes.push(section('Examples', p(examplesText)));
+				// Render verbatim (see Usage above): examples are preformatted
+				// command lines. Reflowing them splits commands mid-line and
+				// breaks copy-paste.
+				nodes.push(section('Examples', footer(examplesText)));
 			}
 		}
 	}
@@ -171,4 +177,5 @@ export const defaultHelp = createDefaultHelp({
 	section: defaultSection,
 	cmds: defaultCmds,
 	flags: defaultFlags,
+	footer: defaultFooter,
 });

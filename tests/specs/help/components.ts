@@ -45,6 +45,43 @@ describe('components', () => {
 			const node = p('hello');
 			expect((node as unknown as { text: string }).text).toBe('hello');
 		});
+
+		test('honors author newlines and wraps each line independently', () => {
+			const restore = withColumns(12);
+			try {
+				// Both lines fit within 12, so they stay as authored. Without
+				// newline-aware wrapping the running length accumulates across
+				// the '\n' and forces spurious mid-line breaks.
+				expect(p('aaaa bbbb\ncccc dddd').render()).toBe('aaaa bbbb\ncccc dddd');
+			} finally {
+				restore();
+			}
+		});
+
+		test('wraps within a single author line that exceeds width', () => {
+			const restore = withColumns(12);
+			try {
+				// First authored line (14) exceeds 12 so it wraps; the second
+				// line (11) fits and stays whole. The old wrap accumulated
+				// length across the '\n' and split 'fff' onto its own line.
+				expect(p('aaaa bbbb cccc\nddd eee fff').render())
+					.toBe('aaaa bbbb\ncccc\nddd eee fff');
+			} finally {
+				restore();
+			}
+		});
+
+		test('preserves leading spaces on each authored line', () => {
+			const restore = withColumns(20);
+			try {
+				// Leading indentation is author intent (e.g. an indented list in
+				// a description); it must not be swallowed during wrapping.
+				expect(p('  indented line\n    more indented').render())
+					.toBe('  indented line\n    more indented');
+			} finally {
+				restore();
+			}
+		});
 	});
 
 	describe('usage', () => {
@@ -266,6 +303,18 @@ describe('components', () => {
 
 			expect(result.split('\n').map(line => stripVTControlCharacters(line)))
 				.toStrictEqual(['      --quiet']);
+		});
+
+		test('blank line in a description carries no trailing whitespace', () => {
+			const result = flagsHanging([{
+				long: '--mode',
+				description: 'line one\n\nline two',
+			}]).render();
+			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
+			// The blank separator stays empty rather than being padded with the
+			// hang indent.
+			expect(lines).toContain('');
+			expect(lines.every(line => line === line.trimEnd())).toBe(true);
 		});
 	});
 

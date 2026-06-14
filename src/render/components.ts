@@ -53,23 +53,33 @@ export type CreateComponentsOptions = {
  */
 export const createComponents = ({ measureString }: CreateComponentsOptions) => {
 	const wrap = (text: string, width: number, contIndent: string): string => {
-		const words = text.split(' ');
+		// Honor author-intended hard breaks: split on '\n' first, then
+		// space-wrap each line independently. Without this, an embedded '\n'
+		// rides inside a "word" and the running length accumulates across it,
+		// forcing spurious mid-line breaks (and never resetting at the author's
+		// break). Blank lines survive as empty segments. The first token seeds
+		// `current` even when empty, so leading indentation is preserved rather
+		// than swallowed.
 		const lines: string[] = [];
-		let current = '';
-		for (const word of words) {
-			if (current.length === 0) {
-				current = word;
-			} else if (measureString(current) + 1 + measureString(word) <= width) {
-				current += ` ${word}`;
-			} else {
-				lines.push(current);
-				current = word;
+		for (const hardLine of text.split('\n')) {
+			let current = '';
+			let isFirst = true;
+			for (const word of hardLine.split(' ')) {
+				if (isFirst) {
+					current = word;
+					isFirst = false;
+				} else if (measureString(current) + 1 + measureString(word) <= width) {
+					current += ` ${word}`;
+				} else {
+					lines.push(current);
+					current = word;
+				}
 			}
-		}
-		if (current) {
 			lines.push(current);
 		}
-		return lines.map((line, i) => (i === 0 ? line : contIndent + line)).join('\n');
+		// Indent continuation lines, but leave blank lines empty so a non-empty
+		// contIndent doesn't introduce trailing whitespace.
+		return lines.map((line, i) => (i === 0 || line === '' ? line : contIndent + line)).join('\n');
 	};
 
 	const p = (text: string): Node => ({

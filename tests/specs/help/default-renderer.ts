@@ -3,6 +3,7 @@ import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { defaultHelp } from '../../../src/render/default-help.ts';
 import { render } from '../../../src/render/render.ts';
+import { withColumns } from '../../utils/with-columns.ts';
 
 // `defaultHelp` returns Node[]; tests assert on the rendered string.
 const renderDefault = (...args: Parameters<typeof defaultHelp>) => render(...defaultHelp(...args));
@@ -86,6 +87,21 @@ describe('defaultHelp', () => {
 			}));
 			expect(output).toContain('my-cli foo');
 			expect(output).toContain('my-cli bar');
+		});
+
+		test('multi-line usage preserves authored line breaks when the block exceeds the width', () => {
+			const restore = withColumns(20);
+			try {
+				const output = stripVTControlCharacters(renderDefault({
+					name: 'my-cli',
+					help: { usage: ['my-cli build <file>', 'my-cli deploy --prod'] },
+				}));
+				// Each authored line stays intact rather than being reflowed.
+				expect(output).toContain('my-cli build <file>');
+				expect(output).toContain('my-cli deploy --prod');
+			} finally {
+				restore();
+			}
 		});
 
 		test('usage: false suppresses usage section', () => {
@@ -565,6 +581,61 @@ describe('defaultHelp', () => {
 				help: { examples: [] },
 			}));
 			expect(output).not.toContain('Examples:');
+		});
+
+		test('examples keep one per line when the block exceeds the terminal width', () => {
+			const restore = withColumns(30);
+			try {
+				const examples = ['demo alpha', 'demo bravo', 'demo charlie', 'demo delta'];
+				const output = stripVTControlCharacters(renderDefault({
+					name: 'tool',
+					help: { examples },
+				}));
+				// Every example stays intact on its own line: the cumulative block
+				// length exceeds 30, but no individual command is split.
+				for (const example of examples) {
+					expect(output).toContain(example);
+				}
+				// No example was broken onto a continuation line.
+				expect(output).not.toMatch(/demo\n/);
+			} finally {
+				restore();
+			}
+		});
+
+		test('examples preserve blank-line grouping', () => {
+			const restore = withColumns(20);
+			try {
+				const output = stripVTControlCharacters(renderDefault({
+					name: 'tool',
+					help: {
+						examples: [
+							'# Group one',
+							'tool foo',
+							'',
+							'# Group two',
+							'tool bar',
+						],
+					},
+				}));
+				expect(output).toContain('# Group one\ntool foo\n\n# Group two\ntool bar');
+			} finally {
+				restore();
+			}
+		});
+
+		test('a single example longer than the terminal width is not wrapped', () => {
+			const restore = withColumns(20);
+			try {
+				const longExample = 'tool deploy --target production --region us-east-1';
+				const output = stripVTControlCharacters(renderDefault({
+					name: 'tool',
+					help: { examples: [longExample] },
+				}));
+				expect(output).toContain(longExample);
+			} finally {
+				restore();
+			}
 		});
 	});
 
