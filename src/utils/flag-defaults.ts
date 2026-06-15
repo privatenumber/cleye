@@ -2,12 +2,21 @@ import { isStandardSchema } from 'type-flag/internal';
 import type { Flags } from '../types.ts';
 import type { DescribedDefault } from '../types-internal.ts';
 
+/**
+ * Whether a flag definition is a config object (`{ type, ... }`) rather than a
+ * bare type, array, or Standard Schema — those are opaque flag types whose own
+ * members (e.g. a Zod schema's `.default()` method) must not be read as cleye
+ * flag options.
+ */
+export const isFlagConfigObject = (value: unknown): value is Record<string, unknown> => (
+	typeof value === 'object'
+	&& value !== null
+	&& !Array.isArray(value)
+	&& !isStandardSchema(value)
+);
+
 const getDescribedDefault = (value: unknown): DescribedDefault | undefined => {
-	if (
-		value === null
-		|| typeof value !== 'object'
-		|| Array.isArray(value)
-	) {
+	if (!isFlagConfigObject(value)) {
 		return;
 	}
 
@@ -39,15 +48,7 @@ export const getDefaultDescription = (value: unknown): string | undefined => {
 export const unwrapDescribedDefaults = (flags: Record<string, unknown>): Flags => {
 	const normalizedFlags: Record<string, unknown> = {};
 	for (const [name, config] of Object.entries(flags)) {
-		if (
-			config === null
-			|| typeof config !== 'object'
-			|| Array.isArray(config)
-			// A Standard Schema can carry its own `.default()` method; it is the
-			// flag type, not a cleye config object, so pass it through untouched.
-			|| isStandardSchema(config)
-			|| !('default' in config)
-		) {
+		if (!isFlagConfigObject(config) || !('default' in config)) {
 			normalizedFlags[name] = config;
 			continue;
 		}

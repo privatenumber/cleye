@@ -1,7 +1,7 @@
-import { flagNameToKebab, isStandardSchema } from 'type-flag/internal';
+import { flagNameToKebab } from 'type-flag/internal';
 import type { Flags } from '../types.ts';
 import { getFlagAlias } from '../utils/build-name-index.ts';
-import { getDefaultDescription } from '../utils/flag-defaults.ts';
+import { getDefaultDescription, isFlagConfigObject } from '../utils/flag-defaults.ts';
 import type { Flag } from './components.ts';
 
 type FlagEntry = readonly [name: string, kebabName: string];
@@ -24,15 +24,7 @@ const flagNameSorter = new Intl.Collator('en', {
 });
 
 const normalizeFlagConfig = (config: unknown): HelpFlagConfig => (
-	config !== null
-	&& typeof config === 'object'
-	&& !Array.isArray(config)
-	// A Standard Schema is the flag's type, not a config object. Treat it as
-	// opaque so its own members (e.g. Zod's `.default()` method, which would
-	// otherwise render as "(default: computed)") aren't read as flag options.
-	&& !isStandardSchema(config)
-		? config
-		: { type: config }
+	isFlagConfigObject(config) ? config : { type: config }
 );
 
 /**
