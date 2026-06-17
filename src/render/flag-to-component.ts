@@ -45,7 +45,12 @@ const inferFlagArgument = (typeValue: unknown): string | undefined => {
 	if (typeValue === Number) {
 		return 'number';
 	}
-	return 'value';
+	// Type functions (e.g. `oneOf` from `cleye/formats`) may advertise a
+	// `placeholder` describing the values they accept; otherwise fall back
+	// to a generic `<value>`. Optional-chain so a nullish type (e.g. an
+	// empty `[]` array element) falls through instead of throwing.
+	const advertised = (typeValue as { placeholder?: unknown })?.placeholder;
+	return typeof advertised === 'string' ? advertised : 'value';
 };
 
 /**

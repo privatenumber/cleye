@@ -3,6 +3,7 @@ import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { defaultHelp } from '../../../src/render/default-help.ts';
 import { render } from '../../../src/render/render.ts';
+import { oneOf } from '../../../src/formats.ts';
 import { withColumns } from '../../utils/with-columns.ts';
 
 // `defaultHelp` returns Node[]; tests assert on the rendered string.
@@ -250,6 +251,27 @@ describe('defaultHelp', () => {
 			}));
 			const flagLine = output.split('\n').find(line => line.includes('--port')) ?? '';
 			expect(flagLine).toContain('<number>');
+		});
+
+		test('oneOf type shows accepted values as the arg label', () => {
+			const output = stripVTControlCharacters(renderDefault({
+				flags: {
+					format: { type: oneOf(['json', 'yaml', 'csv']) },
+				},
+			}));
+			const flagLine = output.split('\n').find(line => line.includes('--format')) ?? '';
+			expect(flagLine).toContain('<json|yaml|csv>');
+		});
+
+		test('empty array flag type falls back to <value> without throwing', () => {
+			// An empty array type unwraps to an `undefined` element; the
+			// placeholder lookup must optional-chain rather than throw.
+			const flags = {
+				tag: { type: [] },
+			} as unknown as NonNullable<Parameters<typeof defaultHelp>[0]['flags']>;
+			const output = stripVTControlCharacters(renderDefault({ flags }));
+			const flagLine = output.split('\n').find(line => line.includes('--tag')) ?? '';
+			expect(flagLine).toContain('<value>');
 		});
 
 		test('flag placeholder overrides type-inferred label', () => {

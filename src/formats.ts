@@ -1,11 +1,16 @@
 export const oneOf = <const T extends readonly string[]>(
 	values: T,
-) => (input: string): T[number] => {
-	if (!values.includes(input)) {
-		throw new Error(`Expected one of: ${values.join(', ')} (got: "${input}")`);
-	}
-	return input as T[number];
-};
+) => Object.assign(
+	(input: string): T[number] => {
+		if (!values.includes(input)) {
+			throw new Error(`Expected one of: ${values.join(', ')} (got: "${input}")`);
+		}
+		return input as T[number];
+	},
+	// Advertise the accepted values as the help placeholder so the flag
+	// renders `<a|b|c>` instead of a generic `<value>`.
+	{ placeholder: values.join('|') },
+);
 
 export const commaList = <T>(itemType: (value: string) => T) => (input: string): T[] => {
 	if (input === '') {

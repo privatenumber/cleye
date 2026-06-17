@@ -27,6 +27,11 @@ describe('formats', () => {
 			const parser = oneOf(['json', 'yaml', 'csv']);
 			expectTypeOf(parser('json')).toEqualTypeOf<'json' | 'yaml' | 'csv'>();
 		});
+
+		test('advertises accepted values as the help placeholder', () => {
+			const parser = oneOf(['json', 'yaml', 'csv']);
+			expect(parser.placeholder).toBe('json|yaml|csv');
+		});
 	});
 
 	describe('commaList', () => {
