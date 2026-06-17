@@ -203,4 +203,70 @@ describe('two-tier help (-h vs --help)', () => {
 		}, undefined, ['--help'])).toThrow(TypeError);
 		mocked.restore();
 	});
+
+	describe('short-form --help hint', () => {
+		const shortHelp = (options: Parameters<typeof cli>[0]) => {
+			const mocked = mockEnvFunctions();
+			cli(options, undefined, ['-h']);
+			mocked.restore();
+			return stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
+		};
+
+		test('hints when the long form has a description', () => {
+			expect(shortHelp({
+				name: 'my-cli',
+				help: { description: 'A helpful tool' },
+			})).toContain('Pass --help for more details.');
+		});
+
+		test('hints when a command has a description', () => {
+			expect(shortHelp({
+				name: 'my-cli',
+				commands: {
+					build: {
+						description: 'Build it',
+						loader: () => {},
+					},
+				},
+			})).toContain('Pass --help for more details.');
+		});
+
+		test('hints when a flag has a default', () => {
+			expect(shortHelp({
+				name: 'my-cli',
+				flags: {
+					port: {
+						type: Number,
+						default: 3000,
+					},
+				},
+			})).toContain('Pass --help for more details.');
+		});
+
+		test('omits the hint when the long form shows nothing more', () => {
+			expect(shortHelp({
+				name: 'my-cli',
+				flags: { verbose: Boolean },
+			})).not.toContain('for more details');
+		});
+
+		test('omits the hint for examples that render to nothing', () => {
+			// `['']` joins to '' — the long form shows no Examples section, so
+			// the hint must not claim there's more.
+			expect(shortHelp({
+				name: 'my-cli',
+				help: { examples: [''] },
+			})).not.toContain('for more details');
+		});
+
+		test('long form (--help) never shows the hint', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				name: 'my-cli',
+				help: { description: 'A helpful tool' },
+			}, undefined, ['--help']);
+			mocked.restore();
+			expect(stripVTControlCharacters(mocked.consoleLog.calls[0][0])).not.toContain('for more details');
+		});
+	}, { parallel: false });
 }, { parallel: false });

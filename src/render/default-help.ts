@@ -5,6 +5,7 @@ import {
 	autoFlagShortHelp,
 	resolveAutoFlags,
 } from '../utils/auto-flags.ts';
+import { getDefaultDescription, isFlagConfigObject } from '../utils/flag-defaults.ts';
 import {
 	type Components, type Node,
 	p as defaultP, usage as defaultUsage, section as defaultSection,
@@ -42,6 +43,12 @@ export const createDefaultHelp = (
 		})
 		: options.help;
 	const help = typeof helpOption === 'object' ? helpOption : undefined;
+
+	// Examples render only when they join to non-empty text. Compute once so the
+	// long-form Examples section and the short-form hint agree on whether there
+	// are examples to show (e.g. `examples: ['']` joins to '' — nothing to show).
+	const examplesValue = help?.examples;
+	const examplesText = examplesValue && (Array.isArray(examplesValue) ? examplesValue.join('\n') : examplesValue);
 
 	// Build the full flag set: user flags + auto-injected version/help.
 	// `resolveAutoFlags` is the single source of truth shared with cli.ts —
@@ -167,16 +174,30 @@ export const createDefaultHelp = (
 	}
 
 	// ── Examples (long form only) ─────────────────────────────────────────
-	if (!isShort) {
-		const examples = help?.examples;
-		if (examples && (!Array.isArray(examples) || examples.length > 0)) {
-			const examplesText = Array.isArray(examples) ? examples.join('\n') : examples;
-			if (examplesText) {
-				// Render verbatim (see Usage above): examples are preformatted
-				// command lines. Reflowing them splits commands mid-line and
-				// breaks copy-paste.
-				nodes.push(section('Examples', footer(examplesText)));
-			}
+	if (!isShort && examplesText) {
+		// Render verbatim (see Usage above): examples are preformatted command
+		// lines. Reflowing them splits commands mid-line and breaks copy-paste.
+		nodes.push(section('Examples', footer(examplesText)));
+	}
+
+	// ── Short-form hint ───────────────────────────────────────────────────
+	// Short help hides the description, examples, command descriptions, and
+	// flag defaults. When the long form would actually reveal more of those,
+	// point the user to `--help`.
+	if (isShort) {
+		const hasLongFormExtras = Boolean(
+			help?.description
+			|| examplesText
+			|| Object.values(options.commands ?? {}).some(
+				entry => typeof entry === 'object' && entry !== null && 'description' in entry && Boolean(entry.description),
+			)
+			|| Object.values(options.flags ?? {}).some(
+				config => isFlagConfigObject(config) && 'default' in config && getDefaultDescription(config.default) !== undefined,
+			),
+		);
+
+		if (hasLongFormExtras) {
+			nodes.push(p('Pass --help for more details.'));
 		}
 	}
 
