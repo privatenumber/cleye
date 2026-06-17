@@ -6,48 +6,49 @@
  * (description, usage, examples) renders into that auto-help. No components,
  * no custom rendering — just metadata.
  *
- * Vehicle: a tiny `cheat`-style — a CLI whose value really IS its help page.
+ * Vehicle: a tiny weather CLI whose value is mostly its help page.
  * Run `--help` to see the full output the metadata produces.
  *
  * Usage:
- *  node examples/04-help/index.ts --help        # full help, with description and examples
- *  node examples/04-help/index.ts -h            # short help, cheatsheet form
- *  node examples/04-help/index.ts --version     # auto-injected from `version`
- *  node examples/04-help/index.ts --topic tar
+ *  node examples/04-help/index.ts --help          # full help, with description and examples
+ *  node examples/04-help/index.ts -h              # short help
+ *  node examples/04-help/index.ts --version       # auto-injected from `version`
+ *  node examples/04-help/index.ts --location Tokyo
  */
 
 import { cli } from '#cleye';
 
 await cli({
-	name: 'cheat',
+	name: 'weather',
 
 	// Setting `version` auto-injects a `--version` flag. Pass via
 	// `help.version` instead if you want it shown in --help only.
-	version: '1.2.3',
+	version: '1.0.0',
 
 	flags: {
-		topic: {
+		location: {
 			type: String,
-			alias: 't',
-			description: 'Cheat sheet topic',
-			default: 'tar',
+			alias: 'l',
+			description: 'Location to forecast',
+			default: 'here',
 		},
 	},
 
 	help: {
 		// `description` shows under the title in `--help` (long form).
-		description: 'Quick command reminders for things you always forget.',
+		description: 'Show the local weather forecast.',
 
 		// `examples` renders an "Examples:" section in `--help`. Strings as-is;
 		// arrays let you mix headers (`# section`) with command lines.
 		examples: [
-			'# Extract a tarball',
-			'cheat -t tar',
+			'# Forecast for your current location',
+			'weather',
 			'',
-			'# Look up a different topic',
-			'cheat --topic git-rebase',
+			'# A specific city — long flag or short alias',
+			'weather --location Tokyo',
+			'weather -l "New York"',
 		],
 	},
 }, (argv) => {
-	console.log(`(pretend cheat sheet for: ${argv.flags.topic})`);
+	console.log(`(pretend forecast for: ${argv.flags.location})`);
 });
