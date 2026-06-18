@@ -1,4 +1,6 @@
-declare const oneOf: <const T extends readonly string[]>(values: T) => (input: string) => T[number];
+declare const oneOf: <const T extends readonly string[]>(values: T) => ((input: string) => T[number]) & {
+    placeholder: string;
+};
 declare const commaList: <T>(itemType: (value: string) => T) => (input: string) => T[];
 declare const integer: () => (input: string) => number;
 declare const float: () => (input: string) => number;

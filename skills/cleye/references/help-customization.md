@@ -6,21 +6,21 @@ Use this reference only when declarative help metadata is not enough. Most CLIs 
 
 ```ts
 cli({
-    name: 'cheat',
-    version: '1.2.3',
+    name: 'weather',
+    version: '1.0.0',
     flags: {
-        topic: {
+        location: {
             type: String,
-            alias: 't',
-            description: 'Cheat sheet topic',
-            default: 'tar'
+            alias: 'l',
+            description: 'Location to forecast',
+            default: 'here'
         }
     },
     help: {
-        description: 'Quick command reminders.',
+        description: 'Show the local weather forecast.',
         examples: [
-            'cheat -t tar',
-            'cheat --topic git-rebase'
+            'weather --location Tokyo',
+            'weather -l "New York"'
         ]
     }
 })
@@ -34,21 +34,21 @@ cli({
 
 ```ts
 cli({
-    name: 'cheat',
+    name: 'weather',
     help: ({ command }) => ({
         examples: [
-            `${command} -t tar`,
-            `${command} --topic git-rebase`
+            `${command} --location Tokyo`,
+            `${command} -l "New York"`
         ]
     })
 })
 ```
 
 - `name` — the command's own name (the program name at the root).
-- `command` — the full invocation path, e.g. `cheat config get` for a nested command; equals `name` at the root.
+- `command` — the full invocation path, e.g. `weather config get` for a nested command; equals `name` at the root.
 - `version` — the configured version, if any.
 
-`command` reflects the full path the user types, so a nested command's `--help` shows `Usage: cheat config get …` rather than just the leaf.
+`command` reflects the full path the user types, so a nested command's `--help` shows `Usage: weather config get …` rather than just the leaf.
 
 ## Extending Default Help
 
