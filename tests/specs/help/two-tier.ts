@@ -1,4 +1,5 @@
 import { stripVTControlCharacters } from 'node:util';
+import { dim } from 'ansis';
 import { describe, test, expect } from 'manten';
 import { cli } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
@@ -241,6 +242,34 @@ describe('two-tier help (-h vs --help)', () => {
 					},
 				},
 			})).toContain('Pass --help for more details.');
+		});
+
+		test('dims the hint', () => {
+			// Only assert when ansis actually emits color. ansis resolves its
+			// color level once at import and bakes it into the named `dim`
+			// import, so it can't be forced on from inside the test: mutating
+			// process.env — or even ansis.level — afterward doesn't re-color an
+			// already-imported `dim`. Color must be set before the process
+			// starts, which every test script does (FORCE_COLOR=1), so this
+			// runs under `pnpm test` and CI; only a bare color-off `node` run
+			// skips, which beats passing a vacuous plain-vs-plain assertion.
+			// Mirrors help/output.ts.
+			if (
+				process.env.NO_COLOR
+				|| !process.env.FORCE_COLOR
+				|| process.env.FORCE_COLOR === '0'
+			) {
+				return;
+			}
+			const mocked = mockEnvFunctions();
+			cli({
+				name: 'my-cli',
+				help: { description: 'A helpful tool' },
+			}, undefined, ['-h']);
+			mocked.restore();
+			// dim() wraps the rendered text, so the SGR codes surround the
+			// intact phrase — asserting on it locks in both styling and content.
+			expect(mocked.consoleLog.calls[0][0]).toContain(dim('Pass --help for more details.'));
 		});
 
 		test('omits the hint when the long form shows nothing more', () => {

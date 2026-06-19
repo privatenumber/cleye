@@ -1,3 +1,4 @@
+import { dim } from 'ansis';
 import type { CliOptions, Flags, HelpForm } from '../types.ts';
 import {
 	AUTO_FLAG,
@@ -197,7 +198,15 @@ export const createDefaultHelp = (
 		);
 
 		if (hasLongFormExtras) {
-			nodes.push(p('Pass --help for more details.'));
+			// Dim the hint so it reads as ancillary to the help body. Apply
+			// `dim` to the *rendered* output rather than the input text: the
+			// paragraph measures and wraps on the plain string, so pre-styling
+			// it would count the ANSI escapes toward the width and wrap early.
+			const hint = p('Pass --help for more details.');
+			nodes.push({
+				...hint,
+				render: () => dim(hint.render()),
+			});
 		}
 	}
 
