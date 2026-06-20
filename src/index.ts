@@ -1,4 +1,5 @@
 export { cli } from './cli.ts';
+export { group } from './group.ts';
 export { CleyeExit } from './utils/cleye-exit.ts';
 export type {
 	Flags,

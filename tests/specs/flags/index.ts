@@ -6,5 +6,6 @@ describe('flags', () => {
 	import('./unknown.ts');
 	import('./boolean-negation.ts');
 	import('./standard-schema.ts');
+	import('./group.ts');
 	import('./types.ts');
 }, { parallel: false });

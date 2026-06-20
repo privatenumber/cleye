@@ -3,6 +3,7 @@ import { describe } from 'manten';
 describe('help', () => {
 	import('./output.ts');
 	import('./two-tier.ts');
+	import('./flag-grouping.ts');
 	import('./user-overrides.ts');
 	import('./render.ts');
 	import('./components.ts');

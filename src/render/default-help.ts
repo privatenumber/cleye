@@ -14,6 +14,41 @@ import {
 } from './components.ts';
 import { flagsToComponentList } from './flag-to-component.ts';
 
+type FlagPartition = {
+	ungrouped: Flags;
+	groups: Map<string, Flags>;
+};
+
+/**
+ * Split a flag set into the default (ungrouped) bucket plus named groups, in
+ * the order each group first appears. A flag tagged with the default section's
+ * own title folds into the ungrouped bucket rather than spawning a duplicate
+ * heading.
+ */
+const partitionFlagsByGroup = (
+	flags: Flags,
+	defaultTitle: string,
+): FlagPartition => {
+	const ungrouped: Flags = {};
+	const groups = new Map<string, Flags>();
+	for (const [flagName, config] of Object.entries(flags)) {
+		const groupName = isFlagConfigObject(config) && typeof config.group === 'string'
+			? config.group
+			: undefined;
+		if (groupName === undefined || groupName === defaultTitle) {
+			ungrouped[flagName] = config;
+		} else {
+			const bucket = groups.get(groupName) ?? {};
+			bucket[flagName] = config;
+			groups.set(groupName, bucket);
+		}
+	}
+	return {
+		ungrouped,
+		groups,
+	};
+};
+
 /**
  * Build a `defaultHelp` function bound to a specific component set. Called
  * once by `cleye/help` (with the default `.length`-based components) and
@@ -166,12 +201,25 @@ export const createDefaultHelp = (
 			description: 'Show help (-h for short form)',
 		};
 	}
-	const flagList = isShort
-		? flagsToComponentList(allFlags, { includeDefaultDescriptions: false })
-		: flagsToComponentList(allFlags);
-
-	if (flagList.length > 0) {
-		nodes.push(section('Flags', flagsComponent(flagList)));
+	// Short form stays a single flat list. Long form splits flags into the
+	// default "Flags" section plus any named groups (tagged via the `group()`
+	// helper), in the order each group first appears. With no groups present
+	// this renders an identical single "Flags" section.
+	const flagsSectionTitle = 'Flags';
+	if (isShort) {
+		const flagList = flagsToComponentList(allFlags, { includeDefaultDescriptions: false });
+		if (flagList.length > 0) {
+			nodes.push(section(flagsSectionTitle, flagsComponent(flagList)));
+		}
+	} else {
+		const { ungrouped, groups } = partitionFlagsByGroup(allFlags, flagsSectionTitle);
+		const ungroupedList = flagsToComponentList(ungrouped);
+		if (ungroupedList.length > 0) {
+			nodes.push(section(flagsSectionTitle, flagsComponent(ungroupedList)));
+		}
+		for (const [title, groupFlags] of groups) {
+			nodes.push(section(title, flagsComponent(flagsToComponentList(groupFlags))));
+		}
 	}
 
 	// ── Examples (long form only) ─────────────────────────────────────────

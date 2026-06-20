@@ -199,6 +199,46 @@ await cli({
 })
 ```
 
+### Grouping flags
+
+Wrap related flags with `group(name, flags)` and spread them into `flags` to render them under a titled section in `--help`:
+
+```ts
+import { cli, group } from 'cleye'
+
+cli({
+    name: 'search',
+    flags: {
+        ...group('Filters', {
+            region: {
+                type: String,
+                description: 'Region to search'
+            },
+            lang: String
+        }),
+        ...group('Output', {
+            json: Boolean
+        }),
+        verbose: Boolean // ungrouped → default "Flags" section
+    }
+})
+```
+
+```
+Flags:
+  -h, --help     Show help (-h for short form)
+      --verbose
+
+Filters:
+      --lang <string>
+      --region <string>  Region to search
+
+Output:
+      --json
+```
+
+Groups render in the order they first appear, after the default `Flags` section (which holds ungrouped flags). `group()` preserves each flag's type, so `argv.flags` stays fully inferred. Grouping applies to long help (`--help`); short help (`-h`) stays a single flat list.
+
 ### Required flags
 In command-line APIs, flags are presence-based and may be absent. cleye inherits
 that boundary: when a flag is not passed, the parsed value is `undefined` unless
