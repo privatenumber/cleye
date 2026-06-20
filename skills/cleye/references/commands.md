@@ -40,6 +40,8 @@ tool --verbose install lodash --save-dev
 
 A flag is owned by the level adjacent to the command name. A flag before the command goes to the parent and the subcommand never sees it; a flag after goes to the subcommand. The level that didn't declare the flag collects it into `unknownFlags` and ignores it, or rejects it under `strictFlags`. So a flag that must work on either side is declared at both levels, with the parent forwarding its value via `runCommand(data)` (see the `runCommand` section) so the child can fall back to it. cleye has no global or persistent flag primitive; this forwarding is the equivalent.
 
+That forwarding shares a flag's runtime *value*. To instead reuse the same flag *definition* across sibling commands, define the flags once and spread them into each command (`flags: { ...sharedFlags }`) — see [Flag Formats](flag-formats.md#sharing-flag-definitions-across-commands). The two are independent and compose.
+
 If a command name is misspelled and `strictCommands` is enabled, cleye reports the command typo before parsing flags after that candidate.
 
 ## Lazy Command Files

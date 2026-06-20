@@ -172,7 +172,8 @@ form to add help metadata.
 
 Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`,
 `range`, `commaList`, `url`, Standard Schema validators, required-flag
-assertions, custom parsers, and described defaults.
+assertions, custom parsers, described defaults, and sharing flag definitions
+across commands.
 
 ## Help And Version
 

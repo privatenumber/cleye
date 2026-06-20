@@ -194,3 +194,41 @@ cli({
 ```
 
 The wrapper is recognized only when both `value` and `description` are present. Objects with only one of those keys are treated as normal default values.
+
+## Sharing Flag Definitions Across Commands
+
+When several commands accept the same flags, define them once and spread them into each command's `flags`. Annotate the shared object with `satisfies Flags` — not `: Flags`:
+
+```ts
+// flags.ts
+import type { Flags } from 'cleye'
+
+export const sharedFlags = {
+    verbose: Boolean,
+    config: {
+        type: String,
+        default: 'config.json'
+    }
+} satisfies Flags
+```
+
+```ts
+// commands/build.ts
+import { cli } from 'cleye'
+import { sharedFlags } from '../flags.ts'
+
+const argv = cli({
+    flags: {
+        ...sharedFlags,
+        watch: Boolean
+    }
+})
+
+argv.flags.verbose // boolean | undefined
+argv.flags.config // string
+argv.flags.watch // boolean | undefined
+```
+
+`satisfies Flags` checks the shape while keeping each member's literal type, so cleye still infers every flag after the spread. A `const sharedFlags: Flags = { ... }` annotation widens the members to the index type and collapses the spread flags to `unknown` — always use `satisfies`.
+
+This reuses flag *definitions* at compile time. It is independent of forwarding a parent flag's *value* to a child at runtime (see [Commands](commands.md#runcommand)); the two compose freely.

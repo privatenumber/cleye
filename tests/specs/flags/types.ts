@@ -203,6 +203,31 @@ describe('flags types', () => {
 		expectTypeOf(parsed.flags.config).toEqualTypeOf<string | undefined>();
 	});
 
+	test('shared flags spread into a command preserve inference', async () => {
+		// Define flags once in a shared module and spread them into each
+		// command. `satisfies Flags` keeps the literal member types so cleye
+		// can still infer each flag (a `: Flags` annotation would widen them
+		// and collapse `parsed.flags` to the loose index type).
+		const sharedFlags = {
+			verbose: Boolean,
+			config: {
+				type: String,
+				default: 'config.json',
+			},
+		} satisfies Flags;
+
+		const parsed = cli({
+			flags: {
+				...sharedFlags,
+				port: Number,
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.verbose).toEqualTypeOf<boolean | undefined>();
+		expectTypeOf(parsed.flags.config).toBeString(); // default → non-undefined survives the spread
+		expectTypeOf(parsed.flags.port).toEqualTypeOf<number | undefined>();
+	});
+
 	test('ignoreArgv callback with 3 parameters', () => {
 		cli({
 			name: 'test',
