@@ -84,7 +84,7 @@ await cli({
 > ```ts
 > import packageJson from './package.json' with { type: 'json' }
 >
-> await cli({
+> cli({
 >     name: packageJson.name,
 >     version: packageJson.version
 > })
@@ -243,7 +243,7 @@ $ my-script --some-boolean false
 To also support the `--no-<flag>` prefix syntax, enable `booleanFlagNegation`:
 
 ```ts
-await cli({
+cli({
     flags: {
         verbose: Boolean
     },
@@ -406,7 +406,7 @@ If you define your own `help` or `h` flag, or use either name as another flag's 
 To enable handling `--version`, specify the `version` property.
 
 ```ts
-await cli({
+cli({
     version: '1.2.3'
 })
 ```
@@ -434,7 +434,7 @@ The version is also shown in the help documentation. To opt out of handling `--v
 To reject unknown flags with an error, enable `strictFlags`:
 
 ```ts
-await cli({
+cli({
     flags: {
         foo: Boolean,
         bar: String
@@ -454,7 +454,7 @@ When enabled, the CLI will exit with an error if any unknown flags are passed. I
 To reject unknown command names with an error, enable `strictCommands`:
 
 ```ts
-await cli({
+cli({
     commands: {
         build: () => import('./commands/build.ts'),
         test: () => import('./commands/test.ts')
@@ -477,7 +477,7 @@ By default, cleye calls `process.exit` on `--help`, `--version`, missing require
 import { cli, CleyeExit } from 'cleye'
 
 try {
-    await cli({
+    cli({
         throwOnExit: true,
         commands: { build: () => import('./commands/build.ts') }
     })
@@ -1020,7 +1020,7 @@ Getting "registry"
 
 ```ts
 // Parent enables strictFlags for all commands
-await cli({
+cli({
     strictFlags: true,
     commands: {
         // This command disables strictFlags for itself
@@ -1031,7 +1031,7 @@ await cli({
 
 ```ts
 // commands/build.ts — overrides parent
-await cli({
+cli({
     strictFlags: false, // Override parent's strictFlags
     flags: { watch: Boolean }
 })
@@ -1162,7 +1162,7 @@ _Cleye_ uses all information provided to generate rich help documentation. The m
 `help` can be a function that receives `{ name, command, version }` and returns the help options. Use it to reference the command name without repeating it — handy for `examples` and `usage`:
 
 ```ts
-await cli({
+cli({
     name: 'mycli',
     help: ({ command }) => ({
         examples: [
@@ -1193,7 +1193,7 @@ The most common need is to append content or prepend a header. `defaultHelp` ret
 import { cli } from 'cleye'
 import { defaultHelp, footer } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
@@ -1215,7 +1215,7 @@ import {
     p, usage, section, flags, footer
 } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
@@ -1242,7 +1242,7 @@ await cli({
 import { cli } from 'cleye'
 import { section, flagsHanging } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
