@@ -143,7 +143,14 @@ export type CliOptions<
 	/** Commands to register to the script. */
 	commands?: Commands;
 
-	/** Name of the script displayed in `--help` output. */
+	/**
+	 * Command name displayed in `--help`. At the entry point this is your bin
+	 * name (the command users type); defaults to `basename(process.argv[1])`
+	 * when omitted, so set it explicitly for a published CLI. Subcommands derive
+	 * their name from the command map automatically — setting it on a nested
+	 * command has no effect on the default `--help` (the full command path is
+	 * always used).
+	 */
 	name?: string;
 
 	/** Version of the script displayed in `--version` and `--help` outputs. */

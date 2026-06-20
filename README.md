@@ -89,6 +89,7 @@ await cli({
 >     version: packageJson.version
 > })
 > ```
+> Do this at your CLI's entry point — subcommands get their name from the command map and don't pull from `package.json`. `name` should be your **bin** name (the command users type): that's `package.json`'s `name` for a single-binary package, but set it explicitly when they differ — a scoped name (`@acme/cli` → bin `cli`), multiple bins, or a deliberately different command (package `grep-app-api` → bin `grep-app`).
 
 Generated help documentation can be viewed with the `--help` flag:
 
@@ -419,16 +420,17 @@ $ my-script --version
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
 
 > [!TIP]
-> Import `name`, `version`, and `description` directly from `package.json` to avoid keeping them in sync manually:
+> Pull `name`, `version`, and `description` from your `package.json` to avoid keeping them in sync manually:
 > ```ts
-> import { name, version, description } from './package.json' with { type: 'json' }
+> import packageJson from './package.json' with { type: 'json' }
 >
 > cli({
->     name,
->     version,
->     help: { description }
+>     name: packageJson.name,
+>     version: packageJson.version,
+>     help: { description: packageJson.description }
 > })
 > ```
+> `name` should be the command users type. That's `package.json`'s `name` for a typical single-binary package, but set it to your **bin** name when they differ (scoped name, multiple bins, or a different command).
 
 ### Strict flags
 To reject unknown flags with an error, enable `strictFlags`:
@@ -706,7 +708,7 @@ await cli({
 })
 ```
 
-The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`.
+The command name is automatically inherited from the parent's command key (`install`). You don't need to set `name` on a subcommand — and doing so has no effect on its default `--help`, which always shows the full command path (the exception is running the file standalone; see the tip below).
 
 Side-effect command files cannot receive forwarded data: the dynamic import runs the file, but nothing passes it an argument. If the parent forwards parent flags or config via `runCommand(data)`, use the default-export style below instead.
 
@@ -1322,7 +1324,7 @@ type ParsedArgv = {
 
 | Property | Type | Description |
 | - | - | - |
-| `name` | `string` | Script name for `--help` output. |
+| `name` | `string` | Command name shown in `--help` — your **bin** name (the command users type). Usually `package.json`'s `name`, but set it explicitly when they differ (scoped name, multiple bins, or a different command). Defaults to the entry filename (`basename(process.argv[1])`) when omitted. |
 | `version` | `string` | Enables `--version` flag and shown in `--help`. Pass via `help.version` to show in help only. |
 | `parameters` | `string[]` | Positional argument definitions. Formats: `<required>`, `[optional]`, `<spread...>`, `[spread...]`. |
 | `flags` | `Flags` | Flag definitions. See [Defining flags](#defining-flags). |
