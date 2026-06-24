@@ -1328,6 +1328,8 @@ Function to parse argv by declaring parameters, flags, and commands.
 #### `ParsedArgv` shape (the callback's first argument)
 
 ```ts
+import type { ParsedArgvEntry } from 'type-flag'
+
 type ParsedArgv = {
     // Parsed arguments
     _: string[] & Parameters
@@ -1341,6 +1343,9 @@ type ParsedArgv = {
     unknownFlags: {
         [flagName: string]: (string | boolean)[]
     }
+
+    // Ordered parsed argv elements
+    entries: ParsedArgvEntry[]
 
     // Matched command name, or undefined
     command: string | undefined
@@ -1359,6 +1364,10 @@ type ParsedArgv = {
     showHelp: (options?: HelpOptions) => void
 }
 ```
+
+`entries` is an advanced API for cases where the order of parsed flags matters. Most CLIs should read `flags`; use `entries` when repeated or mixed flags act as ordered operations rather than independent settings.
+
+`flags` and `unknownFlags` are null-prototype dictionaries. Use `Object.hasOwn()` or the `in` operator for ownership checks.
 
 #### options
 

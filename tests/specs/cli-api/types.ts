@@ -1,5 +1,6 @@
 import { describe, test } from 'manten';
 import { expectTypeOf } from 'expect-type';
+import type { ParsedArgvEntry } from 'type-flag';
 import { cli } from '#cleye';
 
 describe('cli-api types', () => {
@@ -31,6 +32,7 @@ describe('cli-api types', () => {
 		expectTypeOf(parsed.unknownFlags).toEqualTypeOf<{
 			[flagName: string]: (string | boolean)[];
 		}>();
+		expectTypeOf(parsed.entries).toEqualTypeOf<ParsedArgvEntry[]>();
 	});
 
 	test('no parameters', async () => {

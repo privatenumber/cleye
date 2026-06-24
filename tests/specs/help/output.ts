@@ -270,7 +270,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.called).toBe(false);
-			expect(parsed.unknownFlags).toStrictEqual({
+			expect({ ...parsed.unknownFlags }).toStrictEqual({
 				version: [true],
 			});
 		});
@@ -620,6 +620,10 @@ describe('help output', () => {
 					type: String,
 					description: 'API endpoint',
 				},
+				oauth2Bearer: {
+					type: String,
+					description: 'OAuth token',
+				},
 			},
 		}, undefined, ['--help']);
 		mocked.restore();
@@ -627,7 +631,9 @@ describe('help output', () => {
 		const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0]);
 		expect(output).toContain('--org-id');
 		expect(output).toContain('--api-url');
+		expect(output).toContain('--oauth2-bearer');
 		expect(output).not.toContain('--org-i-d');
 		expect(output).not.toContain('--api-u-r-l');
+		expect(output).not.toContain('--oauth2bearer');
 	});
 }, { parallel: false });

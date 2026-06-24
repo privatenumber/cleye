@@ -336,9 +336,38 @@ describe('flags parsing', () => {
 				flags: {
 					value: Number,
 				},
-			}, undefined, ['--value=-42']);
+			}, undefined, ['--value', '-42']);
 
 			expect<number | undefined>(parsed.flags.value).toBe(-42);
+		});
+
+		test('ordered entries preserve flag and argument order', () => {
+			const parsed = cli({
+				flags: {
+					data: {
+						type: [String],
+						alias: 'd',
+					},
+					dataUrlencode: [String],
+				},
+			}, undefined, ['-d', 'a', '--data-urlencode', 'b', 'file.txt']);
+
+			expect(parsed.entries).toStrictEqual([
+				{
+					type: 'flag',
+					name: 'data',
+					value: 'a',
+				},
+				{
+					type: 'flag',
+					name: 'dataUrlencode',
+					value: 'b',
+				},
+				{
+					type: 'argument',
+					value: 'file.txt',
+				},
+			]);
 		});
 
 		test('number flag with decimal', () => {
@@ -363,7 +392,16 @@ describe('flags parsing', () => {
 
 			expect(parsed.flags.orgID).toBe('acme');
 			expect(parsed.flags.apiURL).toBe('https://example.com');
-			expect(parsed.unknownFlags).toStrictEqual({});
+			expect(Object.keys(parsed.unknownFlags)).toStrictEqual([]);
+		});
+
+		test('digit-boundary acronym flags parse as kebab-case argv', () => {
+			const parsed = cli({
+				flags: { oauth2Bearer: { type: String } },
+			}, undefined, ['--oauth2-bearer=token']);
+
+			expect(parsed.flags.oauth2Bearer).toBe('token');
+			expect(Object.keys(parsed.unknownFlags)).toStrictEqual([]);
 		});
 
 		test('naive kebab-case does not match acronym flags', () => {
@@ -395,7 +433,7 @@ describe('flags parsing', () => {
 					},
 				},
 				(p) => {
-					expect(p.unknownFlags).toStrictEqual({
+					expect({ ...p.unknownFlags }).toStrictEqual({
 						unknown: [true],
 					});
 					return p;
@@ -406,7 +444,7 @@ describe('flags parsing', () => {
 			// cleye doesn't leak type-flag's argv mutation: the caller's
 			// array is untouched after cli() returns.
 			expect(argv).toStrictEqual(argvSnapshot);
-			expect(parsed.unknownFlags).toStrictEqual({
+			expect({ ...parsed.unknownFlags }).toStrictEqual({
 				unknown: [true],
 			});
 		});

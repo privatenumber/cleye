@@ -37,16 +37,23 @@ import type {
 `ParsedArgv` is the object returned by sync mode and passed to callbacks:
 
 ```ts
+import type { ParsedArgvEntry } from 'type-flag'
+
 type ParsedArgv = {
     _: string[] & Record<string, unknown>
     flags: Record<string, unknown>
     unknownFlags: Record<string, (string | boolean)[]>
+    entries: ParsedArgvEntry[]
     command: string | undefined
     runCommand: (...arguments_: unknown[]) => unknown
     showHelp: (options?: HelpOptions) => void
     showVersion: () => void
 }
 ```
+
+`entries` is an advanced API for cases where the order of parsed flags matters. Most CLIs should read `flags`; use `entries` when repeated or mixed flags act as ordered operations rather than independent settings.
+
+`flags` and `unknownFlags` are null-prototype dictionaries. Use `Object.hasOwn()` or the `in` operator for ownership checks.
 
 Use named parameters from `argv._` for declared `parameters`, `argv.command` to detect the matched command, and `argv.unknownFlags` only when intentionally forwarding flags with `strictFlags` disabled.
 

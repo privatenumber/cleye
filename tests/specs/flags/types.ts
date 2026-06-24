@@ -232,7 +232,7 @@ describe('flags types', () => {
 		cli({
 			name: 'test',
 			ignoreArgv(type, flagOrArgv, value) {
-				expectTypeOf(type).toEqualTypeOf<'argument' | 'known-flag' | 'unknown-flag'>();
+				expectTypeOf(type).toEqualTypeOf<'argument' | 'flag' | 'unknown-flag'>();
 				expectTypeOf(flagOrArgv).toBeString();
 				expectTypeOf(value).toEqualTypeOf<string | undefined>();
 				return false;
