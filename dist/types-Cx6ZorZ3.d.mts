@@ -148,6 +148,11 @@ type Flags = Flags$1<{
      */
     placeholder?: string;
     /**
+     * Section title used to group this flag in help output. Prefer the
+     * `group()` helper, which stamps this onto a set of flags for you.
+     */
+    group?: string;
+    /**
      * Default value plus display text for help output. `value` is used for
      * parsing; `description` is rendered in help without executing `value`.
      * Objects with only `value` or only `description` are plain object defaults.
@@ -228,7 +233,14 @@ type CliOptions<Parameters extends string[] = string[]> = {
     parameters?: Parameters;
     /** Commands to register to the script. */
     commands?: Commands;
-    /** Name of the script displayed in `--help` output. */
+    /**
+     * Command name displayed in `--help`. At the entry point this is your bin
+     * name (the command users type); defaults to `basename(process.argv[1])`
+     * when omitted, so set it explicitly for a published CLI. Subcommands derive
+     * their name from the command map automatically — setting it on a nested
+     * command has no effect on the default `--help` (the full command path is
+     * always used).
+     */
     name?: string;
     /** Version of the script displayed in `--version` and `--help` outputs. */
     version?: string;

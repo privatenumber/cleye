@@ -84,11 +84,12 @@ await cli({
 > ```ts
 > import packageJson from './package.json' with { type: 'json' }
 >
-> await cli({
+> cli({
 >     name: packageJson.name,
 >     version: packageJson.version
 > })
 > ```
+> Do this at your CLI's entry point — subcommands get their name from the command map and don't pull from `package.json`. `name` should be your **bin** name (the command users type): that's `package.json`'s `name` for a single-binary package, but set it explicitly when they differ — a scoped name (`@acme/cli` → bin `cli`), multiple bins, or a deliberately different command (package `grep-app-api` → bin `grep-app`).
 
 Generated help documentation can be viewed with the `--help` flag:
 
@@ -198,6 +199,46 @@ await cli({
 })
 ```
 
+### Grouping flags
+
+Wrap related flags with `group(name, flags)` and spread them into `flags` to render them under a titled section in `--help`:
+
+```ts
+import { cli, group } from 'cleye'
+
+cli({
+    name: 'search',
+    flags: {
+        ...group('Filters', {
+            region: {
+                type: String,
+                description: 'Region to search'
+            },
+            lang: String
+        }),
+        ...group('Output', {
+            json: Boolean
+        }),
+        verbose: Boolean // ungrouped → default "Flags" section
+    }
+})
+```
+
+```
+Flags:
+  -h, --help     Show help (-h for short form)
+      --verbose
+
+Filters:
+      --lang <string>
+      --region <string>  Region to search
+
+Output:
+      --json
+```
+
+Groups render in the order they first appear, after the default `Flags` section (which holds ungrouped flags). `group()` preserves each flag's type, so `argv.flags` stays fully inferred. Grouping applies to long help (`--help`); short help (`-h`) stays a single flat list.
+
 ### Required flags
 In command-line APIs, flags are presence-based and may be absent. cleye inherits
 that boundary: when a flag is not passed, the parsed value is `undefined` unless
@@ -243,7 +284,7 @@ $ my-script --some-boolean false
 To also support the `--no-<flag>` prefix syntax, enable `booleanFlagNegation`:
 
 ```ts
-await cli({
+cli({
     flags: {
         verbose: Boolean
     },
@@ -406,7 +447,7 @@ If you define your own `help` or `h` flag, or use either name as another flag's 
 To enable handling `--version`, specify the `version` property.
 
 ```ts
-await cli({
+cli({
     version: '1.2.3'
 })
 ```
@@ -419,22 +460,23 @@ $ my-script --version
 The version is also shown in the help documentation. To opt out of handling `--version` while still showing the version in `--help`, pass the version into `help.version`.
 
 > [!TIP]
-> Import `name`, `version`, and `description` directly from `package.json` to avoid keeping them in sync manually:
+> Pull `name`, `version`, and `description` from your `package.json` to avoid keeping them in sync manually:
 > ```ts
-> import { name, version, description } from './package.json' with { type: 'json' }
+> import packageJson from './package.json' with { type: 'json' }
 >
 > cli({
->     name,
->     version,
->     help: { description }
+>     name: packageJson.name,
+>     version: packageJson.version,
+>     help: { description: packageJson.description }
 > })
 > ```
+> `name` should be the command users type. That's `package.json`'s `name` for a typical single-binary package, but set it to your **bin** name when they differ (scoped name, multiple bins, or a different command).
 
 ### Strict flags
 To reject unknown flags with an error, enable `strictFlags`:
 
 ```ts
-await cli({
+cli({
     flags: {
         foo: Boolean,
         bar: String
@@ -454,7 +496,7 @@ When enabled, the CLI will exit with an error if any unknown flags are passed. I
 To reject unknown command names with an error, enable `strictCommands`:
 
 ```ts
-await cli({
+cli({
     commands: {
         build: () => import('./commands/build.ts'),
         test: () => import('./commands/test.ts')
@@ -477,7 +519,7 @@ By default, cleye calls `process.exit` on `--help`, `--version`, missing require
 import { cli, CleyeExit } from 'cleye'
 
 try {
-    await cli({
+    cli({
         throwOnExit: true,
         commands: { build: () => import('./commands/build.ts') }
     })
@@ -706,7 +748,7 @@ await cli({
 })
 ```
 
-The command name is inherited from the parent's command key (`install`) via `AsyncLocalStorage`.
+The command name is automatically inherited from the parent's command key (`install`). You don't need to set `name` on a subcommand — and doing so has no effect on its default `--help`, which always shows the full command path (the exception is running the file standalone; see the tip below).
 
 Side-effect command files cannot receive forwarded data: the dynamic import runs the file, but nothing passes it an argument. If the parent forwards parent flags or config via `runCommand(data)`, use the default-export style below instead.
 
@@ -1020,7 +1062,7 @@ Getting "registry"
 
 ```ts
 // Parent enables strictFlags for all commands
-await cli({
+cli({
     strictFlags: true,
     commands: {
         // This command disables strictFlags for itself
@@ -1031,7 +1073,7 @@ await cli({
 
 ```ts
 // commands/build.ts — overrides parent
-await cli({
+cli({
     strictFlags: false, // Override parent's strictFlags
     flags: { watch: Boolean }
 })
@@ -1162,7 +1204,7 @@ _Cleye_ uses all information provided to generate rich help documentation. The m
 `help` can be a function that receives `{ name, command, version }` and returns the help options. Use it to reference the command name without repeating it — handy for `examples` and `usage`:
 
 ```ts
-await cli({
+cli({
     name: 'mycli',
     help: ({ command }) => ({
         examples: [
@@ -1193,7 +1235,7 @@ The most common need is to append content or prepend a header. `defaultHelp` ret
 import { cli } from 'cleye'
 import { defaultHelp, footer } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
@@ -1215,7 +1257,7 @@ import {
     p, usage, section, flags, footer
 } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
@@ -1242,7 +1284,7 @@ await cli({
 import { cli } from 'cleye'
 import { section, flagsHanging } from 'cleye/help'
 
-await cli({
+cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
@@ -1286,6 +1328,8 @@ Function to parse argv by declaring parameters, flags, and commands.
 #### `ParsedArgv` shape (the callback's first argument)
 
 ```ts
+import type { ParsedArgvEntry } from 'type-flag'
+
 type ParsedArgv = {
     // Parsed arguments
     _: string[] & Parameters
@@ -1299,6 +1343,9 @@ type ParsedArgv = {
     unknownFlags: {
         [flagName: string]: (string | boolean)[]
     }
+
+    // Ordered parsed argv elements
+    entries: ParsedArgvEntry[]
 
     // Matched command name, or undefined
     command: string | undefined
@@ -1318,11 +1365,15 @@ type ParsedArgv = {
 }
 ```
 
+`entries` is an advanced API for cases where the order of parsed flags matters. Most CLIs should read `flags`; use `entries` when repeated or mixed flags act as ordered operations rather than independent settings.
+
+`flags` and `unknownFlags` are null-prototype dictionaries. Use `Object.hasOwn()` or the `in` operator for ownership checks.
+
 #### options
 
 | Property | Type | Description |
 | - | - | - |
-| `name` | `string` | Script name for `--help` output. |
+| `name` | `string` | Command name shown in `--help` — your **bin** name (the command users type). Usually `package.json`'s `name`, but set it explicitly when they differ (scoped name, multiple bins, or a different command). Defaults to the entry filename (`basename(process.argv[1])`) when omitted. |
 | `version` | `string` | Enables `--version` flag and shown in `--help`. Pass via `help.version` to show in help only. |
 | `parameters` | `string[]` | Positional argument definitions. Formats: `<required>`, `[optional]`, `<spread...>`, `[spread...]`. |
 | `flags` | `Flags` | Flag definitions. See [Defining flags](#defining-flags). |

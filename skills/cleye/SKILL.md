@@ -5,9 +5,7 @@ description: "Build Node.js CLIs with cleye: typed positional parameters, flags,
 
 # cleye
 
-Use this skill for consumer code that builds command-line interfaces with
-`cleye`. Prefer the current beta API: import `cli` from `cleye`, define
-commands as a map, and lazy-load command files with dynamic imports.
+Use this skill for consumer code that builds command-line interfaces with `cleye`. Prefer the current beta API: import `cli` from `cleye`, define commands as a map, and lazy-load command files with dynamic imports.
 
 ## Start Here
 
@@ -28,11 +26,9 @@ commands as a map, and lazy-load command files with dynamic imports.
 1. Start with one `cli()` call and declare `name`, `parameters`, and `flags`.
 2. Use the callback form for most CLIs, especially when commands are involved.
 3. Add declarative help metadata before reaching for custom help components.
-4. Choose `parameters` or `commands` at a level. They can be combined for fallback routing.
-   when the first positional token selects behavior.
+4. Choose `parameters` or `commands` at a level. They can be combined for fallback routing when the first positional token selects behavior.
 5. Put command files in separate modules and lazy-load them.
-6. Enable strict modes when typos should fail instead of landing in
-   `unknownFlags` or the no-command-match path.
+6. Enable strict modes when typos should fail instead of landing in `unknownFlags` or the no-command-match path.
 
 ## Quick Patterns
 
@@ -67,8 +63,7 @@ const greeting = `Hello, ${argv._.name}`
 console.log(argv.flags.shout ? greeting.toUpperCase() : greeting)
 ```
 
-Use the callback form when setup, async work, or command auto-invocation is
-part of the flow:
+Use the callback form when setup, async work, or command auto-invocation is part of the flow:
 
 ```ts
 await cli({
@@ -80,8 +75,7 @@ await cli({
 })
 ```
 
-Without a callback, `cli()` returns parsed argv synchronously. With a callback,
-it returns a Promise for the callback result.
+Without a callback, `cli()` returns parsed argv synchronously. With a callback, it returns a Promise for the callback result.
 
 ## Parameters
 
@@ -110,8 +104,7 @@ Multi-word parameter names become camelCase properties.
 
 ## Flags
 
-Define flags as shorthand type functions or descriptor objects. Flag names are
-camelCase in code and kebab-case on the command line.
+Define flags as shorthand type functions or descriptor objects. Flag names are camelCase in code and kebab-case on the command line.
 
 ```ts
 const argv = cli({
@@ -145,13 +138,9 @@ Important flag behavior:
 - Use `[Boolean]` for counting flags: `-vvv` becomes an array with length `3`.
 - Use `strictFlags: true` to reject unknown flags with suggestions.
 - For computed defaults, use `default: { value, description }` so help can show stable text without executing runtime code.
-- Command-line flags are presence-based and may be absent. For a
-  business-required flag, assert after parsing instead of looking for
-  `required: true`.
+- Command-line flags are presence-based and may be absent. For a business-required flag, assert after parsing instead of looking for `required: true`.
 
-A [Standard Schema](https://standardschema.dev) validator (Zod, Valibot,
-ArkType) can be a flag type directly. cleye infers the flag type from the
-schema output:
+A [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType) can be a flag type directly. cleye infers the flag type from the schema output:
 
 ```ts
 import * as z from 'zod'
@@ -165,14 +154,9 @@ cli({
 })
 ```
 
-Coerce numbers (CLI values are strings), wrap in `[ ]` for multiple values
-(not `z.array`), keep booleans as native `Boolean`, and use cleye's `default`
-(not the schema's). Use the `{ type: schema, description, placeholder }` object
-form to add help metadata.
+Coerce numbers (CLI values are strings), wrap in `[ ]` for multiple values (not `z.array`), keep booleans as native `Boolean`, and use cleye's `default` (not the schema's). Use the `{ type: schema, description, placeholder }` object form to add help metadata.
 
-Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`,
-`range`, `commaList`, `url`, Standard Schema validators, required-flag
-assertions, custom parsers, and described defaults.
+Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`, `range`, `commaList`, `url`, Standard Schema validators, required-flag assertions, custom parsers, described defaults, sharing flag definitions across commands, and grouping flags into help sections.
 
 ## Help And Version
 
@@ -199,16 +183,13 @@ cli({
 })
 ```
 
-To show a version in help without enabling `--version`, pass it through
-`help.version`.
+To show a version in help without enabling `--version`, pass it through `help.version`.
 
-Use [Help Customization](references/help-customization.md) only when
-declarative help metadata cannot produce the needed layout.
+Use [Help Customization](references/help-customization.md) only when declarative help metadata cannot produce the needed layout.
 
 ## Commands
 
-Commands are a map on `commands`. The key is the command name. The value is
-either a handler function or an object with metadata and `loader`.
+Commands are a map on `commands`. The key is the command name. The value is either a handler function or an object with metadata and `loader`.
 
 ```ts
 await cli({
@@ -226,12 +207,9 @@ await cli({
 })
 ```
 
-Command argv is split at the first positional token. Flags before the command
-belong to the parent; flags after the command belong to the child command file.
+Command argv is split at the first positional token. Flags before the command belong to the parent; flags after the command belong to the child command file.
 
-Read [Commands](references/commands.md) for lazy command files, aliases,
-strict command mode, `runCommand(data)`, nested commands, and rerunnable
-handlers.
+Read [Commands](references/commands.md) for lazy command files, aliases, strict command mode, `runCommand(data)`, nested commands, and rerunnable handlers.
 
 ## Runtime And Types
 
@@ -248,7 +226,5 @@ handlers.
 - Do not use a `command()` helper; cleye's public entry point is `cli()`.
 - Do not register commands as an array; use `commands: { name: entry }`.
 - You can combine `parameters` and `commands` at the same `cli()` level. Commands take precedence.
-- Do not pass custom argv as the second `cli()` argument. Use
-  `cli(options, undefined, argv)` when there is no callback.
-- Do not customize help before trying `help.description`, `help.usage`, and
-  `help.examples`.
+- Do not pass custom argv as the second `cli()` argument. Use `cli(options, undefined, argv)` when there is no callback.
+- Do not customize help before trying `help.description`, `help.usage`, and `help.examples`.

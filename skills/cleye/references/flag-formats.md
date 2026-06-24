@@ -194,3 +194,66 @@ cli({
 ```
 
 The wrapper is recognized only when both `value` and `description` are present. Objects with only one of those keys are treated as normal default values.
+
+## Sharing Flag Definitions Across Commands
+
+When several commands accept the same flags, define them once and spread them into each command's `flags`. Annotate the shared object with `satisfies Flags` — not `: Flags`:
+
+```ts
+// flags.ts
+import type { Flags } from 'cleye'
+
+export const sharedFlags = {
+    verbose: Boolean,
+    config: {
+        type: String,
+        default: 'config.json'
+    }
+} satisfies Flags
+```
+
+```ts
+// commands/build.ts
+import { cli } from 'cleye'
+import { sharedFlags } from '../flags.ts'
+
+const argv = cli({
+    flags: {
+        ...sharedFlags,
+        watch: Boolean
+    }
+})
+
+argv.flags.verbose // boolean | undefined
+argv.flags.config // string
+argv.flags.watch // boolean | undefined
+```
+
+`satisfies Flags` checks the shape while keeping each member's literal type, so cleye still infers every flag after the spread. A `const sharedFlags: Flags = { ... }` annotation widens the members to the index type and collapses the spread flags to `unknown` — always use `satisfies`.
+
+This reuses flag *definitions* at compile time. It is independent of forwarding a parent flag's *value* to a child at runtime (see [Commands](commands.md#runcommand)); the two compose freely.
+
+## Grouping Flags
+
+Wrap related flags with `group(name, flags)` (imported from `cleye`) and spread the result into `flags`. Each flag is tagged with the group name and renders under a `<name>:` section in long `--help`:
+
+```ts
+import { cli, group } from 'cleye'
+
+cli({
+    name: 'search',
+    flags: {
+        ...group('Filters', {
+            region: { type: String, description: 'Region to search' },
+            lang: String
+        }),
+        ...group('Output', { json: Boolean }),
+        verbose: Boolean // ungrouped → default "Flags" section
+    }
+})
+```
+
+- Sections render in first-appearance order, after the default `Flags` section (which holds ungrouped flags plus the auto `--help`/`--version`).
+- `group()` is generic, so it preserves each flag's type — `argv.flags` stays fully inferred after the spread (no `satisfies` needed).
+- Accepts both shorthand (`lang: String`) and object-form flags.
+- Long help only; short help (`-h`) stays a single flat list.

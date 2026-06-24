@@ -61,6 +61,6 @@
   "dependencies": {
     "ansis": "4.3.0",
     "string-width": "8.2.1",
-    "type-flag": "5.0.0-beta.10"
+    "type-flag": "5.0.0-beta.17"
   }
 }
