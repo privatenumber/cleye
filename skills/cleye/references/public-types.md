@@ -83,7 +83,7 @@ import type {
 } from 'cleye/help'
 ```
 
-Use `Flag` when building a manual flag list for `flags()`, `flagsInline()`, or `flagsHanging()`. Use `Node` when building helper functions that return help components.
+Use `Flag` when building a manual flag list for `flags()`, `flagsColumns()`, or `flagsStacked()`. Use `Node` when building helper functions that return help components.
 
 ## Parser Types
 

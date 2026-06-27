@@ -1,14 +1,27 @@
-import stringWidth from 'string-width';
-import { createComponents } from '../render/components.ts';
 import { createDefaultHelp } from '../render/default-help.ts';
+import {
+	p,
+	usage,
+	footer,
+	section,
+	cmds,
+	flagsColumns,
+	flagsStacked,
+	flags,
+} from '../render/components-responsive.ts';
 
-const components = createComponents({ measureString: stringWidth });
+export {
+	p, usage, footer, section, cmds, flagsColumns, flagsStacked, flags,
+};
 
-export const {
-	p, usage, footer, section, cmds, flagsInline, flagsHanging, flags,
-} = components;
-
-export const defaultHelp = createDefaultHelp(components);
+export const defaultHelp = createDefaultHelp({
+	p,
+	usage,
+	section,
+	cmds,
+	flags,
+	footer,
+});
 
 export { render } from '../render/render.ts';
 export type { Flag, Node } from '../render/components.ts';

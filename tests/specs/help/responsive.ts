@@ -3,10 +3,13 @@ import { describe, test, expect } from 'manten';
 import stringWidth from 'string-width';
 import { cli } from '#cleye';
 import {
+	p,
 	defaultHelp,
 	render,
 	cmds,
-	flagsInline,
+	flagsColumns,
+	flagsStacked,
+	flags,
 	type Flag,
 } from '../../../src/help/responsive.ts';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
@@ -35,7 +38,7 @@ describe('cleye/help/responsive', () => {
 		expect(col0).toBe(2 + 4 + 2);
 	});
 
-	test('flagsInline aligns description column for CJK arg labels', () => {
+	test('flagsColumns aligns description column for CJK arg labels', () => {
 		const testFlags: Flag[] = [
 			{
 				short: 'l',
@@ -48,7 +51,7 @@ describe('cleye/help/responsive', () => {
 				description: 'silent mode',
 			},
 		];
-		const result = flagsInline(testFlags).render();
+		const result = flagsColumns(testFlags).render();
 		const lines = result.split('\n').map(line => stripVTControlCharacters(line));
 		const col0 = stringWidth(lines[0].slice(0, lines[0].indexOf('attach a label')));
 		const col1 = stringWidth(lines[1].slice(0, lines[1].indexOf('silent mode')));
@@ -88,5 +91,107 @@ describe('cleye/help/responsive', () => {
 		} finally {
 			restore();
 		}
+	});
+
+	test('p wraps text to the terminal width', () => {
+		const restore = withColumns(20);
+		try {
+			const lines = p('one two three four five six seven eight').render().split('\n');
+			expect(lines.length).toBeGreaterThan(1);
+			for (const line of lines) {
+				expect(line.length).toBeLessThanOrEqual(20);
+			}
+		} finally {
+			restore();
+		}
+	});
+
+	test('p wraps within a single author line that exceeds the width', () => {
+		const restore = withColumns(12);
+		try {
+			// First authored line (14) exceeds 12 so it wraps; the second line
+			// (11) fits and stays whole.
+			expect(p('aaaa bbbb cccc\nddd eee fff').render())
+				.toBe('aaaa bbbb\ncccc\nddd eee fff');
+		} finally {
+			restore();
+		}
+	});
+
+	test('flags uses columns layout at a wide width', () => {
+		const restore = withColumns(80);
+		try {
+			const testFlags: Flag[] = [
+				{
+					short: 'h',
+					long: '--help',
+					description: 'show help',
+				},
+				{
+					long: '--output',
+					arg: 'FILE',
+					description: 'output file',
+				},
+			];
+			expect(flags(testFlags).render()).toBe(flagsColumns(testFlags).render());
+		} finally {
+			restore();
+		}
+	});
+
+	test('flags degrades to stacked layout at a narrow width', () => {
+		const restore = withColumns(40);
+		try {
+			const testFlags: Flag[] = [
+				{
+					short: 'h',
+					long: '--help',
+					description: 'show help',
+				},
+				{
+					long: '--output',
+					arg: 'FILE',
+					description: 'output file',
+				},
+			];
+			expect(flags(testFlags).render()).toBe(flagsStacked(testFlags).render());
+		} finally {
+			restore();
+		}
+	});
+
+	test('flagsStacked keeps descriptions visible at very narrow widths', () => {
+		const restore = withColumns(8);
+		try {
+			const result = flagsStacked([{
+				short: 'v',
+				long: '--version',
+				description: 'show version',
+			}]).render();
+			const lines = result.split('\n').map(line => stripVTControlCharacters(line));
+			expect(lines[0]).toContain('-v, --version');
+			expect(lines[1]).toBe('       show');
+			expect(lines[2]).toBe('       version');
+		} finally {
+			restore();
+		}
+	});
+
+	test('cmds renders empty output for no commands', () => {
+		expect(cmds([]).render()).toBe('');
+	});
+
+	test('cmds omits the description column for a command without a description', () => {
+		const result = stripVTControlCharacters(
+			cmds([{ name: 'build' }, {
+				name: 'test',
+				description: 'run tests',
+			}]).render(),
+		);
+		expect(result.split('\n')[0]).toBe('  build');
+	});
+
+	test('flagsColumns renders empty output for no flags', () => {
+		expect(flagsColumns([]).render()).toBe('');
 	});
 }, { parallel: false });

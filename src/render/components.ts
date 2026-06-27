@@ -28,209 +28,191 @@ export type Flag = {
 	description?: string;
 };
 
-const getWidth = (): number => process.stdout.columns ?? 80;
-
 /**
- * Width threshold below which `flags` degrades from inline to hanging layout.
+ * The help component set. `cleye/help` (and `cli()`) use a static
+ * implementation: aligned columns, but no terminal-width awareness and no
+ * wrapping — long content overflows. `cleye/help/responsive` provides a
+ * width-adaptive implementation (wrapping + columns/stacked layout).
  */
-const INLINE_THRESHOLD = 60;
+export type Components = {
+	p: (text: string) => Node;
+	usage: (name: string, pattern: string) => Node;
+	footer: (text: string) => Node;
+	section: (title: string, ...body: Node[]) => Node;
+	cmds: (commands: { name: string;
+		description?: string; }[]) => Node;
+	flagsColumns: (flags: Flag[]) => Node;
+	flagsStacked: (flags: Flag[]) => Node;
+	flags: (flags: Flag[]) => Node;
+};
 
-export type CreateComponentsOptions = {
+// Static measure: a column is one terminal cell per code unit. Correct for the
+// ASCII baseline; wide characters are approximated. `cleye/help/responsive`
+// measures display width accurately.
+const length = (text: string): number => text.length;
 
-	/**
-	 * Function used to compute the visible width of a string.
-	 *
-	 * The default `cleye/help` exports use `text => text.length`, which is
-	 * correct for ASCII. CLIs with CJK or emoji content can opt into accurate
-	 * display-width alignment via `cleye/help/responsive`, which passes
-	 * `stringWidth` from the `string-width` package.
-	 */
-	measureString: (text: string) => number;
+// ── Width-agnostic building blocks (shared with the responsive variant) ───
+
+export const usage = (name: string, pattern: string): Node => ({
+	kind: 'usage',
+	name,
+	pattern,
+	render: () => `${bold(green('Usage:'))} ${bold(cyan(name))} ${
+		pattern.split(' ').map(token => cyan(token)).join(' ')
+	}`,
+});
+
+export const footer = (text: string): Node => ({
+	kind: 'footer',
+	text,
+	render: () => text,
+});
+
+export const section = (title: string, ...body: Node[]): Node => ({
+	kind: 'section',
+	title,
+	body,
+	render: () => {
+		const heading = bold(green(`${title}:`));
+		const content = body.map(node => node.render()).join('\n');
+		return `${heading}\n${content}`;
+	},
+});
+
+export const renderFlagCell = (flag: Flag): string => {
+	if (flag.long) {
+		const longOpt = flag.arg
+			? `${bold(cyan(flag.long))} ${cyan(`<${flag.arg}>`)}`
+			: bold(cyan(flag.long));
+		return flag.short
+			? `${bold(cyan(`-${flag.short}`))}, ${longOpt}`
+			: `    ${longOpt}`;
+	}
+	const shortOpt = flag.short ? bold(cyan(`-${flag.short}`)) : '';
+	const argumentSuffix = flag.arg ? ` ${cyan(`<${flag.arg}>`)}` : '';
+	return `${shortOpt}${argumentSuffix}`;
+};
+
+export const flagCellLength = (
+	flag: Flag,
+	measureString: (text: string) => number,
+): number => {
+	if (flag.long) {
+		const shortPart = flag.short ? measureString(flag.short) + 3 : 4; // "-x, " or "    "
+		const longPart = flag.arg
+			? measureString(flag.long) + 1 + measureString(flag.arg) + 2 // --long <ARG>  (+2 for < >)
+			: measureString(flag.long);
+		return 2 + shortPart + longPart;
+	}
+	const shortLength = flag.short ? measureString(flag.short) + 1 : 0; // "-x"
+	const argumentPart = flag.arg ? 1 + measureString(flag.arg) + 2 : 0; // " <ARG>"
+	return 2 + shortLength + argumentPart;
 };
 
 /**
- * Build a component set parameterized by a string-measure function.
+ * Indent continuation lines (after author-intended `\n` breaks) to a column,
+ * leaving blank lines empty so a non-empty indent introduces no trailing
+ * whitespace. Unlike the responsive `wrap`, this never breaks on width.
  */
-export const createComponents = ({ measureString }: CreateComponentsOptions) => {
-	const wrap = (text: string, width: number, contIndent: string): string => {
-		// Honor author-intended hard breaks: split on '\n' first, then
-		// space-wrap each line independently. Without this, an embedded '\n'
-		// rides inside a "word" and the running length accumulates across it,
-		// forcing spurious mid-line breaks (and never resetting at the author's
-		// break). Blank lines survive as empty segments. The first token seeds
-		// `current` even when empty, so leading indentation is preserved rather
-		// than swallowed.
-		const lines: string[] = [];
-		for (const hardLine of text.split('\n')) {
-			let current = '';
-			let isFirst = true;
-			for (const word of hardLine.split(' ')) {
-				if (isFirst) {
-					current = word;
-					isFirst = false;
-				} else if (measureString(current) + 1 + measureString(word) <= width) {
-					current += ` ${word}`;
-				} else {
-					lines.push(current);
-					current = word;
-				}
-			}
-			lines.push(current);
-		}
-		// Indent continuation lines, but leave blank lines empty so a non-empty
-		// contIndent doesn't introduce trailing whitespace.
-		return lines.map((line, i) => (i === 0 || line === '' ? line : contIndent + line)).join('\n');
-	};
+export const indentContinuations = (text: string, indent: string): string => (
+	text
+		.split('\n')
+		.map((line, index) => (index === 0 || line === '' ? line : indent + line))
+		.join('\n')
+);
 
-	const p = (text: string): Node => ({
-		kind: 'paragraph',
-		text,
-		render: () => wrap(text, getWidth(), ''),
-	});
-
-	const usage = (name: string, pattern: string): Node => ({
-		kind: 'usage',
-		name,
-		pattern,
-		render: () => `${bold(green('Usage:'))} ${bold(cyan(name))} ${
-			pattern.split(' ').map(token => cyan(token)).join(' ')
-		}`,
-	});
-
-	const footer = (text: string): Node => ({
-		kind: 'footer',
-		text,
-		render: () => text,
-	});
-
-	const section = (title: string, ...body: Node[]): Node => ({
-		kind: 'section',
-		title,
-		body,
-		render: () => {
-			const heading = bold(green(`${title}:`));
-			const content = body.map(node => node.render()).join('\n');
-			return `${heading}\n${content}`;
-		},
-	});
-
-	const cmds = (commands: { name: string;
-		description?: string; }[]): Node => ({
-		kind: 'cmds',
-		commands,
-		render: () => {
-			if (commands.length === 0) {
-				return '';
-			}
-
-			const width = getWidth();
-			const nameWidth = Math.max(...commands.map(c => measureString(c.name)));
-			const descStart = 2 + nameWidth + 2;
-			return commands
-				.map(({ name, description }) => {
-					const padding = ' '.repeat(nameWidth - measureString(name) + 2);
-					const nameCell = `  ${cyan(name)}${padding}`;
-					if (!description) {
-						return nameCell.trimEnd();
-					}
-					return `${nameCell}${wrap(description, width - descStart, ' '.repeat(descStart))}`;
-				})
-				.join('\n');
-		},
-	});
-
-	const flagCellLength = (flag: Flag): number => {
-		if (flag.long) {
-			const shortPart = flag.short ? measureString(flag.short) + 3 : 4; // "-x, " or "    "
-			const longPart = flag.arg
-				? measureString(flag.long) + 1 + measureString(flag.arg) + 2 // --long <ARG>  (+2 for < >)
-				: measureString(flag.long);
-			return 2 + shortPart + longPart;
-		}
-		const shortLength = flag.short ? measureString(flag.short) + 1 : 0; // "-x"
-		const argumentPart = flag.arg ? 1 + measureString(flag.arg) + 2 : 0; // " <ARG>"
-		return 2 + shortLength + argumentPart;
-	};
-
-	const renderFlagCell = (flag: Flag): string => {
-		if (flag.long) {
-			const longOpt = flag.arg
-				? `${bold(cyan(flag.long))} ${cyan(`<${flag.arg}>`)}`
-				: bold(cyan(flag.long));
-			return flag.short
-				? `${bold(cyan(`-${flag.short}`))}, ${longOpt}`
-				: `    ${longOpt}`;
-		}
-		const shortOpt = flag.short ? bold(cyan(`-${flag.short}`)) : '';
-		const argumentSuffix = flag.arg ? ` ${cyan(`<${flag.arg}>`)}` : '';
-		return `${shortOpt}${argumentSuffix}`;
-	};
-
-	const flagsInline = (flagList: Flag[]): Node => ({
-		kind: 'flags-inline',
-		flags: flagList,
-		render: () => {
-			if (flagList.length === 0) {
-				return '';
-			}
-
-			const width = getWidth();
-			const flagWidth = Math.max(...flagList.map(flagCellLength)) + 2;
-			const contIndent = ' '.repeat(flagWidth);
-			return flagList
-				.map((flag) => {
-					const gap = ' '.repeat(Math.max(flagWidth - flagCellLength(flag), 2));
-					const desc = flag.description ?? '';
-					return `  ${renderFlagCell(flag)}${gap}${wrap(desc, width - flagWidth, contIndent)}`;
-				})
-				.join('\n');
-		},
-	});
-
-	const flagsHanging = (flagList: Flag[]): Node => ({
-		kind: 'flags-hanging',
-		flags: flagList,
-		render: () => {
-			const width = getWidth();
-			const hangIndent = '          ';
-			const descriptionIndent = ' '.repeat(Math.max(0, Math.min(hangIndent.length, width - 1)));
-			const descriptionWidth = Math.max(width - descriptionIndent.length, 1);
-			return flagList
-				.map((flag) => {
-					const flagLine = `  ${renderFlagCell(flag)}`;
-					return flag.description
-						? `${flagLine}\n${descriptionIndent}${wrap(flag.description, descriptionWidth, descriptionIndent)}`
-						: flagLine;
-				})
-				.join('\n');
-		},
-	});
-
-	const flags = (flagList: Flag[]): Node => ({
-		kind: 'flags',
-		flags: flagList,
-		render: () => {
-			const narrow = getWidth() < INLINE_THRESHOLD;
-			return (narrow ? flagsHanging(flagList) : flagsInline(flagList)).render();
-		},
-	});
-
+/**
+ * Align a list of cells into a padded column. Each `cell` already includes its
+ * leading indent, and `width` is its full visible width (including that
+ * indent). Returns each row's prefix (cell padded to the widest plus a 2-space
+ * gap) and the column at which descriptions begin. Purely content-driven —
+ * independent of terminal width.
+ */
+export const alignColumn = (
+	rows: { cell: string;
+		width: number; }[],
+): { prefixes: string[];
+	descriptionColumn: number; } => {
+	const descriptionColumn = Math.max(...rows.map(row => row.width)) + 2;
 	return {
-		p,
-		usage,
-		footer,
-		section,
-		cmds,
-		flagsInline,
-		flagsHanging,
-		flags,
+		prefixes: rows.map(row => `${row.cell}${' '.repeat(descriptionColumn - row.width)}`),
+		descriptionColumn,
 	};
 };
 
-export type Components = ReturnType<typeof createComponents>;
+const renderColumnList = (
+	rows: { cell: string;
+		width: number;
+		description?: string; }[],
+): string => {
+	if (rows.length === 0) {
+		return '';
+	}
+	const { prefixes, descriptionColumn } = alignColumn(rows);
+	const indent = ' '.repeat(descriptionColumn);
+	return rows
+		.map((row, index) => (
+			row.description
+				? `${prefixes[index]}${indentContinuations(row.description, indent)}`
+				: prefixes[index].trimEnd()
+		))
+		.join('\n');
+};
 
-const defaultComponents = createComponents({ measureString: text => text.length });
+// ── Static components (used by `cleye/help` and `cli()`) ──────────────────
 
-export const {
-	p, usage, footer, section, cmds, flagsInline, flagsHanging, flags,
-} = defaultComponents;
+export const p = (text: string): Node => ({
+	kind: 'paragraph',
+	text,
+	render: () => text,
+});
+
+export const cmds = (commands: { name: string;
+	description?: string; }[]): Node => ({
+	kind: 'cmds',
+	commands,
+	render: () => renderColumnList(
+		commands.map(command => ({
+			cell: `  ${cyan(command.name)}`,
+			width: 2 + length(command.name),
+			description: command.description,
+		})),
+	),
+});
+
+export const flagsColumns = (flagList: Flag[]): Node => ({
+	kind: 'flags-columns',
+	flags: flagList,
+	render: () => renderColumnList(
+		flagList.map(flag => ({
+			// `flagCellLength` already accounts for the leading 2-space indent,
+			// so the cell includes it and `width` matches.
+			cell: `  ${renderFlagCell(flag)}`,
+			width: flagCellLength(flag, length),
+			description: flag.description,
+		})),
+	),
+});
+
+export const flagsStacked = (flagList: Flag[]): Node => ({
+	kind: 'flags-stacked',
+	flags: flagList,
+	render: () => {
+		const indent = '          ';
+		return flagList
+			.map((flag) => {
+				const flagLine = `  ${renderFlagCell(flag)}`;
+				return flag.description
+					? `${flagLine}\n${indent}${indentContinuations(flag.description, indent)}`
+					: flagLine;
+			})
+			.join('\n');
+	},
+});
+
+// The static default never inspects terminal width, so flags always use the columns layout.
+export const flags = (flagList: Flag[]): Node => ({
+	kind: 'flags',
+	flags: flagList,
+	render: () => flagsColumns(flagList).render(),
+});

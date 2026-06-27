@@ -201,7 +201,7 @@ describe('help output', () => {
 			mocked.restore();
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
-			expect(getOutput(mocked)).toBe('Flags:\n      --flag             \n      --flag-a <string>  \n      --flag-b <number>  \n      --flag-c <value>   (default: {})\n  -h, --help             Show help (-h for short form)');
+			expect(getOutput(mocked)).toBe('Flags:\n      --flag\n      --flag-a <string>\n      --flag-b <number>\n      --flag-c <value>   (default: {})\n  -h, --help             Show help (-h for short form)');
 		});
 
 		test('help disabled', async () => {

@@ -99,7 +99,7 @@ This is the largest change. The old `Renderers`-class pipeline is replaced by a 
 
 **Added:**
 
-- `cleye/help` subpath — `render`, `defaultHelp`, and components: `p`, `usage`, `section`, `cmds`, `flags`, `flagsInline`, `flagsHanging`, `footer`
+- `cleye/help` subpath — `render`, `defaultHelp`, and components: `p`, `usage`, `section`, `cmds`, `flags`, `flagsColumns`, `flagsStacked`, `footer`
 - `cleye/formats` subpath — `oneOf`, `commaList`, `integer`, `float`, `range`, `url`
 
 **`help.render` callback signature changed:**

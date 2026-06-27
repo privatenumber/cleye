@@ -51,8 +51,8 @@ const partitionFlagsByGroup = (
 
 /**
  * Build a `defaultHelp` function bound to a specific component set. Called
- * once by `cleye/help` (with the default `.length`-based components) and
- * once by `cleye/help/responsive` (with `stringWidth`-based components).
+ * once by `cleye/help` (static components — aligned but no wrapping) and once
+ * by `cleye/help/responsive` (width-adaptive, `string-width`-based components).
  */
 export const createDefaultHelp = (
 	components: Pick<Components, 'p' | 'usage' | 'section' | 'cmds' | 'flags' | 'footer'>,

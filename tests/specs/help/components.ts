@@ -9,12 +9,11 @@ import {
 	section,
 	cmds,
 	flags,
-	flagsInline,
-	flagsHanging,
+	flagsColumns,
+	flagsStacked,
 	type Flag,
 } from '../../../src/render/components.ts';
 import { cmds as responsiveCmds } from '../../../src/help/responsive.ts';
-import { withColumns } from '../../utils/with-columns.ts';
 
 process.stdout.columns = 80;
 
@@ -26,19 +25,11 @@ describe('components', () => {
 			expect(node.render()).toBe('short');
 		});
 
-		test('text longer than width wraps', () => {
-			const restore = withColumns(20);
-			try {
-				const text = 'one two three four five six seven eight';
-				const result = p(text).render();
-				const lines = result.split('\n');
-				expect(lines.length).toBeGreaterThan(1);
-				for (const line of lines) {
-					expect(line.length).toBeLessThanOrEqual(20);
-				}
-			} finally {
-				restore();
-			}
+		test('long text is returned verbatim (no wrapping)', () => {
+			// The static default never wraps; long text overflows the terminal
+			// rather than being broken across lines.
+			const text = 'one two three four five six seven eight nine ten eleven';
+			expect(p(text).render()).toBe(text);
 		});
 
 		test('stores text as own property', () => {
@@ -46,41 +37,13 @@ describe('components', () => {
 			expect((node as unknown as { text: string }).text).toBe('hello');
 		});
 
-		test('honors author newlines and wraps each line independently', () => {
-			const restore = withColumns(12);
-			try {
-				// Both lines fit within 12, so they stay as authored. Without
-				// newline-aware wrapping the running length accumulates across
-				// the '\n' and forces spurious mid-line breaks.
-				expect(p('aaaa bbbb\ncccc dddd').render()).toBe('aaaa bbbb\ncccc dddd');
-			} finally {
-				restore();
-			}
-		});
-
-		test('wraps within a single author line that exceeds width', () => {
-			const restore = withColumns(12);
-			try {
-				// First authored line (14) exceeds 12 so it wraps; the second
-				// line (11) fits and stays whole. The old wrap accumulated
-				// length across the '\n' and split 'fff' onto its own line.
-				expect(p('aaaa bbbb cccc\nddd eee fff').render())
-					.toBe('aaaa bbbb\ncccc\nddd eee fff');
-			} finally {
-				restore();
-			}
+		test('preserves author newlines verbatim', () => {
+			expect(p('aaaa bbbb\ncccc dddd').render()).toBe('aaaa bbbb\ncccc dddd');
 		});
 
 		test('preserves leading spaces on each authored line', () => {
-			const restore = withColumns(20);
-			try {
-				// Leading indentation is author intent (e.g. an indented list in
-				// a description); it must not be swallowed during wrapping.
-				expect(p('  indented line\n    more indented').render())
-					.toBe('  indented line\n    more indented');
-			} finally {
-				restore();
-			}
+			expect(p('  indented line\n    more indented').render())
+				.toBe('  indented line\n    more indented');
 		});
 	});
 
@@ -213,7 +176,7 @@ describe('components', () => {
 		});
 	});
 
-	describe('flagsInline', () => {
+	describe('flagsColumns', () => {
 		const testFlags: Flag[] = [
 			{
 				short: 'h',
@@ -227,8 +190,8 @@ describe('components', () => {
 		];
 
 		test('renders flag and description on the same line', () => {
-			const node = flagsInline(testFlags);
-			expect(node.kind).toBe('flags-inline');
+			const node = flagsColumns(testFlags);
+			expect(node.kind).toBe('flags-columns');
 			const result = node.render();
 			const lines = result.split('\n');
 			expect(lines).toHaveLength(2);
@@ -238,7 +201,7 @@ describe('components', () => {
 		});
 
 		test('description columns align across short+long and long-only', () => {
-			const result = flagsInline(testFlags).render();
+			const result = flagsColumns(testFlags).render();
 			const lines = result.split('\n');
 			const descriptionColumn = (line: string, description: string) => {
 				const stripped = stripVTControlCharacters(line);
@@ -248,12 +211,25 @@ describe('components', () => {
 				.toBe(descriptionColumn(lines[1], 'enable verbose output'));
 		});
 
+		test('multi-line description aligns continuation under the description column', () => {
+			// The leading 2-space indent is counted once: the continuation line
+			// sits under the first description line, not two columns past it.
+			const lines = stripVTControlCharacters(
+				flagsColumns([{
+					short: 'm',
+					long: '--mode',
+					description: 'line one\nline two',
+				}]).render(),
+			).split('\n');
+			expect(lines[1].indexOf('line two')).toBe(lines[0].indexOf('line one'));
+		});
+
 		test('empty list renders empty output', () => {
-			expect(flagsInline([]).render()).toBe('');
+			expect(flagsColumns([]).render()).toBe('');
 		});
 	});
 
-	describe('flagsHanging', () => {
+	describe('flagsStacked', () => {
 		const testFlags: Flag[] = [
 			{
 				short: 'v',
@@ -263,8 +239,8 @@ describe('components', () => {
 		];
 
 		test('renders flag on its own line, description indented below', () => {
-			const node = flagsHanging(testFlags);
-			expect(node.kind).toBe('flags-hanging');
+			const node = flagsStacked(testFlags);
+			expect(node.kind).toBe('flags-stacked');
 			const result = node.render();
 			const lines = result.split('\n');
 			// At minimum 2 lines: flag line + description line
@@ -275,29 +251,8 @@ describe('components', () => {
 			expect(lines[1]).toMatch(/^\s+/);
 		});
 
-		test('very narrow widths keep hanging descriptions visible', () => {
-			const restore = withColumns(8);
-			try {
-				let result = '';
-				expect(() => {
-					result = flagsHanging([{
-						short: 'v',
-						long: '--version',
-						description: 'show version',
-					}]).render();
-				}).not.toThrow();
-
-				const lines = result.split('\n').map(line => stripVTControlCharacters(line));
-				expect(lines[0]).toContain('-v, --version');
-				expect(lines[1]).toBe('       show');
-				expect(lines[2]).toBe('       version');
-			} finally {
-				restore();
-			}
-		});
-
 		test('omits description line when flag has no description', () => {
-			const result = flagsHanging([{
+			const result = flagsStacked([{
 				long: '--quiet',
 			}]).render();
 
@@ -306,7 +261,7 @@ describe('components', () => {
 		});
 
 		test('blank line in a description carries no trailing whitespace', () => {
-			const result = flagsHanging([{
+			const result = flagsStacked([{
 				long: '--mode',
 				description: 'line one\n\nline two',
 			}]).render();
@@ -318,7 +273,7 @@ describe('components', () => {
 		});
 	});
 
-	describe('flags smart wrapper', () => {
+	describe('flags (always columns)', () => {
 		const testFlags: Flag[] = [
 			{
 				short: 'h',
@@ -332,26 +287,11 @@ describe('components', () => {
 			},
 		];
 
-		test('width 80 uses inline layout', () => {
-			const restore = withColumns(80);
-			try {
-				const inlineResult = flagsInline(testFlags).render();
-				const smartResult = flags(testFlags).render();
-				expect(smartResult).toBe(inlineResult);
-			} finally {
-				restore();
-			}
-		});
-
-		test('width 40 uses hanging layout', () => {
-			const restore = withColumns(40);
-			try {
-				const hangingResult = flagsHanging(testFlags).render();
-				const smartResult = flags(testFlags).render();
-				expect(smartResult).toBe(hangingResult);
-			} finally {
-				restore();
-			}
+		test('renders columns, never stacked (width-independent)', () => {
+			// The static default never reads terminal width: flags always uses
+			// the columns layout, never the stacked one.
+			expect(flags(testFlags).render()).toBe(flagsColumns(testFlags).render());
+			expect(flags(testFlags).render()).not.toBe(flagsStacked(testFlags).render());
 		});
 
 		test('stores kind and flags as own properties', () => {
@@ -361,12 +301,7 @@ describe('components', () => {
 		});
 
 		test('empty list renders empty output', () => {
-			const restore = withColumns(80);
-			try {
-				expect(flags([]).render()).toBe('');
-			} finally {
-				restore();
-			}
+			expect(flags([]).render()).toBe('');
 		});
 	});
 
@@ -374,7 +309,7 @@ describe('components', () => {
 		test('tree is JSON-serializable with kind and data fields visible', () => {
 			const tree = [
 				p('description'),
-				section('Options', flagsInline([{
+				section('Options', flagsColumns([{
 					long: '--help',
 					description: 'help',
 				}])),

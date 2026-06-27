@@ -111,16 +111,16 @@ Common components:
 
 | Component | Use |
 | --- | --- |
-| `p(text)` | Paragraph text wrapped to terminal width. |
+| `p(text)` | Paragraph text (verbatim — no wrapping). |
 | `usage(name, pattern)` | Styled usage line. |
 | `section(title, ...body)` | Heading plus body components. |
 | `cmds(commands)` | Command table. |
-| `flags(list)` | Auto-responsive flag table. |
-| `flagsInline(list)` | Force inline flag table. |
-| `flagsHanging(list)` | Force hanging flag table. |
+| `flags(list)` | Flag table; columns layout here, adjusts to terminal width in `cleye/help/responsive`. |
+| `flagsColumns(list)` | Columns flag table (description aligned beside each flag). |
+| `flagsStacked(list)` | Stacked flag table (description on its own indented line below each flag). |
 | `footer(text)` | Literal trailing text. |
 
-Use `cleye/help/responsive` when display-width-aware alignment matters for CJK, emoji, or other wide characters:
+The default components (`cleye/help`, and what `cli()` uses) are **static**: columns are aligned, but there is no terminal-width awareness — long descriptions overflow rather than wrap, and `flags` always uses the columns layout. For help that wraps to the terminal width, degrades `flags` to a stacked layout on narrow terminals, and aligns CJK/emoji/wide characters by display width, import the responsive variant instead:
 
 ```ts
 import { flags, section } from 'cleye/help/responsive'

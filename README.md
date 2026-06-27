@@ -1373,17 +1373,17 @@ cli({
 
 #### Force a specific flag layout
 
-`flags()` chooses inline or hanging layout based on terminal width. To force one layout regardless of width, use `flagsInline` or `flagsHanging` directly:
+`cleye/help`'s `flags()` always uses the columns layout. (In `cleye/help/responsive`, `flags()` switches between columns and stacked based on terminal width.) To render a fixed layout directly, use `flagsColumns` or `flagsStacked`:
 
 ```ts
 import { cli } from 'cleye'
-import { section, flagsHanging } from 'cleye/help'
+import { section, flagsStacked } from 'cleye/help'
 
 cli({
     name: 'mycli',
     flags: { verbose: Boolean },
     help: {
-        render: () => section('Options', flagsHanging([
+        render: () => section('Options', flagsStacked([
             {
                 long: 'verbose',
                 description: 'Enable verbose logging'
@@ -1397,16 +1397,18 @@ cli({
 
 | Component | Signature | Description |
 | - | - | - |
-| `p` | `p(text)` | Paragraph; wraps to terminal width |
+| `p` | `p(text)` | Paragraph |
 | `usage` | `usage(name, pattern)` | Styled `Usage: name pattern` line |
 | `section` | `section(title, ...body)` | Bold heading followed by body nodes |
 | `cmds` | `cmds(commands)` | Two-column command table |
-| `flags` | `flags(list)` | Auto-responsive flag table |
-| `flagsInline` | `flagsInline(list)` | Flag table, inline layout |
-| `flagsHanging` | `flagsHanging(list)` | Flag table, hanging layout |
+| `flags` | `flags(list)` | Flag table; columns layout in `cleye/help`, adjusts to terminal width in `cleye/help/responsive` |
+| `flagsColumns` | `flagsColumns(list)` | Flag table, columns layout (description aligned beside each flag) |
+| `flagsStacked` | `flagsStacked(list)` | Flag table, stacked layout (description on its own indented line below each flag) |
 | `footer` | `footer(text)` | Literal trailing text |
 | `render` | `render(...nodes)` | Joins nodes into a string. cleye does this for you when `help.render` returns components; export is for testing or manual rendering. |
 | `defaultHelp` | `defaultHelp(options, { form? })` | Returns the default help document as a component array — spread it to extend |
+
+These default components are **static**: columns are aligned, but there's no terminal-width awareness, so long descriptions overflow rather than wrap. For help that wraps to the terminal width, degrades `flags` to a stacked layout on narrow terminals, and aligns CJK/emoji/wide characters by display width, import the same components (plus `defaultHelp`) from `cleye/help/responsive` instead.
 
 ## API
 
