@@ -46,7 +46,11 @@ If a command name is misspelled and `strictCommands` is enabled, cleye reports t
 
 ## Lazy Command Files
 
-For ordinary lazy imports, use side-effect style. The imported module calls `cli()` at top level and parses the argv after the command name:
+cleye runs a command's module for you, inside the context it set up for the matched command — the argv after the command name and the inherited options are already in scope, so the module's top-level `cli()` reads them automatically. A command file therefore does not need to be a function; it is already executed in the right context.
+
+Use a function (default export) only to receive data the parent passes via `runCommand(data)`. The form is a signal: a plain top-level `cli()` is a self-contained command; an exported function marks a command that receives data from the parent. Opt into that coupling through syntax, only when needed.
+
+For ordinary lazy imports with no data to receive, use side-effect style. The module calls `cli()` at top level and parses the argv after the command name:
 
 ```ts
 // commands/install.ts

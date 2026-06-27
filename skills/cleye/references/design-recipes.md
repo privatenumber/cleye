@@ -92,6 +92,8 @@ await argv.runCommand()
 
 ## Choose Command File Style
 
+The file's form signals intent. A command module is dynamically imported and executed by cleye in the matched command's context, so it does not need to be a function — a plain top-level `cli()` is a self-contained command. Reach for a default-export function only when the parent passes data down; that syntax marks the parent-child data flow.
+
 Use side-effect command files when the parent only needs to load the command:
 
 ```ts

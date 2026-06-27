@@ -20,6 +20,7 @@
 	},
 	"files": [
 		"dist",
+		"docs",
 		"skills"
 	],
 	"type": "module",
