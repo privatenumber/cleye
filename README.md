@@ -893,9 +893,54 @@ When no command matched, `parsed.runCommand` is a sync no-op typed as `() => und
 **Each level of a multi-command CLI can declare its own flags.** Parent flags apply to whichever subcommand runs; child flags apply only to that subcommand. The parent passes its parsed flags down via `runCommand(data)`, the child receives them as the first argument to its default export. Real CLIs like `git`, `docker`, and `kubectl` use this pattern — global options before the subcommand, subcommand-specific options after.
 
 > [!NOTE]
-> **Looking for global or persistent flags?** cleye has no global-flag primitive (no yargs `.global()`, no oclif or commander persistent flags). This forwarding pattern is the equivalent: the parent declares the flag once and passes its value to whichever subcommand runs. Each level keeps owning its own argv slice, and the parent decides exactly what each child receives.
+> **Looking for global or persistent flags?** cleye has no global-flag primitive (no yargs `.global()`, no oclif or commander persistent flags). This forwarding pattern is the equivalent: the parent declares the flag once and passes its value to whichever subcommand runs. Each level keeps owning its own argv slice, and the parent decides exactly what each child receives. To declare the same flag at multiple levels without repeating yourself, see [Sharing flags](#sharing-flags).
 
-A minimal `git` reimplementation showing the pattern:
+#### Global flags
+
+The parent resolves a global flag into shared state that every subcommand needs, then forwards the result to the child through `runCommand(data)`. The child receives it as the first argument to its default export — it never declares the flag itself. Here a `--user-id` flag is looked up into a `user` object and handed to whichever subcommand runs:
+
+```ts
+// cli.ts (parent)
+await cli({
+    flags: {
+        userId: {
+            type: String,
+            description: 'User to act as'
+        }
+    },
+    commands: {
+        status: () => import('./commands/status.ts')
+    }
+}, async ({ flags, runCommand }) => {
+    const user = await getUserById(flags.userId)
+    await runCommand(user)
+})
+```
+
+```ts
+// commands/status.ts (child)
+import { cli } from 'cleye'
+
+type User = {
+    id: string
+    name: string
+}
+
+export default (user: User) => cli({
+    flags: {
+        short: {
+            type: Boolean,
+            alias: 's'
+        }
+    }
+}, (parsed) => {
+    renderStatus(user, parsed.flags.short)
+})
+```
+
+`my-cli --user-id 42 status` looks up user `42` at the parent and passes the loaded `user` to `status`, which uses it alongside its own `--short`. A global flag goes before the command, where the parent owns and parses it.
+
+The same callback can derive and forward several values at once. A minimal `git` reimplementation:
 
 ```ts
 // cli.ts (parent)
@@ -961,42 +1006,6 @@ git -C /tmp --no-pager status --short
 
 The parent's callback acts as middleware between the user's invocation and the child: it picks which subset of parent state the child needs, transforms it (e.g. `pager: !flags.noPager`), and forwards it. The child sees a clean typed `Context` instead of reaching back into a parent argv it doesn't own.
 
-#### Sharing a flag across levels
-
-The example above keeps parent and child flags disjoint, which is the common case. Sometimes the *same* flag is meaningful at both levels: a `--json` that switches output format whether it appears before or after the command. For that, declare it at **both** levels, have the parent forward its value, and let the child fall back to that value when its own flag is unset:
-
-```ts
-// cli.ts (parent)
-await cli({
-    flags: {
-        json: {
-            type: Boolean,
-            default: false
-        }
-    },
-    commands: {
-        status: () => import('./commands/status.ts')
-    }
-}, async ({ flags, runCommand }) => {
-    await runCommand({ json: flags.json })
-})
-```
-
-```ts
-// commands/status.ts (child)
-import { cli } from 'cleye'
-
-export default (context: { json: boolean }) => cli({
-    flags: { json: Boolean }
-}, (parsed) => {
-    // Child flag wins when set; otherwise use the forwarded parent value.
-    const json = parsed.flags.json ?? context.json
-    render(json)
-})
-```
-
-Now both `my-cli --json status` and `my-cli status --json` produce JSON, because each placement reaches the level that asked for it. Both declarations are needed: under [`strictFlags`](#strict-flags) (which the child inherits), the level missing the declaration rejects the flag rather than ignoring it.
-
 > [!WARNING]
 > **Don't blind-merge the parent's flags into the child's.** It is tempting to forward the parent's whole `flags` object and spread-merge it (`{ ...parentFlags, ...parsed.flags }`). But a flag the user didn't pass is not absent: it carries a value (`undefined` for most types, `[]` for an array flag, or whatever `default` the child declared), and that value overwrites the forwarded one. Forwarding a small transformed context (as above, or as in the `git` example) sidesteps this: there is nothing to merge. If you must merge raw flag objects, drop the unset keys first, and don't give a shared child flag a `default` (a configured default is indistinguishable from a user-passed value, so apply it as a fallback after merging instead, e.g. `merged.json ?? false`):
 > ```ts
@@ -1013,6 +1022,92 @@ Now both `my-cli --json status` and `my-cli status --json` produce JSON, because
 > ```
 
 See [`examples/07-git`](/examples/07-git) for the full runnable version. The same pattern composes through deeper nesting — see [Nested commands](#nested-commands) below.
+
+#### Sharing flags
+
+Re-declaring the same flag at every level (as the forwarding example above does with `json: Boolean`) gets repetitive. Define it once in a module and spread it into each `flags` object. Assert its shape with `satisfies Flags`: when flags are written inline, a malformed entry is caught by `cli()`'s parameter type, but a standalone object gets no such check unless you add one.
+
+```ts
+// flags.ts
+import type { Flags } from 'cleye'
+
+export const globalFlags = {
+    json: {
+        type: Boolean,
+        description: 'Output as JSON'
+    }
+} satisfies Flags
+```
+
+```ts
+// cli.ts (parent)
+import { cli } from 'cleye'
+import { globalFlags } from './flags.ts'
+
+const argv = cli({
+    flags: { ...globalFlags },
+    commands: {
+        status: () => import('./commands/status.ts')
+    }
+})
+
+await argv.runCommand()
+```
+
+```ts
+// commands/status.ts (child)
+import { cli } from 'cleye'
+import { globalFlags } from './flags.ts'
+
+const argv = cli({
+    flags: {
+        ...globalFlags,
+        short: {
+            type: Boolean,
+            alias: 's'
+        }
+    }
+})
+
+argv.flags.json // => boolean | undefined (typed through the spread)
+argv.flags.short // => boolean | undefined
+```
+
+`satisfies` validates each definition at its source — a typo like `alias: 123` errors in `flags.ts` rather than slipping through — while preserving the inferred types, so `argv.flags` stays precisely typed at each level (an undeclared flag like `argv.flags.nope` is still a compile error). Avoid a type annotation (`const globalFlags: Flags = ...`) for this: it widens the value to `Flags` and erases the per-flag types, so the spread would no longer type `argv.flags`. Each level parses its own occurrence: `cli --json status` sets it at the parent, `cli status --json` sets it at the child.
+
+> [!TIP]
+> **Group flags when sharing.** When the shared flags form a logical group, define the module with [`group()`](#grouping-flags) instead of `satisfies Flags`. It validates and infers the same way, and tags each flag so it renders under a shared `--help` heading at every level it's spread into:
+> ```ts
+> // flags.ts
+> import { group } from 'cleye'
+>
+> export const globalFlags = group('Global', {
+>     json: {
+>         type: Boolean,
+>         description: 'Output as JSON'
+>     }
+> })
+> ```
+
+Spreading reuses the *definition*, not the *value*: it does not pass a parsed value between levels. If the child must know the flag regardless of where it appeared, combine this with the forwarding pattern above — spread the definition into both levels so either placement is accepted, and forward the parent's value so the child can fall back to it:
+
+```ts
+// commands/status.ts (child)
+export default (json: boolean) => cli({
+    flags: {
+        ...globalFlags,
+        short: {
+            type: Boolean,
+            alias: 's'
+        }
+    }
+}, (parsed) => {
+    // Own placement wins; otherwise use the forwarded parent value.
+    render(parsed.flags.json ?? json)
+})
+```
+
+Now `--json` is accepted before or after the command and the child always sees the effective value. Keep the shared flag free of a `default` so an unset child flag stays `undefined` and the `??` fallback works; apply any default at the very end (e.g. `parsed.flags.json ?? json ?? false`).
 
 ### Nested commands
 
