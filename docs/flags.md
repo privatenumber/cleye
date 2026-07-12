@@ -288,31 +288,33 @@ A few things to keep in mind:
 
 `cleye/formats` is a tree-shakable subpath that ships ready-made type-function helpers for common flag shapes. Import only what you need.
 
+Formatters use PascalCase like built-in flag types (`String`, `Number`, and `Boolean`). Pass formatters that need no configuration directly; call the ones that need accepted values, an item type, or bounds.
+
 ```ts
 import {
-    oneOf, commaList, integer, float, range, url
+    OneOf, CommaList, Integer, Float, Range, Url
 } from 'cleye/formats'
 
 cli({
     flags: {
-        format: { type: oneOf(['json', 'yaml', 'csv']) }, // => 'json' | 'yaml' | 'csv'
-        tags: { type: commaList(String) }, // => string[]
-        port: { type: range(1024, 65_535) }, // => number, validated in range
-        count: { type: integer() }, // => number (integer only)
-        ratio: { type: float() }, // => number (finite float)
-        apiUrl: { type: url() } // => URL object
+        format: { type: OneOf(['json', 'yaml', 'csv']) }, // => 'json' | 'yaml' | 'csv'
+        tags: { type: CommaList(String) }, // => string[]
+        port: { type: Range(1024, 65_535) }, // => number, validated in range
+        count: { type: Integer }, // => number (integer only)
+        ratio: { type: Float }, // => number (finite float)
+        apiUrl: { type: Url } // => URL object
     }
 })
 ```
 
 | Helper | Return type | Description |
 |--------|-------------|-------------|
-| `oneOf(values)` | Union of the given string literals | Throws if the value is not in the list. Accepts an array (e.g. `oneOf(['a', 'b'])` or `oneOf(myConstArray)`). |
-| `commaList(itemType)` | `T[]` | Splits on `,`, trims whitespace, maps each item through `itemType`. |
-| `integer()` | `number` | Parses a base-10 integer. Throws on floats or non-numeric input. |
-| `float()` | `number` | Parses a finite float. Throws on non-finite or non-numeric input. |
-| `range(min, max)` | `(input: string) => number` | Returns a parser that validates the input parses to a number in `[min, max]`. |
-| `url()` | `URL` | Parses with `new URL()`. Returns a `URL` object so callers get `.host`, `.pathname`, etc. |
+| `OneOf(values)` | Union of the given string literals | Throws if the value is not in the list. Accepts an array (e.g. `OneOf(['a', 'b'])` or `OneOf(myConstArray)`). |
+| `CommaList(itemType)` | `T[]` | Splits on `,`, trims whitespace, maps each item through `itemType`. |
+| `Integer` | `number` | Parses a base-10 integer. Throws on floats or non-numeric input. |
+| `Float` | `number` | Parses a finite float. Throws on non-finite or non-numeric input. |
+| `Range(min, max)` | `number` | Validates that the input parses to a number in `[min, max]`. |
+| `Url` | `URL` | Parses with `new URL()`. Returns a `URL` object so callers get `.host`, `.pathname`, etc. |
 
 ## Default flags
 By default, _Cleye_ will try to handle the `--help`, `-h`, and `--version` flags.

@@ -1,11 +1,11 @@
 /**
- * Flag mechanics beyond the basics — `oneOf`, `integer`, array flags,
+ * Flag mechanics beyond the basics — `OneOf`, `Integer`, array flags,
  * `booleanFlagNegation`.
  *
  * Any function `(input: string) => T` works as a flag's `type`. Wrap a type
  * in an array (`type: [Number]`) to accept multiple values. The
- * `cleye/formats` subpath ships canonical helpers — `oneOf`, `integer`,
- * `float`, `range`, `commaList`, `url` — that throw with friendly messages
+ * `cleye/formats` subpath ships canonical helpers — `OneOf`, `Integer`,
+ * `Float`, `Range`, `CommaList`, `Url` — that throw with friendly messages
  * when the input is invalid.
  *
  * Vehicle: a tiny `cowsay`-like — pick a style, repeat the message N times,
@@ -21,7 +21,7 @@
  */
 
 import { cli } from '#cleye';
-import { integer, oneOf } from '#cleye/formats';
+import { Integer, OneOf } from '#cleye/formats';
 
 await cli({
 	name: 'cowsay',
@@ -40,18 +40,18 @@ await cli({
 			description: 'What the cow says',
 			default: 'moo',
 		},
-		// `oneOf([...])` narrows the type to the literal union `'classic' | 'fancy'`.
+		// `OneOf([...])` narrows the type to the literal union `'classic' | 'fancy'`.
 		// Invalid values throw at parse time with the list of valid options.
 		style: {
-			type: oneOf(['classic', 'fancy']),
+			type: OneOf(['classic', 'fancy']),
 			alias: 's',
 			description: 'Output style',
 			default: 'classic',
 		},
-		// `integer()` rejects floats, hex literals, etc. with a clear error.
+		// `Integer` rejects floats, hex literals, etc. with a clear error.
 		// (Plain `Number` would silently accept `3.5` or `1e2`.)
 		repeat: {
-			type: integer(),
+			type: Integer,
 			description: 'How many times to repeat',
 			default: 1,
 		},

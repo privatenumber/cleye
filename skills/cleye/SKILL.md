@@ -156,7 +156,7 @@ cli({
 
 Coerce numbers (CLI values are strings), wrap in `[ ]` for multiple values (not `z.array`), keep booleans as native `Boolean`, and use cleye's `default` (not the schema's). Use the `{ type: schema, description, placeholder }` object form to add help metadata.
 
-Read [Flag Formats](references/flag-formats.md) for `oneOf`, `integer`, `range`, `commaList`, `url`, Standard Schema validators, required-flag assertions, custom parsers, described defaults, sharing flag definitions across commands, and grouping flags into help sections.
+Read [Flag Formats](references/flag-formats.md) for `OneOf`, `Integer`, `Range`, `CommaList`, `Url`, Standard Schema validators, required-flag assertions, custom parsers, described defaults, sharing flag definitions across commands, and grouping flags into help sections.
 
 ## Help And Version
 

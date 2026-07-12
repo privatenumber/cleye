@@ -6,7 +6,7 @@ Examples are numbered by reading order. Each one introduces **one new concept** 
 
 - [`01-minimal`](./01-minimal/index.ts) — the simplest possible CLI: `cli()` with flags, no params, no commands. Fits on one screen.
 - [`02-parameters`](./02-parameters/index.ts) — positional arguments: `<required>`, `[optional]`, `<spread...>`. Reimplements a `cp`-style invocation.
-- [`03-flag-types`](./03-flag-types/index.ts) — flag mechanics beyond String/Number/Boolean: custom types from `cleye/formats` (`oneOf`, `integer`), array flags, `booleanFlagNegation` for `--no-<flag>` shorthand. Vehicle: `cowsay`-like.
+- [`03-flag-types`](./03-flag-types/index.ts) — flag mechanics beyond String/Number/Boolean: custom types from `cleye/formats` (`OneOf`, `Integer`), array flags, `booleanFlagNegation` for `--no-<flag>` shorthand. Vehicle: `cowsay`-like.
 - [`04-help`](./04-help/index.ts) — declarative help: `version`, `help.description`, `help.examples`. Auto-injected `--help` / `--version`. Vehicle: a tiny `weather` CLI.
 
 ## Commands

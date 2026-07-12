@@ -2,160 +2,160 @@ import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
 import { cli } from '#cleye';
 import {
-	oneOf,
-	commaList,
-	integer,
-	float,
-	range,
-	url,
+	OneOf,
+	CommaList,
+	Integer,
+	Float,
+	Range,
+	Url,
 } from '../../src/formats.ts';
 
 describe('formats', () => {
-	describe('oneOf', () => {
+	describe('OneOf', () => {
 		test('returns valid value', () => {
-			const parser = oneOf(['json', 'yaml', 'csv']);
+			const parser = OneOf(['json', 'yaml', 'csv']);
 			expect(parser('json')).toBe('json');
 			expect(parser('yaml')).toBe('yaml');
 		});
 
 		test('throws on invalid value', () => {
-			const parser = oneOf(['json', 'yaml', 'csv']);
+			const parser = OneOf(['json', 'yaml', 'csv']);
 			expect(() => parser('xml')).toThrow('Expected one of: json, yaml, csv');
 		});
 
 		test('infers union type', () => {
-			const parser = oneOf(['json', 'yaml', 'csv']);
+			const parser = OneOf(['json', 'yaml', 'csv']);
 			expectTypeOf(parser('json')).toEqualTypeOf<'json' | 'yaml' | 'csv'>();
 		});
 
 		test('advertises accepted values as the help placeholder', () => {
-			const parser = oneOf(['json', 'yaml', 'csv']);
+			const parser = OneOf(['json', 'yaml', 'csv']);
 			expect(parser.placeholder).toBe('json|yaml|csv');
 		});
 	});
 
-	describe('commaList', () => {
+	describe('CommaList', () => {
 		test('splits on comma', () => {
-			const parser = commaList(String);
+			const parser = CommaList(String);
 			expect(parser('a,b,c')).toStrictEqual(['a', 'b', 'c']);
 		});
 
 		test('empty string returns empty array', () => {
-			const parser = commaList(String);
+			const parser = CommaList(String);
 			expect(parser('')).toStrictEqual([]);
 		});
 
 		test('trims whitespace around items', () => {
-			const parser = commaList(String);
+			const parser = CommaList(String);
 			expect(parser('a, b, c')).toStrictEqual(['a', 'b', 'c']);
 		});
 
 		test('trailing comma is ignored', () => {
-			const parser = commaList(String);
+			const parser = CommaList(String);
 			expect(parser('a,b,')).toStrictEqual(['a', 'b']);
 		});
 
-		test('composes with integer()', () => {
-			const parser = commaList(integer());
+		test('composes with Integer', () => {
+			const parser = CommaList(Integer);
 			expect(parser('1,2,3')).toStrictEqual([1, 2, 3]);
 			expectTypeOf(parser('1,2')).toEqualTypeOf<number[]>();
 		});
 	});
 
-	describe('integer', () => {
+	describe('Integer', () => {
 		test('parses integer', () => {
-			expect(integer()('42')).toBe(42);
-			expect(integer()('-5')).toBe(-5);
-			expect(integer()('0')).toBe(0);
+			expect(Integer('42')).toBe(42);
+			expect(Integer('-5')).toBe(-5);
+			expect(Integer('0')).toBe(0);
 		});
 
 		test('throws on float', () => {
-			expect(() => integer()('3.14')).toThrow('Expected an integer');
+			expect(() => Integer('3.14')).toThrow('Expected an integer');
 		});
 
 		test('throws on non-numeric', () => {
-			expect(() => integer()('abc')).toThrow('Expected an integer');
+			expect(() => Integer('abc')).toThrow('Expected an integer');
 		});
 
 		test('throws on empty input', () => {
-			expect(() => integer()('')).toThrow('Expected an integer');
-			expect(() => integer()('  ')).toThrow('Expected an integer');
+			expect(() => Integer('')).toThrow('Expected an integer');
+			expect(() => Integer('  ')).toThrow('Expected an integer');
 		});
 
 		test('infers number type', () => {
-			expectTypeOf(integer()('1')).toEqualTypeOf<number>();
+			expectTypeOf(Integer('1')).toEqualTypeOf<number>();
 		});
 	});
 
-	describe('float', () => {
+	describe('Float', () => {
 		test('parses float', () => {
-			expect(float()('3.14')).toBe(3.14);
-			expect(float()('42')).toBe(42);
-			expect(float()('-1.5')).toBe(-1.5);
+			expect(Float('3.14')).toBe(3.14);
+			expect(Float('42')).toBe(42);
+			expect(Float('-1.5')).toBe(-1.5);
 		});
 
 		test('throws on non-numeric', () => {
-			expect(() => float()('abc')).toThrow('Expected a finite number');
+			expect(() => Float('abc')).toThrow('Expected a finite number');
 		});
 
 		test('throws on Infinity', () => {
-			expect(() => float()('Infinity')).toThrow('Expected a finite number');
+			expect(() => Float('Infinity')).toThrow('Expected a finite number');
 		});
 
 		test('throws on empty input', () => {
-			expect(() => float()('')).toThrow('Expected a finite number');
-			expect(() => float()('  ')).toThrow('Expected a finite number');
+			expect(() => Float('')).toThrow('Expected a finite number');
+			expect(() => Float('  ')).toThrow('Expected a finite number');
 		});
 
 		test('infers number type', () => {
-			expectTypeOf(float()('1.5')).toEqualTypeOf<number>();
+			expectTypeOf(Float('1.5')).toEqualTypeOf<number>();
 		});
 	});
 
-	describe('range', () => {
+	describe('Range', () => {
 		test('returns value within range', () => {
-			expect(range(1, 10)('5')).toBe(5);
-			expect(range(1, 10)('1')).toBe(1);
-			expect(range(1, 10)('10')).toBe(10);
+			expect(Range(1, 10)('5')).toBe(5);
+			expect(Range(1, 10)('1')).toBe(1);
+			expect(Range(1, 10)('10')).toBe(10);
 		});
 
 		test('throws below min', () => {
-			expect(() => range(1, 10)('0')).toThrow('Expected a number between 1 and 10');
+			expect(() => Range(1, 10)('0')).toThrow('Expected a number between 1 and 10');
 		});
 
 		test('throws above max', () => {
-			expect(() => range(1, 10)('11')).toThrow('Expected a number between 1 and 10');
+			expect(() => Range(1, 10)('11')).toThrow('Expected a number between 1 and 10');
 		});
 
 		test('throws on non-numeric input', () => {
-			expect(() => range(1, 10)('abc')).toThrow('Expected a number');
+			expect(() => Range(1, 10)('abc')).toThrow('Expected a number');
 		});
 
 		test('throws on empty input', () => {
-			expect(() => range(0, 10)('')).toThrow('Expected a number');
-			expect(() => range(0, 10)('  ')).toThrow('Expected a number');
+			expect(() => Range(0, 10)('')).toThrow('Expected a number');
+			expect(() => Range(0, 10)('  ')).toThrow('Expected a number');
 		});
 
 		test('infers number type', () => {
-			expectTypeOf(range(0, 100)('50')).toEqualTypeOf<number>();
+			expectTypeOf(Range(0, 100)('50')).toEqualTypeOf<number>();
 		});
 	});
 
-	describe('url', () => {
+	describe('Url', () => {
 		test('returns URL object for valid URL', () => {
-			const result = url()('https://example.com');
+			const result = Url('https://example.com');
 			expect(result).toBeInstanceOf(URL);
 			expect(result.host).toBe('example.com');
 		});
 
 		test('throws on invalid URL', () => {
-			expect(() => url()('not-a-url')).toThrow('Expected a valid URL');
+			expect(() => Url('not-a-url')).toThrow('Expected a valid URL');
 		});
 
 		test('preserves the original error as cause', () => {
 			let caught: unknown;
 			try {
-				url()('not-a-url');
+				Url('not-a-url');
 			} catch (error) {
 				caught = error;
 			}
@@ -164,20 +164,32 @@ describe('formats', () => {
 		});
 
 		test('infers URL type', () => {
-			expectTypeOf(url()('https://example.com')).toEqualTypeOf<URL>();
+			expectTypeOf(Url('https://example.com')).toEqualTypeOf<URL>();
 		});
 	});
 
 	test('cli() integrates with cleye/formats helpers', async () => {
 		const parsed = cli({
 			flags: {
-				format: { type: oneOf(['json', 'yaml']) },
-				tags: { type: commaList(String) },
+				format: { type: OneOf(['json', 'yaml']) },
+				tags: { type: CommaList(String) },
+				count: { type: Integer },
+				apiUrl: { type: Url },
 			},
-		}, undefined, ['--format=json', '--tags=a,b,c']);
+		}, undefined, [
+			'--format=json',
+			'--tags=a,b,c',
+			'--count=3',
+			'--api-url=https://example.com/docs',
+		]);
 		expect(parsed.flags.format).toBe('json');
 		expect(parsed.flags.tags).toStrictEqual(['a', 'b', 'c']);
+		expect(parsed.flags.count).toBe(3);
+		expect(parsed.flags.apiUrl).toBeInstanceOf(URL);
+		expect(parsed.flags.apiUrl?.pathname).toBe('/docs');
 		expectTypeOf(parsed.flags.format).toEqualTypeOf<'json' | 'yaml' | undefined>();
 		expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[] | undefined>();
+		expectTypeOf(parsed.flags.count).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.apiUrl).toEqualTypeOf<URL | undefined>();
 	});
 });

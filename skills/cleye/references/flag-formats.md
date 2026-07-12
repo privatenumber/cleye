@@ -101,33 +101,33 @@ Import reusable validators from `cleye/formats`:
 
 ```ts
 import {
-    commaList,
-    float,
-    integer,
-    oneOf,
-    range,
-    url
+    CommaList,
+    Float,
+    Integer,
+    OneOf,
+    Range,
+    Url
 } from 'cleye/formats'
 
 cli({
     flags: {
-        mode: { type: oneOf(['dev', 'prod'] as const) },
-        port: { type: range(1024, 65_535) },
-        count: { type: integer() },
-        ratio: { type: float() },
-        origins: { type: commaList(url()) }
+        mode: { type: OneOf(['dev', 'prod'] as const) },
+        port: { type: Range(1024, 65_535) },
+        count: { type: Integer },
+        ratio: { type: Float },
+        origins: { type: CommaList(Url) }
     }
 })
 ```
 
 | Helper | Result |
 | --- | --- |
-| `oneOf(values)` | Validates and infers a string-literal union. |
-| `commaList(itemType)` | Splits on commas, trims, and maps each item. |
-| `integer()` | Parses a base-10 integer; rejects floats and empty values. |
-| `float()` | Parses a finite float; rejects empty or non-finite values. |
-| `range(min, max)` | Parses a number and validates inclusive bounds. |
-| `url()` | Returns a `URL` object. |
+| `OneOf(values)` | Validates and infers a string-literal union. |
+| `CommaList(itemType)` | Splits on commas, trims, and maps each item. |
+| `Integer` | Parses a base-10 integer; rejects floats and empty values. |
+| `Float` | Parses a finite float; rejects empty or non-finite values. |
+| `Range(min, max)` | Parses a number and validates inclusive bounds. |
+| `Url` | Returns a `URL` object. |
 
 ## Custom Parsers
 

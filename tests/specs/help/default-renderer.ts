@@ -3,7 +3,7 @@ import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { defaultHelp } from '../../../src/render/default-help.ts';
 import { render } from '../../../src/render/render.ts';
-import { oneOf } from '../../../src/formats.ts';
+import { OneOf } from '../../../src/formats.ts';
 import { withColumns } from '../../utils/with-columns.ts';
 
 // `defaultHelp` returns Node[]; tests assert on the rendered string.
@@ -253,10 +253,10 @@ describe('defaultHelp', () => {
 			expect(flagLine).toContain('<number>');
 		});
 
-		test('oneOf type shows accepted values as the arg label', () => {
+		test('OneOf type shows accepted values as the arg label', () => {
 			const output = stripVTControlCharacters(renderDefault({
 				flags: {
-					format: { type: oneOf(['json', 'yaml', 'csv']) },
+					format: { type: OneOf(['json', 'yaml', 'csv']) },
 				},
 			}));
 			const flagLine = output.split('\n').find(line => line.includes('--format')) ?? '';

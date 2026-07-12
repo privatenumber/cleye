@@ -1,4 +1,4 @@
-export const oneOf = <const T extends readonly string[]>(
+export const OneOf = <const T extends readonly string[]>(
 	values: T,
 ) => Object.assign(
 	(input: string): T[number] => {
@@ -12,7 +12,7 @@ export const oneOf = <const T extends readonly string[]>(
 	{ placeholder: values.join('|') },
 );
 
-export const commaList = <T>(itemType: (value: string) => T) => (input: string): T[] => {
+export const CommaList = <T>(itemType: (value: string) => T) => (input: string): T[] => {
 	if (input === '') {
 		return [];
 	}
@@ -22,7 +22,7 @@ export const commaList = <T>(itemType: (value: string) => T) => (input: string):
 	});
 };
 
-export const integer = () => (input: string): number => {
+export const Integer = (input: string): number => {
 	if (input.trim() === '') {
 		throw new TypeError(`Expected an integer (got: "${input}")`);
 	}
@@ -33,7 +33,7 @@ export const integer = () => (input: string): number => {
 	return value;
 };
 
-export const float = () => (input: string): number => {
+export const Float = (input: string): number => {
 	if (input.trim() === '') {
 		throw new TypeError(`Expected a finite number (got: "${input}")`);
 	}
@@ -44,7 +44,7 @@ export const float = () => (input: string): number => {
 	return value;
 };
 
-export const range = (min: number, max: number) => (input: string): number => {
+export const Range = (min: number, max: number) => (input: string): number => {
 	if (input.trim() === '') {
 		throw new TypeError(`Expected a number (got: "${input}")`);
 	}
@@ -58,7 +58,7 @@ export const range = (min: number, max: number) => (input: string): number => {
 	return value;
 };
 
-export const url = () => (input: string): URL => {
+export const Url = (input: string): URL => {
 	try {
 		return new URL(input);
 	} catch (error) {
