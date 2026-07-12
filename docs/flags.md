@@ -224,6 +224,8 @@ await cli({
 })
 ```
 
+When a type function throws — `Size` above, a [`cleye/formats`](#composable-type-helpers) helper, or a [Standard Schema](#standard-schema-zod-valibot-arktype) validator — cleye treats it as a flag-value validation failure. It prints `Error: Flag "--<name>": <message>` to stderr and exits with code 1 (the same clean handling as other flag errors, not an uncaught stack trace). When [embedding with `throwOnExit`](./embedding.md), it instead throws `CleyeExit` (reason `'invalid-flag-value'`) whose `cause` is type-flag's `FlagParseError`. That error exposes `flagName`, and its `cause` is the original parser error (e.g. a `ZodError`).
+
 ## Standard Schema (Zod, Valibot, ArkType)
 
 Any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, and others) can be used directly as a flag type. _Cleye_ validates the value and infers the flag type from the schema's output. No wrapper or extra import.
@@ -373,4 +375,3 @@ Error: Unknown flag: --baz. (Did you mean --bar?)
 ```
 
 When enabled, the CLI will exit with an error if any unknown flags are passed. If a similar flag name exists (within 2 edits), it will suggest the closest match.
-

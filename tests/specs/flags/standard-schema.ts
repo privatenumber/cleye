@@ -17,10 +17,15 @@ describe('standard schema', () => {
 			}
 		});
 
-		test('zod enum throws on an invalid value, wrapped with the flag name', () => {
-			expect(() => cli({
+		test('zod enum rejects an invalid value with a clean, flag-named error', () => {
+			const mocked = mockEnvFunctions();
+			cli({
 				flags: { size: z.enum(['small', 'large']) },
-			}, undefined, ['--size', 'xlarge'])).toThrow('Flag "--size":');
+			}, undefined, ['--size', 'xlarge']);
+			mocked.restore();
+			expect(mocked.processExit.calls).toStrictEqual([[1]]);
+			const [message] = mocked.consoleError.calls[0] as [string];
+			expect(message.startsWith('Error: Flag "--size":')).toBe(true);
 		});
 
 		test('zod coerce.number coerces the string value to a number', () => {
@@ -73,10 +78,15 @@ describe('standard schema', () => {
 			}
 		});
 
-		test('valibot throws on an invalid value, wrapped with the flag name', () => {
-			expect(() => cli({
+		test('valibot rejects an invalid value with a clean, flag-named error', () => {
+			const mocked = mockEnvFunctions();
+			cli({
 				flags: { mode: v.picklist(['dev', 'prod']) },
-			}, undefined, ['--mode', 'staging'])).toThrow('Flag "--mode":');
+			}, undefined, ['--mode', 'staging']);
+			mocked.restore();
+			expect(mocked.processExit.calls).toStrictEqual([[1]]);
+			const [message] = mocked.consoleError.calls[0] as [string];
+			expect(message.startsWith('Error: Flag "--mode":')).toBe(true);
 		});
 	}, { parallel: false });
 

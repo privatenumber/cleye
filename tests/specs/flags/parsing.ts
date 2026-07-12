@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { cli } from '#cleye';
+import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('flags parsing', () => {
 	test('parses flags + parameters together with type narrowing', async () => {
@@ -54,18 +55,22 @@ describe('flags parsing', () => {
 			}
 		});
 
-		test('throws on invalid custom-type value', () => {
-			expect(
-				() => cli(
-					{
-						flags: {
-							size: Size,
-						},
+		test('rejects an invalid custom-type value with a clean error', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						size: Size,
 					},
-					undefined,
-					['--size', 'xlarge'],
-				),
-			).toThrow('Invalid size: "xlarge"');
+				},
+				undefined,
+				['--size', 'xlarge'],
+			);
+			mocked.restore();
+			expect(mocked.consoleError.calls).toStrictEqual([
+				['Error: Flag "--size": Invalid size: "xlarge"'],
+			]);
+			expect(mocked.processExit.calls).toStrictEqual([[1]]);
 		});
 	}, { parallel: false });
 

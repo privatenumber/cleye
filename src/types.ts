@@ -222,6 +222,7 @@ export type ExitReason =
 	| 'version'
 	| 'missing-required-parameter'
 	| 'unknown-flag'
+	| 'invalid-flag-value'
 	| 'unknown-command'
 	| 'no-command-match';
 

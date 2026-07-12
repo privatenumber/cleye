@@ -143,6 +143,8 @@ const Size = (value: string) => {
 }
 ```
 
+A throwing parser (custom function, `cleye/formats` helper, or Standard Schema) is a flag-value validation failure: cleye prints `Error: Flag "--<name>": <message>` and exits 1, or — under `throwOnExit` — throws `CleyeExit` (reason `'invalid-flag-value'`) with type-flag's `FlagParseError` as `cause`. The parse error exposes `flagName`, and its `cause` is the original parser error. Don't add a top-level `try/catch` to render these yourself.
+
 ## Standard Schema
 
 Any [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType) can be used directly as a flag type. cleye validates the value and infers the flag type from the schema's output:

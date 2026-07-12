@@ -1,8 +1,13 @@
 import path from 'node:path';
-import { typeFlag } from 'type-flag';
+import {
+	typeFlag,
+	FlagParseError,
+	type TypeFlagOptions,
+} from 'type-flag';
 import type {
 	CallbackFunction,
 	CliOptions,
+	Flags,
 	HelpForm,
 	ParsedArgv,
 	HelpOptions,
@@ -95,6 +100,27 @@ type Handler = (...arguments_: unknown[]) => unknown;
 type MatchedCommand = {
 	name: string;
 	handler: Handler;
+};
+
+/**
+ * Adapt type-flag's parser failures to cleye's output and exit contract.
+ * Configuration and default-factory errors continue to surface unchanged.
+ */
+const parseFlagArguments = <Schemas extends Flags>(
+	schemas: Schemas,
+	argv: string[],
+	options: TypeFlagOptions,
+) => {
+	try {
+		return typeFlag(schemas, argv, options);
+	} catch (error) {
+		if (!(error instanceof FlagParseError)) {
+			throw error;
+		}
+
+		console.error(`Error: ${error.message}`);
+		throw new CleyeExit(1, 'invalid-flag-value', error);
+	}
 };
 
 /**
@@ -337,7 +363,7 @@ function cli<
 
 		const parseFlags = unwrapDescribedDefaults(flags);
 
-		const parsed = typeFlag(
+		const parsed = parseFlagArguments(
 			parseFlags,
 			argv,
 			{

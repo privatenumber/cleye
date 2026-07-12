@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'manten';
+import { FlagParseError } from 'type-flag';
 import { cli, CleyeExit } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
@@ -87,6 +88,29 @@ describe('throwOnExit / non-intrusive mode', () => {
 			expect(error?.reason).toBe('unknown-flag');
 		});
 
+		test('flag parser throw → reason "invalid-flag-value" with code 1', () => {
+			const mocked = mockEnvFunctions();
+			const parserError = new Error('bad value: x');
+			const error = captureExit(() => cli({
+				flags: {
+					level: {
+						type: () => {
+							throw parserError;
+						},
+					},
+				},
+				throwOnExit: true,
+			}, undefined, ['--level', 'x']));
+			mocked.restore();
+			expect(error?.code).toBe(1);
+			expect(error?.reason).toBe('invalid-flag-value');
+			expect(error?.cause).toBeInstanceOf(FlagParseError);
+			const flagParseError = error?.cause as FlagParseError;
+			expect(flagParseError.flagName).toBe('level');
+			expect(flagParseError.message).toBe('Flag "--level": bad value: x');
+			expect(flagParseError.cause).toBe(parserError);
+		});
+
 		test('strictCommands unknown command → reason "unknown-command" with code 1', () => {
 			const mocked = mockEnvFunctions();
 			const error = captureExit(() => cli({
@@ -108,6 +132,72 @@ describe('throwOnExit / non-intrusive mode', () => {
 			mocked.restore();
 			expect(error?.code).toBe(1);
 			expect(error?.reason).toBe('no-command-match');
+		});
+	}, { parallel: false });
+
+	describe('flag parser errors', () => {
+		test('default: prints a clean message and exits 1 (no uncaught throw)', () => {
+			const mocked = mockEnvFunctions();
+			// A throwing type function is exactly how cleye/formats helpers and
+			// the documented custom-type pattern signal a validation failure.
+			cli({
+				flags: {
+					level: {
+						type: (value: string) => {
+							throw new Error(`bad value: ${value}`);
+						},
+					},
+				},
+			}, undefined, ['--level', 'x']);
+			mocked.restore();
+			// type-flag re-throws the parser error as `Flag "--name": <message>`.
+			expect(mocked.consoleError.calls).toStrictEqual([
+				['Error: Flag "--level": bad value: x'],
+			]);
+			expect(mocked.processExit.calls).toStrictEqual([[1]]);
+		});
+
+		test('developer config errors are not swallowed', () => {
+			// An invalid flag name is a config mistake type-flag throws as a plain
+			// Error (not a FlagParseError). It must surface as a real error
+			// rather than be converted into a clean exit.
+			const mocked = mockEnvFunctions();
+			let thrown: unknown;
+			try {
+				cli({ flags: { 'a.b': String } }, undefined, []);
+			} catch (error) {
+				thrown = error;
+			}
+			mocked.restore();
+			expect(thrown).toBeInstanceOf(Error);
+			expect(thrown instanceof CleyeExit).toBe(false);
+			expect((thrown as Error).message).toBe('Flag name "a.b" cannot contain "."');
+		});
+
+		test('a throwing default factory is not swallowed', () => {
+			// type-flag resolves function defaults inside the parse call. A default
+			// factory that throws is a developer/runtime bug, not a flag-value
+			// validation failure, so it is not a FlagParseError and must surface.
+			const mocked = mockEnvFunctions();
+			let thrown: unknown;
+			try {
+				cli({
+					flags: {
+						config: {
+							type: String,
+							default: () => {
+								throw new TypeError('missing config');
+							},
+						},
+					},
+				}, undefined, []);
+			} catch (error) {
+				thrown = error;
+			}
+			mocked.restore();
+			expect(thrown).toBeInstanceOf(TypeError);
+			expect(thrown instanceof CleyeExit).toBe(false);
+			expect((thrown as Error).message).toBe('missing config');
 		});
 	}, { parallel: false });
 
