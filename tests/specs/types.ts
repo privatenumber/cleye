@@ -196,6 +196,106 @@ describe('types', () => {
 		}
 	});
 
+	test('array flag inference with readonly shared definitions', () => {
+		const flags = {
+			strings: [String],
+			numbers: { type: [Number] },
+			booleans: [Boolean],
+			defaults: {
+				type: [String],
+				default: ['fallback'],
+			},
+			lazyDefaults: {
+				type: [Number],
+				default: () => [1],
+			},
+		} as const satisfies Flags;
+
+		const parsed = cli({ flags }, undefined, []);
+
+		expectTypeOf(parsed.flags.strings).toEqualTypeOf<string[]>();
+		expectTypeOf(parsed.flags.numbers).toEqualTypeOf<number[]>();
+		expectTypeOf(parsed.flags.booleans).toEqualTypeOf<boolean[]>();
+		expectTypeOf(parsed.flags.defaults).toEqualTypeOf<string[] | readonly ['fallback']>();
+		expectTypeOf(parsed.flags.lazyDefaults).toEqualTypeOf<number[]>();
+	});
+
+	test('custom parser output and default inference', () => {
+		const parseMode = (value: string): 'fast' | 'safe' => (value === 'fast' ? 'fast' : 'safe');
+		const parsePoint = (value: string) => ({ x: Number(value) });
+		const parsed = cli({
+			flags: {
+				mode: parseMode,
+				wrappedMode: { type: parseMode },
+				modes: [parseMode],
+				point: { type: parsePoint },
+				points: { type: [parsePoint] },
+				defaultMode: {
+					type: parseMode,
+					default: 'fast' as const,
+				},
+				lazyMode: {
+					type: parseMode,
+					default: () => 'safe' as const,
+				},
+				nullablePoint: {
+					type: parsePoint,
+					default: null,
+				},
+				lazyPoint: {
+					type: parsePoint,
+					default: () => ({ x: 0 }),
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.mode).toEqualTypeOf<'fast' | 'safe' | undefined>();
+		expectTypeOf(parsed.flags.wrappedMode).toEqualTypeOf<'fast' | 'safe' | undefined>();
+		expectTypeOf(parsed.flags.modes).toEqualTypeOf<('fast' | 'safe')[]>();
+		expectTypeOf(parsed.flags.point).toEqualTypeOf<{ x: number } | undefined>();
+		expectTypeOf(parsed.flags.points).toEqualTypeOf<{ x: number }[]>();
+		expectTypeOf(parsed.flags.defaultMode).toEqualTypeOf<'fast' | 'safe'>();
+		expectTypeOf(parsed.flags.lazyMode).toEqualTypeOf<'fast' | 'safe'>();
+		expectTypeOf(parsed.flags.nullablePoint).toEqualTypeOf<{ x: number } | null>();
+		expectTypeOf(parsed.flags.lazyPoint).toEqualTypeOf<{ x: number }>();
+		expectTypeOf(parsed.unknownFlags).toEqualTypeOf<Record<string, (string | boolean)[]>>();
+	});
+
+	test('custom and array flags retain inference through commands and callbacks', () => {
+		const flags = {
+			point: (value: string) => ({ x: Number(value) }),
+			numbers: [Number],
+			label: {
+				type: String,
+				default: () => 'origin',
+			},
+		} as const satisfies Flags;
+
+		const parsed = cli({
+			flags,
+			commands: [
+				command({
+					name: 'draw',
+					flags,
+				}, (argv) => {
+					expectTypeOf(argv.flags.point).toEqualTypeOf<{ x: number } | undefined>();
+					expectTypeOf(argv.flags.numbers).toEqualTypeOf<number[]>();
+					expectTypeOf(argv.flags.label).toEqualTypeOf<string>();
+				}),
+			],
+		}, (argv) => {
+			expectTypeOf(argv.flags.point).toEqualTypeOf<{ x: number } | undefined>();
+			expectTypeOf(argv.flags.numbers).toEqualTypeOf<number[]>();
+			expectTypeOf(argv.flags.label).toEqualTypeOf<string>();
+		}, ['draw']);
+
+		if (parsed.command === 'draw') {
+			expectTypeOf(parsed.flags.point).toEqualTypeOf<{ x: number } | undefined>();
+			expectTypeOf(parsed.flags.numbers).toEqualTypeOf<number[]>();
+			expectTypeOf(parsed.flags.label).toEqualTypeOf<string>();
+		}
+	});
+
 	test('optional and required parameters', () => {
 		const parsed = cli({
 			parameters: ['<required>', '[variadic...]'],
