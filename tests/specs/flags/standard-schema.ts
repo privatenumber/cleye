@@ -3,7 +3,7 @@ import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
 import * as z from 'zod';
 import * as v from 'valibot';
-import { cli } from '#cleye';
+import { cli, type Flags } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('standard schema', () => {
@@ -120,6 +120,39 @@ describe('standard schema', () => {
 			}, undefined, []);
 
 			expectTypeOf(parsed.flags.size).toEqualTypeOf<'small' | 'large'>();
+		});
+
+		test('wrapped, array, transform, and lazy-default schemas infer the schema output', async () => {
+			const parsed = cli({
+				flags: {
+					wrappedPort: { type: z.coerce.number() },
+					modes: [z.enum(['dev', 'prod'])],
+					lengths: { type: [z.string().transform(value => value.length)] },
+					transformed: z.string().transform(value => value.length),
+					lazyRetries: {
+						type: z.coerce.number(),
+						default: () => 3,
+					},
+				},
+			}, undefined, []);
+
+			expectTypeOf(parsed.flags.wrappedPort).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.modes).toEqualTypeOf<('dev' | 'prod')[]>();
+			expectTypeOf(parsed.flags.lengths).toEqualTypeOf<number[]>();
+			expectTypeOf(parsed.flags.transformed).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.lazyRetries).toEqualTypeOf<number>();
+		});
+
+		test('readonly shared schema definitions preserve inference', async () => {
+			const flags = {
+				port: z.coerce.number(),
+				tags: [z.string()],
+			} as const satisfies Flags;
+
+			const parsed = cli({ flags }, undefined, []);
+
+			expectTypeOf(parsed.flags.port).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[]>();
 		});
 	}, { parallel: false });
 
