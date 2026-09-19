@@ -3,7 +3,7 @@ import { describe, test, expect } from 'manten';
 import { expectTypeOf } from 'expect-type';
 import * as z from 'zod';
 import * as v from 'valibot';
-import { cli } from '#cleye';
+import { cli, type Flags } from '#cleye';
 import { mockEnvFunctions } from '../../utils/mock-env-functions.ts';
 
 describe('standard schema', () => {
@@ -121,6 +121,39 @@ describe('standard schema', () => {
 
 			expectTypeOf(parsed.flags.size).toEqualTypeOf<'small' | 'large'>();
 		});
+
+		test('wrapped, array, transform, and lazy-default schemas infer the schema output', async () => {
+			const parsed = cli({
+				flags: {
+					wrappedPort: { type: z.coerce.number() },
+					modes: [z.enum(['dev', 'prod'])],
+					lengths: { type: [z.string().transform(value => value.length)] },
+					transformed: z.string().transform(value => value.length),
+					lazyRetries: {
+						type: z.coerce.number(),
+						default: () => 3,
+					},
+				},
+			}, undefined, []);
+
+			expectTypeOf(parsed.flags.wrappedPort).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.modes).toEqualTypeOf<('dev' | 'prod')[]>();
+			expectTypeOf(parsed.flags.lengths).toEqualTypeOf<number[]>();
+			expectTypeOf(parsed.flags.transformed).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.lazyRetries).toEqualTypeOf<number>();
+		});
+
+		test('readonly shared schema definitions preserve inference', async () => {
+			const flags = {
+				port: z.coerce.number(),
+				tags: [z.string()],
+			} as const satisfies Flags;
+
+			const parsed = cli({ flags }, undefined, []);
+
+			expectTypeOf(parsed.flags.port).toEqualTypeOf<number | undefined>();
+			expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[]>();
+		});
 	}, { parallel: false });
 
 	describe('help', () => {
@@ -156,6 +189,56 @@ describe('standard schema', () => {
 			expect(output).toContain('--size <size>');
 			expect(output).toContain('Pizza size');
 			expect(output).not.toContain('default:');
+		});
+	}, { parallel: false });
+
+	describe('aliases', () => {
+		// A raw schema can carry its own `alias` member; it is schema metadata,
+		// not a cleye flag alias.
+		const schemaWithAlias = (alias: string) => ({
+			alias,
+			'~standard': {
+				version: 1 as const,
+				vendor: 'test',
+				validate: (value: unknown) => ({ value }),
+			},
+		});
+
+		test('a schema-internal alias is not registered as a flag alias', () => {
+			const parsed = cli({
+				flags: { value: schemaWithAlias('x') },
+			}, undefined, ['-x', 'hello']);
+			if (parsed.command === undefined) {
+				expect(parsed.flags.value).toBeUndefined();
+				expect(parsed.unknownFlags.x).toStrictEqual([true]);
+			}
+		});
+
+		test('help ignores a multi-character schema-internal alias', () => {
+			const mocked = mockEnvFunctions();
+			cli({
+				name: 'demo',
+				flags: { value: schemaWithAlias('metadata') },
+			}, undefined, ['--help']);
+			mocked.restore();
+
+			const output = stripVTControlCharacters(mocked.consoleLog.calls[0][0] as string);
+			expect(output).toContain('--value');
+			expect(output).not.toContain('metadata');
+		});
+
+		test('an explicit wrapper alias is still honored', () => {
+			const parsed = cli({
+				flags: {
+					value: {
+						type: schemaWithAlias('metadata'),
+						alias: 'v',
+					},
+				},
+			}, undefined, ['-v', 'hello']);
+			if (parsed.command === undefined) {
+				expect(parsed.flags.value).toBe('hello');
+			}
 		});
 	}, { parallel: false });
 }, { parallel: false });

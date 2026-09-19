@@ -22,6 +22,13 @@ describe('unknown flags', () => {
 			expect(parsed.unknownFlags.unknown2).toEqual([true]);
 		});
 
+		test('unknown flag named __proto__ is captured as an own property', () => {
+			const parsed = cli({}, undefined, ['--__proto__=first', '--__proto__=second']);
+
+			expect(Object.hasOwn(parsed.unknownFlags, '__proto__')).toBe(true);
+			expect(Object.entries(parsed.unknownFlags)).toStrictEqual([['__proto__', ['first', 'second']]]);
+		});
+
 		test('strictFlags disabled by default', () => {
 			const mocked = mockEnvFunctions();
 			const parsed = cli({
