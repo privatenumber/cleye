@@ -1,3 +1,5 @@
+import { isStandardSchema } from 'type-flag/internal';
+
 /**
  * Index a map of named entries into a `(canonical-name | alias) → canonical-name`
  * lookup. Used by both the flag and command pipelines:
@@ -26,9 +28,12 @@ export type NameIndex = {
  * alias contract that type-flag enforces for flags: one non-empty
  * single-character alias, and no alias on single-character flag names. This
  * keeps help and auto-flag metadata from advertising unsupported aliases.
+ *
+ * A bare Standard Schema is the flag type itself, so its own `alias` member is
+ * schema metadata, not a flag alias. Only a flag config object declares one.
  */
 export const getFlagAlias = (config: unknown, flagName: string): string | undefined => {
-	if (!config || typeof config !== 'object' || !('alias' in config)) {
+	if (!config || typeof config !== 'object' || isStandardSchema(config) || !('alias' in config)) {
 		return undefined;
 	}
 	const { alias } = config as { alias?: unknown };
