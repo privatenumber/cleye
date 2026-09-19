@@ -1,5 +1,6 @@
 import { describe, test } from 'manten';
 import { expectTypeOf } from 'expect-type';
+import * as z from 'zod';
 import { cli, command, type Flags } from '#cleye';
 
 describe('types', () => {
@@ -562,5 +563,47 @@ describe('types', () => {
 
 		// Return type should not be void
 		expectTypeOf(result).not.toBeVoid();
+	});
+
+	test('standard schema flags infer the schema output', () => {
+		const parsed = cli({
+			flags: {
+				port: z.coerce.number(),
+				wrappedPort: { type: z.coerce.number() },
+				size: z.enum(['small', 'medium', 'large']),
+				modes: [z.enum(['dev', 'prod'])],
+				lengths: { type: [z.string().transform(value => value.length)] },
+				transformed: z.string().transform(value => value.length),
+				retries: {
+					type: z.coerce.number(),
+					default: 3,
+				},
+				lazyRetries: {
+					type: z.coerce.number(),
+					default: () => 3,
+				},
+			},
+		}, undefined, []);
+
+		expectTypeOf(parsed.flags.port).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.wrappedPort).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.size).toEqualTypeOf<'small' | 'medium' | 'large' | undefined>();
+		expectTypeOf(parsed.flags.modes).toEqualTypeOf<('dev' | 'prod')[]>();
+		expectTypeOf(parsed.flags.lengths).toEqualTypeOf<number[]>();
+		expectTypeOf(parsed.flags.transformed).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.retries).toEqualTypeOf<number>();
+		expectTypeOf(parsed.flags.lazyRetries).toEqualTypeOf<number>();
+	});
+
+	test('standard schema flags support readonly shared definitions', () => {
+		const flags = {
+			port: z.coerce.number(),
+			tags: [z.string()],
+		} as const satisfies Flags;
+
+		const parsed = cli({ flags }, undefined, []);
+
+		expectTypeOf(parsed.flags.port).toEqualTypeOf<number | undefined>();
+		expectTypeOf(parsed.flags.tags).toEqualTypeOf<string[]>();
 	});
 });

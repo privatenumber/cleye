@@ -342,6 +342,49 @@ const argv = cli({
 argv.flags.size // => "large" ("small" | "medium" | "large")
 ```
 
+#### Standard Schema validation
+A [Standard Schema](https://standardschema.dev) (Zod, Valibot, ArkType, and others) can be used directly as a flag type. _Cleye_ validates the value, infers the flag type from the schema output, and renders the flag in help output.
+
+```ts
+import { z } from 'zod'
+import { cli } from 'cleye'
+
+const argv = cli({
+    flags: {
+        port: z.coerce.number(), // number | undefined
+        size: z.enum(['small', 'medium', 'large']), // "small" | "medium" | "large" | undefined
+        tags: [z.string()] // string[]
+    }
+})
+
+// $ my-script --port 3000 --size large --tags app --tags cli
+
+argv.flags.port // => 3000
+argv.flags.tags // => ["app", "cli"]
+```
+
+A few things to keep in mind:
+
+- CLI values are strings, so use coercion (e.g. `z.coerce.number()`) for numbers.
+- To accept multiple values, wrap the schema in an array (`[z.string()]`) rather than using `z.array(...)`.
+- Keep boolean flags as the native `Boolean` type so `--no-<flag>` negation and short-flag grouping keep working.
+- Set the flag's `default` option instead of the schema's `.default()`, because the schema only runs when the flag is present.
+- Schemas must be synchronous.
+
+A direct schema is the flag type itself, so its properties are not read as flag options. To add an alias or description, use the object form:
+
+```ts
+cli({
+    flags: {
+        tag: {
+            type: z.string(),
+            alias: 't',
+            description: 'Tag to apply'
+        }
+    }
+})
+```
+
 #### Composable type helpers
 
 `cleye/formats` is a tree-shakable subpath that ships ready-made type-function helpers for common flag shapes. Import only what you need.

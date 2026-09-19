@@ -74,7 +74,7 @@
 	"dependencies": {
 		"ansis": "4.2.0",
 		"terminal-columns": "^2.0.0",
-		"type-flag": "^4.1.0"
+		"type-flag": "^4.5.2"
 	},
 	"devDependencies": {
 		"@types/node": "^24.9.2",
@@ -88,6 +88,7 @@
 		"pkgroll": "^2.20.1",
 		"skills-npm": "^1.0.0",
 		"tsx": "^4.20.6",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"zod": "4.1.12"
 	}
 }

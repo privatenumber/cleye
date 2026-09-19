@@ -4,10 +4,9 @@ import {
 	breakpoints,
 	type Options as TerminalColumnsOptions,
 } from 'terminal-columns';
+import { isStandardSchema } from 'type-flag';
 import type { HelpDocumentNode } from '../types.ts';
 import type { FlagData } from './render-flags.ts';
-
-type TypeFunction = (value: any) => any;
 
 type HelpDocumentNodeOrString<Type extends PropertyKey> = string | HelpDocumentNode<Type>;
 export class Renderers {
@@ -74,7 +73,7 @@ export class Renderers {
 	}
 
 	flagParameter(
-		typeFunction: TypeFunction | readonly [TypeFunction],
+		typeFunction: unknown,
 	): string {
 		if (typeFunction === Boolean) {
 			return '';
@@ -116,11 +115,13 @@ export class Renderers {
 
 		flagText += flagFormatted;
 
-		if ('placeholder' in flag && typeof flag.placeholder === 'string') {
+		// A Standard Schema is the flag type itself, not a flag options object
+		const isSchema = isStandardSchema(flag);
+
+		if (!isSchema && 'placeholder' in flag && typeof flag.placeholder === 'string') {
 			flagText += `${this.flagOperator(flagData)}${flag.placeholder}`;
 		} else {
-			// Test: default flag for String type short-hand
-			const flagPlaceholder = this.flagParameter('type' in flag ? flag.type : flag);
+			const flagPlaceholder = this.flagParameter(!isSchema && 'type' in flag ? flag.type : flag);
 			if (flagPlaceholder) {
 				flagText += `${this.flagOperator(flagData)}${flagPlaceholder}`;
 			}
@@ -134,6 +135,11 @@ export class Renderers {
 	}
 
 	flagDescription({ flag }: FlagData) {
+		// A Standard Schema is the flag type itself, not a flag options object
+		if (isStandardSchema(flag)) {
+			return '';
+		}
+
 		let descriptionText = 'description' in flag ? (flag.description ?? '') : '';
 
 		if ('default' in flag) {

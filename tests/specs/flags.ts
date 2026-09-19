@@ -1,7 +1,10 @@
 import { describe, test, expect } from 'manten';
+import { expectTypeOf } from 'expect-type';
 import { spy } from 'nanospy';
+import type { StandardSchemaV1 } from 'type-flag';
+import * as z from 'zod';
 import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
-import { cli } from '#cleye';
+import { cli, command } from '#cleye';
 
 describe('flags', () => {
 	test('has return type & callback', () => {
@@ -625,6 +628,154 @@ describe('flags', () => {
 			expect(parsed.flags.verbose).toBe(false);
 			expect(mocked.consoleError.called).toBe(false);
 			expect(mocked.processExit.called).toBe(false);
+		});
+	});
+
+	describe('standard schema flag types', () => {
+		// A raw schema can carry its own `alias` member; it is schema metadata,
+		// not a cleye flag option.
+		const schemaWithAlias = (
+			alias: string,
+		): StandardSchemaV1 & { alias: string } => ({
+			alias,
+			'~standard': {
+				version: 1,
+				vendor: 'test',
+				validate: value => ({ value }),
+			},
+		});
+
+		test('parses schema flags', () => {
+			const parsed = cli(
+				{
+					flags: {
+						port: z.coerce.number(),
+						size: z.enum(['small', 'medium', 'large']),
+						length: z.string().transform(value => value.length),
+						retries: {
+							type: z.coerce.number(),
+							default: 3,
+						},
+					},
+				},
+				undefined,
+				['--port', '3000', '--size', 'medium', '--length', 'hello'],
+			);
+
+			expect(parsed.flags.port).toBe(3000);
+			expect(parsed.flags.size).toBe('medium');
+			expect(parsed.flags.length).toBe(5);
+			expect(parsed.flags.retries).toBe(3);
+		});
+
+		test('collects array schema values and defaults to empty', () => {
+			const present = cli(
+				{ flags: { tags: [z.string()] } },
+				undefined,
+				['--tags', 'app', '--tags', 'cli'],
+			);
+			expect(present.flags.tags).toStrictEqual(['app', 'cli']);
+
+			const absent = cli(
+				{ flags: { tags: [z.string()] } },
+				undefined,
+				[],
+			);
+			expect(absent.flags.tags).toStrictEqual([]);
+		});
+
+		test('surfaces the schema error message on invalid value', () => {
+			expect(() => {
+				cli(
+					{ flags: { port: z.coerce.number() } },
+					undefined,
+					['--port', 'not-a-number'],
+				);
+			}).toThrow('expected number');
+		});
+
+		test('parses schema flags in a command callback', () => {
+			let callbackRan = false;
+			cli(
+				{
+					commands: [
+						command({
+							name: 'serve',
+							flags: {
+								port: z.coerce.number(),
+								tags: [z.string()],
+							},
+						}, (argv) => {
+							callbackRan = true;
+							expectTypeOf(argv.flags.port).toEqualTypeOf<number | undefined>();
+							expectTypeOf(argv.flags.tags).toEqualTypeOf<string[]>();
+							expect(argv.flags.port).toBe(3000);
+							expect(argv.flags.tags).toStrictEqual(['app', 'cli']);
+						}),
+					],
+				},
+				undefined,
+				['serve', '--port', '3000', '--tags', 'app', '--tags', 'cli'],
+			);
+
+			expect(callbackRan).toBe(true);
+		});
+
+		test('ignores a schema-internal alias', () => {
+			const parsed = cli(
+				{ flags: { value: schemaWithAlias('x') } },
+				undefined,
+				['-x', 'hello'],
+			);
+
+			expect(parsed.flags.value).toBeUndefined();
+			expect(parsed.unknownFlags).toStrictEqual({ x: [true] });
+		});
+
+		test('parses a schema with a multi-character alias member', () => {
+			const parsed = cli(
+				{ flags: { value: schemaWithAlias('metadata') } },
+				undefined,
+				['--value', 'hello'],
+			);
+
+			expect(parsed.flags.value).toBe('hello');
+			expect(parsed.unknownFlags).toStrictEqual({});
+		});
+
+		test('honors an explicit wrapper alias', () => {
+			const parsed = cli(
+				{
+					flags: {
+						value: {
+							type: schemaWithAlias('metadata'),
+							alias: 'v',
+						},
+					},
+				},
+				undefined,
+				['-v', 'hello'],
+			);
+
+			expect(parsed.flags.value).toBe('hello');
+		});
+
+		test('does not suggest a schema-internal alias for unknown flags', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						value: schemaWithAlias('metadata'),
+					},
+					strictFlags: true,
+				},
+				undefined,
+				['--metadatas'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleError.calls[0][0]).toContain('--metadatas');
+			expect(mocked.consoleError.calls[0][0]).not.toMatch(/did you mean/i);
 		});
 	});
 });

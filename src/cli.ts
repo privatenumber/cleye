@@ -1,4 +1,4 @@
-import { typeFlag } from 'type-flag';
+import { isStandardSchema, typeFlag } from 'type-flag';
 import { closest, distance } from 'fastest-levenshtein';
 import type {
 	CallbackFunction,
@@ -122,7 +122,9 @@ const getKnownFlagNames = (flags: Record<string, unknown>): string[] => {
 	const names: string[] = [];
 	for (const [name, config] of Object.entries(flags)) {
 		names.push(name);
-		if (config && typeof config === 'object' && 'alias' in config) {
+		// A Standard Schema is the flag type itself, so its `alias` is schema
+		// metadata, not a flag alias to suggest.
+		if (config && typeof config === 'object' && !isStandardSchema(config) && 'alias' in config) {
 			const { alias } = config as { alias?: string | string[] };
 			if (typeof alias === 'string' && alias) {
 				names.push(alias);

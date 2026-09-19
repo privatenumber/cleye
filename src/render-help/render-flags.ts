@@ -1,3 +1,4 @@
+import { isStandardSchema } from 'type-flag';
 import type { Flags } from '../types.ts';
 import { kebabCase } from '../utils/convert-case.ts';
 
@@ -64,7 +65,8 @@ export function renderFlags(flags: Flags) {
 		.sort((a, b) => a.localeCompare(b))
 		.map((name): FlagData => {
 			const flag = flags[name];
-			const hasAlias = ('alias' in flag);
+			// A Standard Schema is the flag type itself, so its members are not flag options
+			const hasAlias = !isStandardSchema(flag) && 'alias' in flag;
 
 			if (hasAlias) {
 				aliasesEnabled = true;

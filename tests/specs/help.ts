@@ -1,6 +1,8 @@
 import { stripVTControlCharacters } from 'node:util';
 import { describe, test, expect } from 'manten';
 import { underline } from 'kolorist';
+import type { StandardSchemaV1 } from 'type-flag';
+import * as z from 'zod';
 import { mockEnvFunctions } from '../utils/mock-env-functions.ts';
 import { Renderers } from '../../src/render-help/renderers.ts';
 import { renderFlags } from '../../src/render-help/render-flags.ts';
@@ -250,6 +252,64 @@ describe('help', () => {
 
 			expect(mocked.processExit.calls).toStrictEqual([[0]]);
 			expect(mocked.consoleLog.calls).toStrictEqual([['\u001B[1mFlags:\u001B[22m\n      --flag                   \n      --flag-a <string>        \n      --flag-b <number>        \n      --flag-c <value>          (default: {})\n  -h, --help                   Show help\n']]);
+		});
+
+		test('standard schema flags render flag options, not schema members', () => {
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						direct: z.coerce.number().describe('Schema-internal description'),
+						wrapped: { type: z.string() },
+						list: [z.string()],
+						withDefault: {
+							type: z.coerce.number(),
+							default: 8080,
+						},
+						described: {
+							type: z.string(),
+							description: 'Schema flag description',
+							placeholder: '<schema>',
+						},
+					},
+				},
+				undefined,
+				['--help'],
+			);
+			mocked.restore();
+
+			// A direct schema's `type`, `default`, and `description` members are not flag
+			// options, so only the configured placeholder and default render
+			expect(mocked.consoleLog.calls).toStrictEqual([[
+				'\u001B[1mFlags:\u001B[22m\n      --described <schema>          Schema flag description\n      --direct <value>              \n  -h, --help                        Show help\n      --list <value>                \n      --with-default <value>         (default: 8080)\n      --wrapped <value>             \n',
+			]]);
+		});
+
+		test('a Standard Schema member named alias is not rendered as a flag alias', () => {
+			const schemaWithAlias: StandardSchemaV1 & { alias: string } = {
+				alias: 'x',
+				'~standard': {
+					version: 1,
+					vendor: 'test',
+					validate: value => ({ value }),
+				},
+			};
+
+			const mocked = mockEnvFunctions();
+			cli(
+				{
+					flags: {
+						direct: schemaWithAlias,
+					},
+				},
+				undefined,
+				['--help'],
+			);
+			mocked.restore();
+
+			expect(mocked.consoleLog.calls).toStrictEqual([[
+				'\u001B[1mFlags:\u001B[22m\n      --direct <value>        \n  -h, --help                  Show help\n',
+			]]);
 		});
 
 		test('help disabled', () => {
