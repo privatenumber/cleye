@@ -72,6 +72,11 @@ describe('formats', () => {
 			expect(() => integer()('abc')).toThrow('Expected an integer');
 		});
 
+		test('throws on empty or whitespace string', () => {
+			expect(() => integer()('')).toThrow('Expected an integer');
+			expect(() => integer()('   ')).toThrow('Expected an integer');
+		});
+
 		test('infers number type', () => {
 			expectTypeOf(integer()('1')).toEqualTypeOf<number>();
 		});
@@ -86,6 +91,11 @@ describe('formats', () => {
 
 		test('throws on non-numeric', () => {
 			expect(() => float()('abc')).toThrow('Expected a finite number');
+		});
+
+		test('throws on empty or whitespace string', () => {
+			expect(() => float()('')).toThrow('Expected a finite number');
+			expect(() => float()('   ')).toThrow('Expected a finite number');
 		});
 
 		test('throws on Infinity', () => {
@@ -110,6 +120,12 @@ describe('formats', () => {
 
 		test('throws above max', () => {
 			expect(() => range(1, 10)('11')).toThrow('Expected a number between 1 and 10');
+		});
+
+		test('throws on non-numeric or empty string', () => {
+			expect(() => range(0, 10)('abc')).toThrow('Expected a number');
+			expect(() => range(0, 10)('')).toThrow('Expected a number');
+			expect(() => range(0, 10)('   ')).toThrow('Expected a number');
 		});
 
 		test('infers number type', () => {
