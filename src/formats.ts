@@ -16,7 +16,7 @@ export const commaList = <T>(itemType: (value: string) => T) => (input: string):
 };
 
 export const integer = () => (input: string): number => {
-	const value = Number(input);
+	const value = input.trim() === '' ? NaN : Number(input);
 	if (!Number.isInteger(value)) {
 		throw new TypeError(`Expected an integer (got: ${JSON.stringify(input)})`);
 	}
@@ -24,7 +24,7 @@ export const integer = () => (input: string): number => {
 };
 
 export const float = () => (input: string): number => {
-	const value = Number(input);
+	const value = input.trim() === '' ? NaN : Number(input);
 	if (!Number.isFinite(value)) {
 		throw new TypeError(`Expected a finite number (got: ${JSON.stringify(input)})`);
 	}
@@ -32,7 +32,7 @@ export const float = () => (input: string): number => {
 };
 
 export const range = (min: number, max: number) => (input: string): number => {
-	const value = Number(input);
+	const value = input.trim() === '' ? NaN : Number(input);
 	if (!Number.isFinite(value)) {
 		throw new TypeError(`Expected a number (got: ${JSON.stringify(input)})`);
 	}
