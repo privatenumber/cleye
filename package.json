@@ -72,7 +72,7 @@
 		"prepare": "skills-npm"
 	},
 	"dependencies": {
-		"ansis": "4.2.0",
+		"ansis": "4.5.0",
 		"terminal-columns": "^2.0.0",
 		"type-flag": "^4.5.2"
 	},
