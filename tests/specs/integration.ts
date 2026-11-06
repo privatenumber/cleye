@@ -1,8 +1,29 @@
+import { spawnSync } from 'node:child_process';
 import { describe, test, expect } from 'manten';
 import { spy } from 'nanospy';
 import { cli, command } from '#cleye';
 
 describe('integration', () => {
+	test('help output is not colored when piped with COLORTERM set', () => {
+		const entrypoint = new URL('../../dist/index.mjs', import.meta.url).href;
+		const script = `import { cli } from '${entrypoint}'; cli({ name: 'my-cli' }, undefined, ['--help']);`;
+		const env: NodeJS.ProcessEnv = {
+			...process.env,
+			COLORTERM: 'truecolor',
+		};
+		delete env.FORCE_COLOR;
+		delete env.NO_COLOR;
+
+		const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+			encoding: 'utf8',
+			env,
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout.toLowerCase()).toContain('usage:');
+		expect(result.stdout.includes('\u001B[')).toBe(false);
+	});
+
 	test('full CLI with all features', () => {
 		const buildCallback = spy();
 		const buildCommand = command(
